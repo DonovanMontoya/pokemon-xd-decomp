@@ -266,6 +266,10 @@ cflags_xd_input = [
     "-i include/PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Include",
 ]
 
+# Accessor units use balanced optimization with automatic inlining.
+cflags_xd_app_balanced = [flag for flag in cflags_runtime if not flag.startswith("-O")]
+cflags_xd_app_balanced += ["-O4"]
+
 # Battle objects use balanced optimization, without inherited speed flags.
 cflags_xd_app_fight = [flag for flag in cflags_runtime
                        if not flag.startswith(("-O", "-inline"))]
@@ -853,7 +857,7 @@ config.libs = [
             Object(NonMatching, "game/menuReliveHall.cpp"),
             Object(NonMatching, "game/menuPdaSearcher.cpp"),
             Object(NonMatching, "game/menuPdaMailXD.cpp"),
-            Object(NonMatching, "game/menuPdaMailList.XD.cpp"),
+            Object(NonMatching, "game/menuPdaMailList.XD.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw on"]),
             Object(NonMatching, "game/menuColosseumBattle.cpp"),
             Object(NonMatching, "game/menuCB_BattleResult.cpp"),
             Object(NonMatching, "game/menuCB_BattleStart.cpp"),
@@ -866,11 +870,11 @@ config.libs = [
             Object(NonMatching, "game/menuCB_Battle.cpp"),
             Object(NonMatching, "game/menuToolBattle.cpp"),
             Object(NonMatching, "game/menuGBAC.cpp"),
-            Object(NonMatching, "game/menuPdaDPMonitor.cpp"),
+            Object(NonMatching, "game/menuPdaDPMonitor.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw on"]),
             Object(NonMatching, "game/menuPdaDPMonitorList.cpp"),
             Object(NonMatching, "game/menuPdaSub.cpp"),
             Object(NonMatching, "game/menuPdaMemoXD.cpp"),
-            Object(NonMatching, "game/menuPdaMemoListXD.cpp"),
+            Object(NonMatching, "game/menuPdaMemoListXD.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw on"]),
             Object(NonMatching, "game/menuPcBoxPokemon.cpp"),
             Object(NonMatching, "game/menuField.cpp"),
             Object(NonMatching, "game/menuScript.cpp"),
@@ -1109,10 +1113,10 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/menu/menuFace.cpp"),
             Object(NonMatching, "game/pxdvs/app/menu/menuFaceBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/menu/menuModel.cpp"),
-            Object(NonMatching, "game/pxdvs/app/menu/menuOffScreen.cpp"),
-            Object(NonMatching, "game/pxdvs/app/menu/window.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/menuOffScreen.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-use_lmw_stmw on"]),
+            Object(NonMatching, "game/pxdvs/app/menu/window.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-use_lmw_stmw on"]),
             Object(NonMatching, "game/pxdvs/app/menu/cursorBios.cpp"),
-            Object(NonMatching, "game/pxdvs/app/menu/winMsg.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/winMsg.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-use_lmw_stmw on"]),
 
             # zokusei
             Object(NonMatching, "game/pxdvs/app/zokusei/zokusei.cpp"),
@@ -1120,8 +1124,8 @@ config.libs = [
 
             # floor
             Object(NonMatching, "game/pxdvs/app/floor/floor.cpp"),
-            Object(NonMatching, "game/pxdvs/app/floor/floorEvent.cpp"),
-            Object(NonMatching, "game/pxdvs/app/floor/floorCharacterBios.cpp", extra_cflags=["-inline noauto", "-use_lmw_stmw off", "-opt nopeephole"]),
+            Object(NonMatching, "game/pxdvs/app/floor/floorEvent.cpp", extra_cflags=["-inline noauto", "-use_lmw_stmw on", "-opt nopeephole"]),
+            Object(NonMatching, "game/pxdvs/app/floor/floorCharacterBios.cpp", extra_cflags=["-inline off", "-use_lmw_stmw off", "-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorDataBios.cpp", extra_cflags=["-inline noauto", "-use_lmw_stmw off", "-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorFieldCamera.cpp"),
             Object(NonMatching, "game/pxdvs/app/floor/floorFieldCameraEditor.cpp"),
@@ -1197,7 +1201,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/item/itemParam.c"),
             Object(NonMatching, "game/pxdvs/app/item/item.cpp"),
             Object(NonMatching, "game/pxdvs/app/item/itemBios.cpp", extra_cflags=["-opt nopeephole"]),
-            Object(NonMatching, "game/pxdvs/app/item/itemDB.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/item/itemDB.cpp"),
             Object(NonMatching, "game/pxdvs/app/item/itemUse2Pokemon.cpp"),
             Object(NonMatching, "game/pxdvs/app/item/itemFightItem.cpp"),
 
@@ -1229,7 +1233,7 @@ config.libs = [
             # memcard
             Object(NonMatching, "game/pxdvs/app/memcard/memcard.cpp"),
             Object(NonMatching, "game/pxdvs/app/memcard/savedata.cpp"),
-            Object(NonMatching, "game/pxdvs/app/memcard/savedataBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/memcard/savedataBios.cpp"),
 
             # recovery
             Object(NonMatching, "game/pxdvs/app/recovery/recovery.cpp"),
@@ -1268,17 +1272,17 @@ config.libs = [
 
             # fight
             Object(NonMatching, "game/pxdvs/app/fight/fightMain.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightKind.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightKind.cpp", cflags=cflags_xd_app_balanced),
             Object(NonMatching, "game/pxdvs/app/fight/fightTarget.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightType.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightWaza.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightWazaBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightEncount.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightEncountBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightEncountBios.cpp", cflags=cflags_xd_app_balanced),
             Object(NonMatching, "game/pxdvs/app/fight/fightFloor.cpp", cflags=cflags_xd_app_fight),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightFloorBios.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightFloorDB.cpp", cflags=cflags_xd_app_fight),
-            Object(NonMatching, "game/pxdvs/app/fight/fightSideBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSideBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightSide.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightSideDB.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightTrainer.cpp", cflags=cflags_xd_app_fight),
@@ -1289,7 +1293,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightItem.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightPokemon.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightPokemonBios.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightPokemonEnemy.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightPokemonEnemy.cpp", cflags=cflags_xd_app_balanced),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightActionBios.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightAction.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightActionFlow.cpp"),
@@ -1297,7 +1301,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/fight/fightKouka.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightKoukaBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightJouken.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightJoukenBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightJoukenBios.cpp", cflags=cflags_xd_app_balanced),
             Object(NonMatching, "game/pxdvs/app/fight/fightAbicnt.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fight.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightEncountWipeData.c"),
@@ -1367,7 +1371,7 @@ config.libs = [
             # deck
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/deck/deck.cpp"),
             Object(NonMatching, "game/pxdvs/app/deck/deckGroupData.c"),
-            Object(NonMatching, "game/pxdvs/app/deck/deckDataVirtualBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/deck/deckDataVirtualBios.cpp"),
 
             Object(NonMatching, "game/pxdvs/app/reliveHall/reliveHall.cpp"),
             Object(NonMatching, "game/pxdvs/app/ant/ant.cpp"),

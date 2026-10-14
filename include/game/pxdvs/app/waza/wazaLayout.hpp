@@ -118,10 +118,10 @@ extern WazaDataRecord* waza_data;
 extern u32* waza_data_number;
 extern WazaFunctionRecord waza_func_data[];
 extern u32 waza_func_data_number;
-WazaDataRecord* wazaDataBiosGetPtr(u16);
+WazaDataRecord* wazaDataBiosGetPtr(u32);
 WazaFunctionRecord* wazaFuncDataBiosGetPtr(u16);
 u16 wazaDataBiosGetWazaFuncDataId(WazaDataRecord*);
-u8 wazaCheckDarkWaza(u16);
+u8 wazaCheckDarkWaza(u32);
 u8 zokuseiBiosGetWazaKind(u8);
 }
 #endif

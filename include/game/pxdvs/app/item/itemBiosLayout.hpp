@@ -21,10 +21,10 @@ struct ItemParamRecord {
 struct TasteDataRecord { u8 bytes[0x20]; };
 struct ItemSoubiDataRecord { u16 fightKoukaDataId; };
 struct ItemBiosRecord { u16 itemDataId; u16 num; };
-struct ItemBallDataRecord { u16 id; u16 reserved; s32 effectIds[11]; u8 reservedTail[0x10]; };
+struct ItemBallDataRecord { u16 id; u16 reserved; s32 effectIds[15]; };
 struct ItemDataRecord {
     u8 kind; s8 important; s8 useful; u8 deposit; u8 effectParam; u8 reserved5[1];
-    u16 price; u16 coupon; s16 itemSoubiDataId; s16 fightKoukaDataId; u8 reservedE[2];
+    u16 price; u16 coupon; u16 itemSoubiDataId; s16 fightKoukaDataId; u8 reservedE[2];
     s32 name; s32 doc; s32 buff; s32 fieldUseFunc; s32 battleUseFunc;
     s8 useFriend[3]; u8 reserved27[1];
 };

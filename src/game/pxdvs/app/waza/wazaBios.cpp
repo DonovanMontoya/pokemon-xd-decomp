@@ -73,13 +73,13 @@ void wazaDataBiosSetSeqId(WazaDataRecord* data, u16 value) { if (data) data->seq
 
 void wazaDataBiosSetFightKoukaDataId(WazaDataRecord* data, u16 value) { if (data) data->fightKoukaDataId = value; }
 
-void wazaDataBiosSetIryoku(WazaDataRecord* data, u16 value) { if (data) data->iryoku = value; }
+void wazaDataBiosSetIryoku(WazaDataRecord* data, s16 value) { if (data) data->iryoku = value; }
 
 void wazaDataBiosSetAvg(WazaDataRecord* data, u8 value) { if (data) data->avg = value; }
 
 void wazaDataBiosSetRangeId(WazaDataRecord* data, u8 value) { if (data) data->rangeId = value; }
 
-void wazaDataBiosSetPri(WazaDataRecord* data, u8 value) { if (data) data->pri = value; }
+void wazaDataBiosSetPri(WazaDataRecord* data, s8 value) { if (data) data->pri = value; }
 
 void wazaDataBiosSetZokuseiDataId(WazaDataRecord* data, u8 value) { if (data) data->zokuseiDataId = value; }
 
@@ -139,7 +139,7 @@ u8 wazaDataBiosGetPp(WazaDataRecord* data) { if (data == 0) { return 0; } else {
 
 u32 wazaDataBiosGetName(WazaDataRecord* data) { if (data == 0) { return 0; } else { return data->name; } }
 
-WazaDataRecord* wazaDataBiosGetPtr(u16 identifier) { if (identifier >= *waza_data_number) return waza_data; return &waza_data[identifier]; }
+WazaDataRecord* wazaDataBiosGetPtr(u32 identifier) { u16 index = identifier; if (index >= *waza_data_number) return waza_data; return &waza_data[index]; }
 
 WazaFunctionRecord* wazaFuncDataBiosGetPtr(u16 identifier) { if (identifier >= waza_func_data_number) return 0; return &waza_func_data[identifier]; }
 }

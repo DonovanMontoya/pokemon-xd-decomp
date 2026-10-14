@@ -1,5 +1,7 @@
 #include <dolphin/types.h>
+#ifdef __cplusplus
 extern "C" {
+#endif
 typedef struct FIGHT_TRAINER FIGHT_TRAINER; typedef struct FightOutPokemon FightOutPokemon; typedef struct FightPokemon FightPokemon; typedef struct Pokemon Pokemon; typedef struct FightSide FightSide;
 typedef struct FightAiAllWazaValid {
     FightOutPokemon *attacker[2];
@@ -3527,4 +3529,6 @@ loop_39:
 
 
 
+#ifdef __cplusplus
 }
+#endif

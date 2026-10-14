@@ -1,5 +1,7 @@
 #include <dolphin/types.h>
+#ifdef __cplusplus
 extern "C" {
+#endif
 typedef struct FIGHT_TRAINER FIGHT_TRAINER; typedef struct FightOutPokemon FightOutPokemon; typedef struct FightPokemon FightPokemon; typedef struct Pokemon Pokemon; typedef struct FightWaza FightWaza; typedef struct FightSide FightSide;
 s32 fightTrainerAiAddValue(s32, s32);
 s32 fightTrainerAiAddValueByAddsubDataId(s32, FIGHT_TRAINER *, u16);
@@ -22,7 +24,7 @@ u8 fightTrainerAiGetWazaAddKoukaAvg(FIGHT_TRAINER *, u16);
 u8 fightTrainerAiGetWazaPp(FIGHT_TRAINER *, u16);
 u8 wazaDB_GetAvg(u16);
 u8 fightTrainerAiIsFightOutPokemonNokoriHp(FIGHT_TRAINER *, FightOutPokemon *, f32, s32);
-u8 fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(void *, FIGHT_TRAINER *, u8);
+u8 fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_TRAINER *, void *, FightOutPokemon *, FightOutPokemon **);
 u8 fightTrainerAiCheckJoutaiKieWazaHitWazaDataId(FIGHT_TRAINER *, u16, u16);
 u16 fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(FIGHT_TRAINER *, FightOutPokemon *, u16, u16);
 s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER *, FightOutPokemon *, u16, FightOutPokemon *, u8);
@@ -271,7 +273,7 @@ s32 fightTrainerAiWazaValueDarkHold(FIGHT_TRAINER *arg0, FightOutPokemon *arg1, 
     u8 var_r26_9;
 
     var_r29 = 0;
-    temp_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, (u8) arg3);
+    temp_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, arg3, 0);
     temp_r30 = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, arg0, sp8, 0U, 1U);
     var_r26 = 0;
     while ((s32) var_r26 < (s32) temp_r30) {
@@ -2233,7 +2235,7 @@ s32 fightTrainerAiWazaValueKiaipanti(FIGHT_TRAINER *arg0, FightOutPokemon *arg1,
     u8 temp_r31;
 
     var_r25 = 0;
-    temp_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, (u8) arg3);
+    temp_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, arg3, 0);
     temp_r26 = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, arg0, sp8, 0U, 1U);
     if (fightTrainerAiGetFightOutPokemonLastUseWazaDataId(arg0, arg1) == 0x117) {
         var_r25 = fightTrainerAiAddValueByAddsubDataId(0, arg0, 0x5DU);
@@ -3281,7 +3283,7 @@ s32 fightTrainerAiWazaValueOiuti(FIGHT_TRAINER *arg0, FightOutPokemon *arg1, u16
     u8 var_r31;
 
     var_r28 = 0;
-    var_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, (u8) arg3);
+    var_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, arg3, 0);
     temp_r3 = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, arg3);
     sp8 = 0;
     if (fightTrainerSearchIrekaeFightPokemon(temp_r3, &sp8) == 0) {
@@ -3482,7 +3484,7 @@ s32 fightTrainerAiWazaValueHonoonouzu(FIGHT_TRAINER *arg0, FightOutPokemon *arg1
     u8 var_r31;
 
     var_r28 = 0;
-    var_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, (u8) arg3);
+    var_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, arg3, 0);
     temp_r3 = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, arg3);
     sp8 = 0;
     if (fightTrainerSearchIrekaeFightPokemon(temp_r3, &sp8) == 0) {
@@ -3662,7 +3664,7 @@ s32 fightTrainerAiWazaValueSokubaku(FIGHT_TRAINER *arg0, FightOutPokemon *arg1, 
     u8 var_r31;
 
     var_r28 = 0;
-    var_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, (u8) arg3);
+    var_r31 = fightTrainerAiCheckFightFloorCheckFightActionFightOutPokemonIrekaeSelect(arg0, 0, arg3, 0);
     temp_r3 = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, arg3);
     sp8 = 0;
     if (fightTrainerSearchIrekaeFightPokemon(temp_r3, &sp8) == 0) {
@@ -4863,4 +4865,6 @@ s32 fightTrainerAiWazaValueHimitunotikara(FIGHT_TRAINER *arg0, FightOutPokemon *
 
 
 
+#ifdef __cplusplus
 }
+#endif

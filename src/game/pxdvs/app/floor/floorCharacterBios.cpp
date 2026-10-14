@@ -5,7 +5,7 @@ inline void GSvecSet(GSvec *vector, f32 x, f32 y, f32 z) { vector->x=x; vector->
 void *peopleInfoBiosGetPtrFromIndex(u16);
 floorCharacter_dd_ *floorCharacterBiosGetPtr(u32, u32);
 static floorCharacter_dd_ _globalCharacter[3];
-void floorCharacterBiosSetVisibility(floorCharacter_dd_ *character, u8 visible) { if (character) character->visibility = visible; }
+void floorCharacterBiosSetVisibility(floorCharacter_dd_ *character, u8 visible) { if (character) { u32 value = visible; character->visibility = value; } }
 void floorCharacterBiosSetPos(floorCharacter_dd_ *character, GSvec *position) {
     if (character && position) { character->x=position->x; character->y=position->y; character->z=position->z; }
 }

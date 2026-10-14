@@ -51,59 +51,59 @@ u16 fightWaza_GetMotoWazaDataId(FightWazaRecord* data) { if (data == 0) { return
 
 u8 fightWaza_GetWazaBanme(FightWazaRecord* data) { if (data == 0) { return 0; } else { return data->wazaBanme; } }
 
-void* wazaDB_GetFightWazaWzxVariationFuncPtr(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightWazaWzxVariation; } } }
+void* wazaDB_GetFightWazaWzxVariationFuncPtr(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightWazaWzxVariation; } } }
 
-void* wazaDB_GetFightWazaWzxTypeFuncPtr(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightWazaWzxType; } } }
+void* wazaDB_GetFightWazaWzxTypeFuncPtr(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightWazaWzxType; } } }
 
-void* wazaDB_GetFightTrainerAiWazaDamageFightPokemonFuncPtr(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaDamageFightPokemon; } } }
+void* wazaDB_GetFightTrainerAiWazaDamageFightPokemonFuncPtr(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaDamageFightPokemon; } } }
 
-void* wazaDB_GetFightTrainerAiWazaDamageFuncPtr(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaDamage; } } }
+void* wazaDB_GetFightTrainerAiWazaDamageFuncPtr(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaDamage; } } }
 
-void* wazaDB_GetFightTrainerAiWazaHitFuncPtr(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaHit; } } }
+void* wazaDB_GetFightTrainerAiWazaHitFuncPtr(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaHit; } } }
 
-void* wazaDB_GetFightTrainerAiWazaValueFuncPtr(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaValue; } } }
+void* wazaDB_GetFightTrainerAiWazaValueFuncPtr(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { WazaFunctionRecord* functions = wazaFuncDataBiosGetPtr(wazaDataBiosGetWazaFuncDataId(data)); if (functions == 0) { return 0; } else { return functions->fightTrainerAiWazaValue; } } }
 
-u8 wazaDB_GetCompatible(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->compatible; } }
+u8 wazaDB_GetCompatible(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->compatible; } }
 
-u32 wazaDB_GetWazawzxdataId(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->wazawzxdataId; } }
+u32 wazaDB_GetWazawzxdataId(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->wazawzxdataId; } }
 
-u8 wazaDB_GetRiskFlag(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->riskFlag; } }
+u8 wazaDB_GetRiskFlag(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->riskFlag; } }
 
-u8 wazaDB_GetTypeId(u16 identifier, u16 index) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (!data) return 0; if (index >= 3) return 0; return data->typeId[index]; }
+u8 wazaDB_GetTypeId(u32 identifier, u16 index) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (!data) return 0; if (index >= 3) return 0; return data->typeId[index]; }
 
-u8 wazaDB_GetHidenFlag(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->hidenFlag; } }
+u8 wazaDB_GetHidenFlag(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->hidenFlag; } }
 
-u8 wazaDB_GetBouon(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->bouon; } }
+u8 wazaDB_GetBouon(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->bouon; } }
 
-u8 wazaDB_GetOujanosirusi(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->oujanosirusi; } }
+u8 wazaDB_GetOujanosirusi(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->oujanosirusi; } }
 
-u8 wazaDB_GetOumugaesi(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->oumugaesi; } }
+u8 wazaDB_GetOumugaesi(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->oumugaesi; } }
 
-u8 wazaDB_GetYokodori(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->yokodori; } }
+u8 wazaDB_GetYokodori(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->yokodori; } }
 
-u8 wazaDB_GetMajikku(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->majikku; } }
+u8 wazaDB_GetMajikku(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->majikku; } }
 
-u8 wazaDB_GetMamoru(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->mamoru; } }
+u8 wazaDB_GetMamoru(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->mamoru; } }
 
-u8 wazaDB_GetDageki(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->dageki; } }
+u8 wazaDB_GetDageki(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->dageki; } }
 
-u8 wazaDB_GetAddFightKoukaAvg(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->addFightKoukaAvg; } }
+u8 wazaDB_GetAddFightKoukaAvg(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->addFightKoukaAvg; } }
 
-u16 wazaDB_GetSeqId(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->seqId; } }
+u16 wazaDB_GetSeqId(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->seqId; } }
 
-s16 wazaDB_GetIryoku(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->iryoku; } }
+s16 wazaDB_GetIryoku(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->iryoku; } }
 
-u8 wazaDB_GetAvg(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->avg; } }
+u8 wazaDB_GetAvg(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->avg; } }
 
-u8 wazaDB_GetRangeId(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->rangeId; } }
+u8 wazaDB_GetRangeId(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->rangeId; } }
 
-s8 wazaDB_GetPri(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->pri; } }
+s8 wazaDB_GetPri(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->pri; } }
 
-u8 waza_GetZokuseiKindData(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (!data) return 0; if (wazaCheckDarkWaza(identifier) == 1) { WazaDataRecord* dark = wazaDataBiosGetPtr(identifier); if (dark == 0) { return 0; } else { return dark->darkKind; } } return zokuseiBiosGetWazaKind(data->zokuseiDataId); }
+u8 waza_GetZokuseiKindData(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (!data) return 0; if (wazaCheckDarkWaza(identifier) == 1) { WazaDataRecord* dark = wazaDataBiosGetPtr(identifier); if (dark == 0) { return 0; } else { return dark->darkKind; } } return zokuseiBiosGetWazaKind(data->zokuseiDataId); }
 
-u8 wazaDB_GetZokuseiDataId(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->zokuseiDataId; } }
+u8 wazaDB_GetZokuseiDataId(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->zokuseiDataId; } }
 
-u8 wazaDB_GetPp(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->pp; } }
+u8 wazaDB_GetPp(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->pp; } }
 
-u32 wazaDB_GetName(u16 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->name; } }
+u32 wazaDB_GetName(u32 identifier) { WazaDataRecord* data = wazaDataBiosGetPtr(identifier); if (data == 0) { return 0; } else { return data->name; } }
 }

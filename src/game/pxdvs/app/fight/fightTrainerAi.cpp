@@ -2,7 +2,9 @@
 #undef NULL
 #define NULL 0
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 typedef struct FIGHT_TRAINER FIGHT_TRAINER; typedef struct Pokemon Pokemon; typedef struct FightPokemon FightPokemon; typedef struct FightOutPokemon FightOutPokemon; typedef struct FightSide FightSide; typedef struct FightWaza FightWaza;
 typedef struct AiAbilitySearch { s32 ability; FightOutPokemon *result; s32 side; FightOutPokemon *relative; FIGHT_TRAINER *trainer; } AiAbilitySearch;
 typedef FIGHT_TRAINER FightTrainer;
@@ -2756,9 +2758,11 @@ loop_49:
     }
 }
 s32 fightAi_CopyAllWazaValidTable(AiWazaCandidate *dst, AiWazaCandidate *src) {
+    u8 i;
     if (!dst || !src) return 0;
-    for (u8 i = 0; i < 2; i++) {
-        for (u8 j = 0; j < 2; j++) {
+    for (i = 0; i < 2; i++) {
+        u8 j;
+        for (j = 0; j < 2; j++) {
             dst->attackers[i] = src->attackers[i];
             dst->defenders[i] = src->defenders[i];
             dst->moves[i] = src->moves[i];
@@ -2775,8 +2779,10 @@ s32 fightAi_CopyAllWazaValidTable(AiWazaCandidate *dst, AiWazaCandidate *src) {
 
 void fightAi_InitAllWazaValidSub(AiWazaCandidate *entry) {
     if (entry) {
-        for (u8 i = 0; i < 2; i++) {
-            for (u8 j = 0; j < 2; j++) {
+        u8 i;
+        for (i = 0; i < 2; i++) {
+            u8 j;
+            for (j = 0; j < 2; j++) {
                 entry->attackers[i] = 0;
                 entry->defenders[i] = 0;
                 entry->moves[i] = 0;
@@ -2793,7 +2799,8 @@ void fightAi_InitAllWazaValidSub(AiWazaCandidate *entry) {
 
 void fightAi_CreateAction_FromAllWazaValid(FIGHT_TRAINER *trainer, AiWazaCandidate *entry) {
     u8 fightType = fightFloor_GetFightType(0);
-    for (u8 i = 0; i < 2; i++) {
+    u8 i;
+    for (i = 0; i < 2; i++) {
         FightOutPokemon *attacker = entry->attackers[i];
         u16 move = entry->moves[i];
         u8 slot = entry->slots[i];
@@ -2811,7 +2818,8 @@ void fightAi_CreateAction_FromAllWazaValid(FIGHT_TRAINER *trainer, AiWazaCandida
 
 u8 _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza__FUs(u16 move) {
     u16 ignored[3] = {0x11d, 0x78, 0x99};
-    for (u8 i = 0; i < 3; i++) {
+    u8 i;
+    for (i = 0; i < 3; i++) {
         if (move == ignored[i]) return 1;
     }
     return 0;
@@ -2823,7 +2831,8 @@ u8 fightAi_GetWazaCombValue(FightOutPokemon **pokemon, u16 *damage, u8 *probabil
     u16 average[2] = {0, 0};
     Pokemon *records[2];
     u8 defeated = 0;
-    for (u8 i = 0; i < 2; i++) {
+    u8 i;
+    for (i = 0; i < 2; i++) {
         if (pokemon[i]) {
             total[i] = damage[i] + damage[i + 2];
             records[i] = fightOutPokemonGetPokemonPtr(pokemon[i]);
@@ -2853,4 +2862,6 @@ u8 fightAi_GetWazaCombValue(FightOutPokemon **pokemon, u16 *damage, u8 *probabil
     }
 }
 
+#ifdef __cplusplus
 }
+#endif

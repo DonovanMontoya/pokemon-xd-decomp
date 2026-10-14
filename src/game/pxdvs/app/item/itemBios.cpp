@@ -395,7 +395,7 @@ void itemDataBiosSetFightUseKoukaDataId(void *arg0, s16 arg1) {
 }
 
 
-void itemDataBiosSetItemSoubiDataId(void *arg0, s16 arg1) {
+void itemDataBiosSetItemSoubiDataId(void *arg0, u16 arg1) {
     if (arg0 != NULL) {
         ((ItemDataRecord *)arg0)->itemSoubiDataId = arg1;
     }
