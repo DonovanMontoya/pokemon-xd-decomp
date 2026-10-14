@@ -101,7 +101,7 @@ void modelBankReleaseModel__FP8_GSmodel(GSmodel*);
 void GSmemFree(void*);
 void HSD_JObjSetupMatrixSub(HSD_JObj*);
 void HSD_JObjSetMtxDirtySub(HSD_JObj*);
-void __assert(const char*, u32, const char*);
+void __assert(const char*, int, const char*);
 }
 // Matches the SDK's lazy matrix setup and assertion contract.
 static inline u8 modelJointMatrixDirty(HSD_JObj* joint) {
@@ -201,3 +201,51 @@ static void _modelPreUpdate__Ff(f32) {
 }
 }
 #pragma pop
+
+#include <game/pxdvs/GSAPI/GSpart/GSpart.hpp>
+#include <game/maximum/GSAPI/baselib/quatlib.h>
+extern "C" void GSvecTransformQuat(GSvec*, HSD_Quaternion*, GSvec*);
+extern "C" void GSmodelDetachFromGSpart(GSmodel* model, u8 keepTransform) {
+    if (model->attachmentMode != 0) {
+        HSD_JObj* joint = model->joint;
+        if (!joint) __assert("jobj.h", 1199, "jobj");
+        joint->flags &= ~0x3800000;
+        if (joint && !modelJointMatrixDirty(joint)) HSD_JObjSetMtxDirtySub(joint);
+        model->attachmentModel = 0;
+        model->attachmentPart = 0;
+        model->flags &= ~0x40000;
+        model->attachmentMode = 0;
+        if (keepTransform) {
+            GSmodelSetPosition(model, &model->attachmentPosition);
+            GSmodelSetRotation(model, &model->attachmentRotation);
+            GSmodelSetScale(model, &model->attachmentScale);
+        }
+    }
+}
+extern "C" void GSmodelAttachToGSpart(GSmodel* model, GSpart* part, s32 mode, u8 once, u8 reset) {
+    if (model->attachmentMode == 0 && mode != 0) {
+        model->attachmentModel = part->model;
+        model->attachmentPart = part->index;
+        if (reset == 1) {
+            model->attachmentPosition.param1 = 0.0f; model->attachmentPosition.param2 = 0.0f; model->attachmentPosition.param3 = 0.0f;
+            model->attachmentRotation.param1 = 0.0f; model->attachmentRotation.param2 = 0.0f; model->attachmentRotation.param3 = 0.0f;
+            model->attachmentScale.param1 = 1.0f; model->attachmentScale.param2 = 1.0f; model->attachmentScale.param3 = 1.0f;
+        } else {
+            Vec position, rotation, scale, offset, inverseRotation;
+            HSD_Quaternion quaternion;
+            GSpartGetTransform(part, &position, &rotation, &scale);
+            PSVECSubtract((Vec*)&model->position, &position, &offset);
+            PSVECScale(&rotation, &inverseRotation, -1.0f);
+            EulerToQuat((HSD_Vec3*)&inverseRotation, &quaternion);
+            GSvecTransformQuat(&model->attachmentPosition, &quaternion, (GSvec*)&offset);
+            PSVECSubtract((Vec*)&model->rotation, &rotation, (Vec*)&model->attachmentRotation);
+            model->attachmentScale.param1 = model->scale.param1 * scale.x;
+            model->attachmentScale.param2 = model->scale.param2 * scale.y;
+            model->attachmentScale.param3 = model->scale.param3 * scale.z;
+        }
+        model->attachmentMode = mode;
+        if (once) model->flags |= 0x40000;
+        model->flags &= ~0x400000;
+        model->flags &= ~0x200;
+    }
+}

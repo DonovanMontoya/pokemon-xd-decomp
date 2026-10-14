@@ -129,7 +129,7 @@ u32 fightFloorGetBgmSndDataId(FIGHT_FLOOR*);
 u32 fightEncountGetEnvSndDataId(u32);
 u32 fightFloorGetNowTenkouDataId(FIGHT_FLOOR*, u8);
 u32 fightEncountDataBiosGetFightType(FightEncountData*);
-u32 fightFloor_GetFightType(FIGHT_FLOOR*);
+u8 fightFloor_GetFightType(FIGHT_FLOOR*);
 FightTypeData* fightTypeDataBiosGetPtr(u8);
 u32 fightTypeDataBiosGetName(FightTypeData*);
 u32 fightTypeDataBiosGetTrainerNum(FightTypeData*);
@@ -385,7 +385,7 @@ FightOutPokemon* fightFloor_GetDefensePokemonPtr(FIGHT_FLOOR*);
 Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon*);
 FightTrainer* fightFloorGetGcHeroFightTrainerPtr(FIGHT_FLOOR*);
 u8 fightTargetIsHostSide(void*, u8);
-u16 fightFloorCheckFightOutPokemonPtrAryPokemonTokuseiDataId(FIGHT_FLOOR*, u16, u8, u8);
+u16 fightFloorCheckFightOutPokemonPtrAryPokemonTokuseiDataId(FIGHT_FLOOR*, u16, u8, void*);
 u8 fightFloor_GetIsJoutaiDataId(FIGHT_FLOOR*, u16);
 
 u8 fightFloorIsUseFightTimerCommand(FIGHT_FLOOR* floor) {
@@ -443,7 +443,7 @@ Pokemon* fightFloorGetDefPokemonPtr(FIGHT_FLOOR* floor) {
     return fightOutPokemonGetPokemonPtr(pokemon);
 }
 u8 fightFloorIsGcHeroHostSide(FIGHT_FLOOR* floor) {
-    u8 type = fightFloor_GetFightType(floor);
+    u32 type = fightFloor_GetFightType(floor);
     FightTrainer* trainer = fightFloorGetGcHeroFightTrainerPtr(floor);
     if (trainer != nullptr && fightTargetIsHostSide(trainer, type) == 1) return 1;
     return 0;
@@ -488,7 +488,7 @@ void fightFloor_SetStockPokemonNum(FIGHT_FLOOR*, u8);
 void fightFloor_SetStockPokemonPtr(FIGHT_FLOOR*, u8, Pokemon*);
 void fightFloor_SetStockPokemonBallID(FIGHT_FLOOR*, u8, u16);
 FightOutPokemon** fightFloor_GetFightOutPokemonPtrAryPtr(FIGHT_FLOOR*);
-u32 fightFloorSetStatus(FIGHT_FLOOR*, u16, u16, u16, u32);
+u32 fightFloorSetStatus(void*, u16, u16, u32, u32);
 void fightFloor_SetAppointMsgPtr(FIGHT_FLOOR*, void*);
 void fightFloor_SetAttackMsgId(FIGHT_FLOOR*, u32);
 void fightFloor_SetCriticakMsgId(FIGHT_FLOOR*, u32);
@@ -561,4 +561,1251 @@ s32 fightFloor_GetStatusMenuCnt(s32 property) {
     }
     return count;
 }
+}
+
+extern "C" {
+struct PokemonTokuseiData;
+u8 fightOutPokemonCheckValid(FightOutPokemon*);
+u32 fightOutPokemonGetTokuseiDataId(FightOutPokemon*);
+u16 fightOutPokemonGetSoubiItemDataId(FightOutPokemon*);
+PokemonTokuseiData* pokemonTokuseiDataBiosGetPtr(u32);
+u32 pokemonTokuseiDataBiosGetName(PokemonTokuseiData*);
+u32 GSmsgGetGSchar(u32);
+void fightMsgctrlSetValue(u32, u32);
+u32 itemDB_GetName(u16);
+void pokemonSetStatus(void*,u16,u16,u16,u32);
+u32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void*,u8);
+void fightFloor_SetAttackPokemonFightWazaTargetId(FIGHT_FLOOR*,u32);
+void fightFloor_SetDefensePokemonPtr(FIGHT_FLOOR*,void*);
+void fightFloorBiosSetAttackPokemonPtr(FIGHT_FLOOR*, void*);
+void fightFloorBiosSetDefensePokemonPtr(FIGHT_FLOOR*, void*);
+void fightFloorBiosSetTuikakoukaPokemonPtr(FIGHT_FLOOR*, void*);
+void fightFloorBiosSetAppointPokemonPtr(FIGHT_FLOOR*, void*);
+void fightFloorBiosSetItemPokemonPtr(FIGHT_FLOOR*,void*);
+void fightFloorBiosSetAppointItemDataId(FIGHT_FLOOR*,u16);
+void fightFloorBiosSetAppointTokuseiDataId(FIGHT_FLOOR*,u16);
+void fightFloorDataBiosSetName(FightFloorData*, u32);
+void fightFloorDataBiosSetFloorDataId(FightFloorData*, u16);
+void fightFloorDataBiosSetFightSideDataId(FightFloorData*, u8, u16);
+void fightFloorDataBiosSetTikeiDataId(FightFloorData*, u8);
+void fightFloorDataBiosSetSyoukaiWzxDataId(FightFloorData*, u32);
+void fightFloorDataBiosSetBgmSndId(FightFloorData*, u32);
+void fightFloorDataBiosSetEnvSndId(FightFloorData*, u32);
+void fightFloorBiosSetTurnCount(FIGHT_FLOOR*, u16);
+void fightFloorBiosSetEncountDataId(FIGHT_FLOOR*, u16);
+void fightOutPokemon_SetUseWazaDataId(FightOutPokemon*, u16);
+void fightOutPokemon_SetMotoWazaDataId(FightOutPokemon*, u16);
+void fightOutPokemon_SetWazaDamageValue(FightOutPokemon*, u8);
+void fightOutPokemon_SetWazaCritical(FightOutPokemon*, u8);
+void fightOutPokemon_SetWazaJoutaiDataId(FightOutPokemon*, u16);
+void fightOutPokemon_SetWazaInitJoutaiDataId(FightOutPokemon*, u8);
+void fightOutPokemon_SetWazaDamage(FightOutPokemon*, u32);
+void fightOutPokemon_SetWazaIryoku(FightOutPokemon*, u16);
+void fightOutPokemon_SetWazaTargetId(FightOutPokemon*, u16);
+void fightOutPokemon_SetWazaHitDamage(FightOutPokemon*, u32);
+void fightFloorBiosSetEscapePokemonPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetIrekaePokemonPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetKizetuPokemonPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetTokuseiPokemonPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetEncountFloorId(u32);
+void fightFloorBiosSetAppointTrainerPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetAppointWazaPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetAppointSidePtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetAppointItemPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetAppointMsgId(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetAttackMsgId(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetCriticalMsgId(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetWazakoukaMsgId(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetAppointPokemonDataId(FIGHT_FLOOR*, u16);
+void fightFloorBiosSetAppointWazaDataId(FIGHT_FLOOR*, u16);
+void fightFloorBiosSetFightPokemonEntryCnt(FIGHT_FLOOR*, s16);
+void fightFloorBiosSetFightOutPokemonPtrAry(FIGHT_FLOOR*, u32, u32);
+void fightFloorBiosSetFightOutPokemonPtrAryPtr(FIGHT_FLOOR*, u32);
+void fightFloorBiosSetFirstAttackRnd(FIGHT_FLOOR*, u16);
+u8 fightFloorSetFightResultId(FIGHT_FLOOR*, u16);
+u32 fightFloorSetStatus(void* object, u16 dataId, u16 property, u32 index, u32 value) {
+    u32 result = 0;
+    u32 type = fightFloor_GetFightType(static_cast<FIGHT_FLOOR*>(object));
+    if (property == 0 || property >= 0x60) return 0;
+    if (property < 8) {
+        object = fightFloorDataBiosGetPtr(dataId);
+        if (object == nullptr) return 0;
+    } else if (property < 0x5f) {
+        if (object == nullptr) {
+            object = fightFloorBiosGetFightFloorPtr();
+            if (object == nullptr) return 0;
+        }
+    }
+    switch (property) {
+    case 0x1: { fightFloorDataBiosSetName(static_cast<FightFloorData*>(object), value); break; }
+    case 0x2: { fightFloorDataBiosSetFloorDataId(static_cast<FightFloorData*>(object), static_cast<u16>(value)); break; }
+    case 0x3: { fightFloorDataBiosSetFightSideDataId(static_cast<FightFloorData*>(object), static_cast<u8>(index), static_cast<u16>(value)); break; }
+    case 0x4: { fightFloorDataBiosSetTikeiDataId(static_cast<FightFloorData*>(object), static_cast<u8>(value)); break; }
+    case 0x5: { fightFloorDataBiosSetSyoukaiWzxDataId(static_cast<FightFloorData*>(object), value); break; }
+    case 0x6: { fightFloorDataBiosSetBgmSndId(static_cast<FightFloorData*>(object), value); break; }
+    case 0x7: { fightFloorDataBiosSetEnvSndId(static_cast<FightFloorData*>(object), value); break; }
+    case 0xa: { result = fightFloorCheckWriteJoutaiDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value));
+        if (static_cast<u8>(result) == 2) fightFloorWriteJoutaiDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value), index); break; }
+    case 0xc: { fightFloorBiosSetTurnCount(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0xd: { fightFloorBiosSetEncountDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x36: { if (value != 0) {
+        if (fightOutPokemonCheckValid(reinterpret_cast<FightOutPokemon*>(value)) == 1) {
+            fightMsgctrlSetValue(15, value);
+            fightMsgctrlSetValue(26, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(reinterpret_cast<FightOutPokemon*>(value))))));
+            fightMsgctrlSetValue(31, value);
+            fightMsgctrlSetValue(33, value);
+            fightMsgctrlSetValue(32, value);
+        } else {
+            fightMsgctrlSetValue(15, 0);
+            fightMsgctrlSetValue(26, 0);
+            fightMsgctrlSetValue(31, 0);
+            fightMsgctrlSetValue(33, 0);
+            fightMsgctrlSetValue(32, 0);
+        }
+    } else {
+            fightMsgctrlSetValue(15, 0);
+            fightMsgctrlSetValue(26, 0);
+            fightMsgctrlSetValue(31, 0);
+            fightMsgctrlSetValue(33, 0);
+            fightMsgctrlSetValue(32, 0);
+    }
+    fightFloorBiosSetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object), reinterpret_cast<void*>(value)); break; }
+    case 0x37: { fightOutPokemon_SetUseWazaDataId(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u16>(value)); break; }
+    case 0x38: { fightOutPokemon_SetMotoWazaDataId(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u16>(value)); break; }
+    case 0x39: { fightOutPokemon_SetWazaDamageValue(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u8>(value)); break; }
+    case 0x3a: { fightOutPokemon_SetWazaCritical(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u8>(value)); break; }
+    case 0x3b: { fightOutPokemon_SetWazaJoutaiDataId(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u16>(value)); break; }
+    case 0x3c: { fightOutPokemon_SetWazaInitJoutaiDataId(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u8>(value)); break; }
+    case 0x3d: { pokemonSetStatus(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), 0, 0xe0, 0, value); break; }
+    case 0x3e: { fightOutPokemon_SetWazaDamage(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), value); break; }
+    case 0x3f: { fightOutPokemon_SetWazaIryoku(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u16>(value)); break; }
+    case 0x40: { fightOutPokemon_SetWazaTargetId(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), static_cast<u16>(value)); break; }
+    case 0x41: { fightOutPokemon_SetWazaHitDamage(fightFloorBiosGetAttackPokemonPtr(static_cast<FIGHT_FLOOR*>(object)), value); break; }
+    case 0x42: { if (value != 0) {
+        if (fightOutPokemonCheckValid(reinterpret_cast<FightOutPokemon*>(value)) == 1) {
+            fightMsgctrlSetValue(16, value);
+            fightMsgctrlSetValue(27, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(reinterpret_cast<FightOutPokemon*>(value))))));
+            fightMsgctrlSetValue(66, value);
+            fightMsgctrlSetValue(68, value);
+            fightMsgctrlSetValue(67, value);
+        } else {
+            fightMsgctrlSetValue(16, 0);
+            fightMsgctrlSetValue(27, 0);
+            fightMsgctrlSetValue(66, 0);
+            fightMsgctrlSetValue(68, 0);
+            fightMsgctrlSetValue(67, 0);
+        }
+    } else {
+            fightMsgctrlSetValue(16, 0);
+            fightMsgctrlSetValue(27, 0);
+            fightMsgctrlSetValue(66, 0);
+            fightMsgctrlSetValue(68, 0);
+            fightMsgctrlSetValue(67, 0);
+    }
+    fightFloorBiosSetDefensePokemonPtr(static_cast<FIGHT_FLOOR*>(object), reinterpret_cast<void*>(value)); break; }
+    case 0x43: { fightFloor_SetDefensePokemonPtr(static_cast<FIGHT_FLOOR*>(object), reinterpret_cast<void*>(value));
+        fightFloor_SetAttackPokemonFightWazaTargetId(static_cast<FIGHT_FLOOR*>(object), fightTargetGetTragetPtrToRelativeHostSideFightTargetId(reinterpret_cast<void*>(value), type)); break; }
+    case 0x44: { fightFloorBiosSetEscapePokemonPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x45: { fightFloorBiosSetIrekaePokemonPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x46: { fightFloorBiosSetKizetuPokemonPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x47: { if (value != 0) {
+        if (fightOutPokemonCheckValid(reinterpret_cast<FightOutPokemon*>(value)) == 1) {
+            fightMsgctrlSetValue(18, value);
+            fightMsgctrlSetValue(29, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(reinterpret_cast<FightOutPokemon*>(value))))));
+        } else {
+            fightMsgctrlSetValue(18, 0);
+            fightMsgctrlSetValue(29, 0);
+        }
+    } else {
+            fightMsgctrlSetValue(18, 0);
+            fightMsgctrlSetValue(29, 0);
+    }
+    fightFloorBiosSetTuikakoukaPokemonPtr(static_cast<FIGHT_FLOOR*>(object), reinterpret_cast<void*>(value)); break; }
+    case 0x48: { fightFloorBiosSetTokuseiPokemonPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x49: { if (value != 0 && fightOutPokemonCheckValid(reinterpret_cast<FightOutPokemon*>(value)) == 1) fightFloor_SetAppointItemDataId(static_cast<FIGHT_FLOOR*>(object), fightOutPokemonGetSoubiItemDataId(reinterpret_cast<FightOutPokemon*>(value)));
+        fightFloorBiosSetItemPokemonPtr(static_cast<FIGHT_FLOOR*>(object), reinterpret_cast<void*>(value)); break; }
+    case 0x4a: { fightFloorBiosSetEncountFloorId(value); break; }
+    case 0x4b: { if (value != 0) {
+        if (fightOutPokemonCheckValid(reinterpret_cast<FightOutPokemon*>(value)) == 1) {
+            fightMsgctrlSetValue(30, value);
+            fightMsgctrlSetValue(28, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(reinterpret_cast<FightOutPokemon*>(value))))));
+        } else {
+            fightMsgctrlSetValue(30, 0);
+            fightMsgctrlSetValue(28, 0);
+        }
+    } else {
+            fightMsgctrlSetValue(30, 0);
+            fightMsgctrlSetValue(28, 0);
+    }
+    fightFloorBiosSetAppointPokemonPtr(static_cast<FIGHT_FLOOR*>(object), reinterpret_cast<void*>(value)); break; }
+    case 0x4c: { fightFloorBiosSetAppointTrainerPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x4d: { fightFloorBiosSetAppointWazaPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x4e: { fightFloorBiosSetAppointSidePtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x4f: { fightFloorBiosSetAppointItemPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x50: { fightFloorBiosSetAppointMsgId(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x51: { fightFloorBiosSetAttackMsgId(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x52: { fightFloorBiosSetCriticalMsgId(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x53: { fightFloorBiosSetWazakoukaMsgId(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x54: { fightFloorBiosSetAppointPokemonDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x55: { fightFloorBiosSetAppointWazaDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x56: { fightMsgctrlSetValue(0x29, GSmsgGetGSchar(itemDB_GetName(static_cast<u16>(value))));
+        fightFloorBiosSetAppointItemDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x57: { fightMsgctrlSetValue(0x1c, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(static_cast<u16>(value)))));
+        fightFloorBiosSetAppointTokuseiDataId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x58: { fightFloorBiosSetFightPokemonEntryCnt(static_cast<FIGHT_FLOOR*>(object), static_cast<s16>(value)); break; }
+    case 0x59: { fightFloorBiosSetFightOutPokemonPtrAry(static_cast<FIGHT_FLOOR*>(object), index, value); break; }
+    case 0x5a: { fightFloorBiosSetFightOutPokemonPtrAryPtr(static_cast<FIGHT_FLOOR*>(object), value); break; }
+    case 0x5b: { fightFloorBiosSetFirstAttackRnd(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x5c: { fightFloorSetFightResultId(static_cast<FIGHT_FLOOR*>(object), static_cast<u16>(value)); break; }
+    case 0x5e: { fightMsgctrlSetValue(0x2f, value); break; }
+    default: break;
+    }
+    return static_cast<u8>(result);
+}
+}
+
+// Iteration callbacks receive the battle type as a halfword and an opaque context.
+typedef u8 (*FightFloorCallback)(void*, u16, void*);
+extern "C" {
+u8 fightFloor_GetFightTypeTrainerNum(FIGHT_FLOOR*);
+u8 fightFloor_GetFightTypeFightoutPokemonNum(FIGHT_FLOOR*);
+u32 fightFloor_GetFightTypeEntryPokemonNum(FIGHT_FLOOR*);
+FightOutPokemon* fightFloor_GetFightOutPokemonPtrAry(FIGHT_FLOOR*, u16);
+FightTrainer* fightSideGetValidFightTrainerPtr(FightSide*, u16);
+FightOutPokemon* fightTrainerGetValidFightOutPokemonPtr(FightTrainer*, u16);
+FightPokemon* fightTrainerGetValidFightPokemonPtr(FightTrainer*, u16);
+u8 fightTrainerCheckValid(FightTrainer*);
+u8 fightTrainerIsAllyFightTargetPtr(FightTrainer*, void*, u16);
+u8 fightPokemonCheckFightOut(FightPokemon*);
+u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
+void fightFloorLoopValidFightTrainer(FIGHT_FLOOR*, FightFloorCallback, void*, u8);
+u8 fightFloorLoopValidFightOutPokemon(FIGHT_FLOOR*, FightFloorCallback, void*, u8);
+void* fightTargetGetPtr(u16, void*, u16);
+void fightOutPokemonCreateFightPokemonEnemyAryEnemySideAll(FightOutPokemon*, FightSide*);
+void fightOutPokemonSetMeetEnemyFightPokemonEnemySideAll(FightOutPokemon*, FightSide*);
+void fightSideRegistFightSideEnemyPokemonFightAll(FightSide*, FightTrainer*, u16, u16, u16);
+}
+static FightOutPokemon* _fightFloorLoopValidFightOutPokemonSub(FIGHT_FLOOR* floor, u16 side, u16 trainer, u16 pokemon) {
+    FightSide* sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+    if (sidePtr == nullptr) return nullptr;
+    FightTrainer* trainerPtr = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+    if (trainerPtr == nullptr) return nullptr;
+    FightOutPokemon* pokemonPtr = fightTrainerGetValidFightOutPokemonPtr(trainerPtr, pokemon);
+    if (pokemonPtr == nullptr) return nullptr;
+    return pokemonPtr;
+}
+extern "C" {
+u8 fightFloorLoopValidFightOutPokemon(FIGHT_FLOOR* floor, FightFloorCallback callback, void* context, u8 useArray) {
+    u8 success = 1;
+    u16 type = fightFloor_GetFightType(floor);
+    u16 trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    u16 pokemonCount = fightFloor_GetFightTypeFightoutPokemonNum(floor);
+    if (useArray == 1) {
+        for (u16 i = 0; i < 8; i++) {
+            FightOutPokemon* pokemon = fightFloor_GetFightOutPokemonPtrAry(floor, i);
+            if (pokemon != nullptr && fightOutPokemonCheckValid(pokemon)) {
+                if (callback(pokemon, type, context) == 0) { success = 0; goto done; }
+            }
+        }
+    } else {
+        for (u16 pokemon = 0; static_cast<u32>(pokemon) < pokemonCount; pokemon++) {
+            for (u16 trainer = 0; static_cast<u32>(trainer) < trainers; trainer++) {
+                for (u16 side = 0; side < 2; side++) {
+                    FightOutPokemon* record = _fightFloorLoopValidFightOutPokemonSub(floor, side, trainer, pokemon);
+                    if (record != nullptr) {
+                        if (callback(record, type, context) == 0) { success = 0; goto done; }
+                    }
+                }
+            }
+        }
+    }
+done:
+    return success;
+}
+void fightFloorCreateFightPokemonEnemyAryEnemySideAll(FIGHT_FLOOR* floor) {
+    FightSide* sidePtr;
+    u16 trainer;
+    u16 pokemon;
+    u16 side;
+    u32 type;
+    u32 trainers;
+    u32 pokemonCount;
+    FightTrainer* trainerPtr;
+    FightOutPokemon* record;
+
+    type = fightFloor_GetFightType(floor);
+    trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    pokemonCount = fightFloor_GetFightTypeFightoutPokemonNum(floor);
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+        if (sidePtr != nullptr) {
+            for (trainer = 0; trainer < trainers; trainer++) {
+                trainerPtr = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+                if (trainerPtr != nullptr) {
+                    for (pokemon = 0; pokemon < pokemonCount; pokemon++) {
+                        record = fightTrainerGetValidFightOutPokemonPtr(trainerPtr, pokemon);
+                        if (record != nullptr && fightOutPokemonCheckFightOut(record)) {
+                            FightSide* enemy = static_cast<FightSide*>(fightTargetGetPtr(3, record, type));
+                            fightOutPokemonCreateFightPokemonEnemyAryEnemySideAll(record, enemy);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+void fightFloorSetMeetEnemyFightPokemonEnemySideAll(FIGHT_FLOOR* floor) {
+    FightSide* sidePtr;
+    u16 trainer;
+    u16 pokemon;
+    u16 side;
+    u32 type;
+    u32 trainers;
+    u32 pokemonCount;
+    FightTrainer* trainerPtr;
+    FightOutPokemon* record;
+
+    type = fightFloor_GetFightType(floor);
+    trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    pokemonCount = fightFloor_GetFightTypeFightoutPokemonNum(floor);
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+        if (sidePtr != nullptr) {
+            for (trainer = 0; trainer < trainers; trainer++) {
+                trainerPtr = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+                if (trainerPtr != nullptr) {
+                    for (pokemon = 0; pokemon < pokemonCount; pokemon++) {
+                        record = fightTrainerGetValidFightOutPokemonPtr(trainerPtr, pokemon);
+                        if (record != nullptr && fightOutPokemonCheckFightOut(record)) {
+                            FightSide* enemy = static_cast<FightSide*>(fightTargetGetPtr(3, record, type));
+                            fightOutPokemonSetMeetEnemyFightPokemonEnemySideAll(record, enemy);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+void fightFloorRegistFightTrainerEnemyPokemonFightSideAll(FIGHT_FLOOR* floor) {
+    FightSide* sidePtr;
+    u16 trainer;
+    u16 side;
+    u32 type;
+    u32 trainers;
+    u32 pokemonCount;
+    FightTrainer* trainerPtr;
+
+    type = fightFloor_GetFightType(floor);
+    trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    pokemonCount = fightFloor_GetFightTypeFightoutPokemonNum(floor);
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+        if (sidePtr != nullptr) {
+            for (trainer = 0; trainer < trainers; trainer++) {
+                trainerPtr = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+                if (trainerPtr != nullptr) {
+                    FightSide* enemy = static_cast<FightSide*>(fightTargetGetPtr(3, trainerPtr, type));
+                    fightSideRegistFightSideEnemyPokemonFightAll(enemy, trainerPtr, type, trainers, pokemonCount);
+                }
+            }
+        }
+    }
+}
+}
+
+struct FightFloorConditionCount {
+    u32 condition;
+    u32 count;
+};
+struct FightFloorAbilitySearch {
+    u32 ability;
+    u32 countOrPokemon;
+    s32 relation;
+    void* target;
+};
+extern "C" {
+u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon*,u16);
+void* fightTargetGetPtrAsNowFightType(u16,void*);
+}
+static u8 _fightFloorCheckFightOutPokemonPtrAryJoutaiDataIdSub(void* object, u16 type, void* context) {
+    FightFloorConditionCount* search = static_cast<FightFloorConditionCount*>(context);
+    FightOutPokemon* pokemon = static_cast<FightOutPokemon*>(object);
+    if (!fightOutPokemonCheckFightOut(pokemon)) return 1;
+    if (fightOutPokemonIsJoutaiDataId(pokemon, search->condition) == 1) search->count++;
+    return 1;
+}
+static u8 _fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirstSub(void* object, u16 type, void* context) {
+    FightFloorAbilitySearch* search = static_cast<FightFloorAbilitySearch*>(context);
+    FightOutPokemon* pokemon = static_cast<FightOutPokemon*>(object);
+    void* target = search->target;
+    void* side;
+    if (!fightOutPokemonCheckFightOut(pokemon)) return 1;
+    if (target == nullptr) side = nullptr;
+    else if (search->relation == 1) side = fightTargetGetPtrAsNowFightType(2, target);
+    else if (search->relation == 2) side = fightTargetGetPtrAsNowFightType(3, target);
+    else side = nullptr;
+    void* ownSide = fightTargetGetPtrAsNowFightType(2, pokemon);
+    if ((search->relation == 1 || search->relation == 2) && side == nullptr) return 1;
+    if (search->relation == 0) {
+        if (target != nullptr && target == pokemon) return 1;
+    } else if (search->relation == 1 || search->relation == 2) {
+        if (side != ownSide) return 1;
+    } else return 1;
+    u32 ability = static_cast<u16>(fightOutPokemonGetTokuseiDataId(pokemon));
+    if (static_cast<u16>(search->ability) == ability) {
+        search->countOrPokemon = reinterpret_cast<u32>(pokemon);
+        return 0;
+    }
+    return 1;
+}
+static u8 _fightFloorCheckFightOutPokemonPtrAryPokemonTokuseiDataIdSub(void* object, u16 type, void* context) {
+    FightFloorAbilitySearch* search = static_cast<FightFloorAbilitySearch*>(context);
+    FightOutPokemon* pokemon = static_cast<FightOutPokemon*>(object);
+    void* target = search->target;
+    void* side;
+    if (!fightOutPokemonCheckFightOut(pokemon)) return 1;
+    if (target == nullptr) side = nullptr;
+    else if (search->relation == 1) side = fightTargetGetPtrAsNowFightType(2, target);
+    else if (search->relation == 2) side = fightTargetGetPtrAsNowFightType(3, target);
+    else side = nullptr;
+    void* ownSide = fightTargetGetPtrAsNowFightType(2, pokemon);
+    if ((search->relation == 1 || search->relation == 2) && side == nullptr) return 1;
+    if (search->relation == 0) {
+        if (target != nullptr && target == pokemon) return 1;
+    } else if (search->relation == 1 || search->relation == 2) {
+        if (side != ownSide) return 1;
+    } else return 1;
+    u32 ability = static_cast<u16>(fightOutPokemonGetTokuseiDataId(pokemon));
+    if (static_cast<u16>(search->ability) == ability) search->countOrPokemon++;
+    return 1;
+}
+extern "C" {
+u16 fightFloorCheckFightOutPokemonPtrAryJoutaiDataId(FIGHT_FLOOR* floor, u16 condition) {
+    FightFloorConditionCount search;
+    search.condition = condition;
+    search.count = 0;
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorCheckFightOutPokemonPtrAryJoutaiDataIdSub, &search, 0);
+    return search.count;
+}
+FightOutPokemon* fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(FIGHT_FLOOR* floor, u16 ability, u8 useArray, u8 relation, void* target) {
+    FightFloorAbilitySearch search;
+    search.ability = ability;
+    search.countOrPokemon = 0;
+    search.relation = relation;
+    search.target = target;
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirstSub, &search, useArray);
+    return reinterpret_cast<FightOutPokemon*>(search.countOrPokemon);
+}
+u16 fightFloorCheckFightOutPokemonPtrAryPokemonTokuseiDataId(FIGHT_FLOOR* floor, u16 ability, u8 relation, void* target) {
+    FightFloorAbilitySearch search;
+    search.ability = ability;
+    search.countOrPokemon = 0;
+    search.relation = relation;
+    search.target = target;
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorCheckFightOutPokemonPtrAryPokemonTokuseiDataIdSub, &search, 0);
+    return search.countOrPokemon;
+}
+}
+
+struct FightFloorTrainerPokemonSearch {
+    void* target;
+    s32 ally;
+    u32 count;
+    FightPokemon** output;
+    u32 pokemonCount;
+    s32 fightOutOnly;
+};
+struct FightFloorTrainerOutPokemonSearch {
+    void* target;
+    FightOutPokemon** output;
+    u32 count;
+    s32 ally;
+    s32 fightOutOnly;
+};
+static u8 _fightFloorGetFightTrainerFightPokemonPtrArySub(void* object, u16 type, void* context) {
+    FightFloorTrainerPokemonSearch* search;
+    void* target;
+    FightTrainer* trainer;
+    FightPokemon** output;
+    u16 i;
+    u16 count;
+    search = static_cast<FightFloorTrainerPokemonSearch*>(context);
+    trainer = static_cast<FightTrainer*>(object);
+    target = search->target;
+    output = search->output;
+    if (!fightTrainerCheckValid(trainer)) return 1;
+    if (search->ally == 0) {
+        if (fightTrainerIsAllyFightTargetPtr(trainer, target, type) == 1) return 1;
+    } else {
+        if (!fightTrainerIsAllyFightTargetPtr(trainer, target, type)) return 1;
+    }
+    count = search->pokemonCount;
+    for (i = 0; static_cast<u32>(i) < count; i++) {
+        FightPokemon* pokemon = fightTrainerGetValidFightPokemonPtr(trainer, i);
+        if (pokemon != nullptr) {
+            if (search->fightOutOnly == 1 && !fightPokemonCheckFightOut(pokemon)) continue;
+            output[search->count] = pokemon;
+            search->count++;
+        }
+    }
+    return 1;
+}
+static u8 _fightFloorGetFightTrainerFightOutPokemonPtrArySub(void* object, u16 type, void* context) {
+    FightFloorTrainerOutPokemonSearch* search = static_cast<FightFloorTrainerOutPokemonSearch*>(context);
+    FightOutPokemon* pokemon = static_cast<FightOutPokemon*>(object);
+    void* target = search->target;
+    FightOutPokemon** output = search->output;
+    if (search->fightOutOnly == 1 && !fightOutPokemonCheckFightOut(pokemon)) return 1;
+    if (search->ally == 0) {
+        if (fightTrainerIsAllyFightTargetPtr(static_cast<FightTrainer*>(target), pokemon, type) == 1) return 1;
+    } else {
+        if (!fightTrainerIsAllyFightTargetPtr(static_cast<FightTrainer*>(target), pokemon, type)) return 1;
+    }
+    output[search->count] = pokemon;
+    search->count++;
+    return 1;
+}
+extern "C" {
+u16 fightFloorGetFightTrainerFightPokemonPtrAry(FIGHT_FLOOR* floor, void* target, FightPokemon** output, u8 ally, u8 fightOutOnly) {
+    for (u16 i = 0; i < 24; i++) output[i] = nullptr;
+    FightFloorTrainerPokemonSearch search;
+    search.target = target;
+    search.ally = ally;
+    search.count = 0;
+    search.output = output;
+    search.pokemonCount = static_cast<u8>(fightFloor_GetFightTypeEntryPokemonNum(nullptr));
+    search.fightOutOnly = fightOutOnly;
+    fightFloorLoopValidFightTrainer(floor, _fightFloorGetFightTrainerFightPokemonPtrArySub, &search, 0);
+    return search.count;
+}
+u32 fightFloorGetFightTrainerFightOutPokemonPtrAry(FIGHT_FLOOR* floor, void* target, FightOutPokemon** output, u8 ally, u8 fightOutOnly) {
+    _fightFloorInitFightOutPokemonPtrAry(output);
+    FightFloorTrainerOutPokemonSearch search;
+    search.target = target;
+    search.output = output;
+    search.count = 0;
+    search.ally = ally;
+    search.fightOutOnly = fightOutOnly;
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorGetFightTrainerFightOutPokemonPtrArySub, &search, 0);
+    return static_cast<u16>(search.count);
+}
+}
+
+extern "C" {
+u32 fightFloor_GetFightKindDrawFlag(FIGHT_FLOOR*);
+void fightSetFightResultId(u16);
+u8 fightTrainerIsGcHero(FightTrainer*);
+FightTrainer* fightSide_GetFightTrainerPtr(FightSide*,u16);
+FightOutPokemon* fightTrainer_GetFightoutPokemonPtr(FightTrainer*,u16);
+void fightOutPokemon_SetUsedItemDataId(FightOutPokemon*,u16);
+u8 fightFloorSetFightResultId(FIGHT_FLOOR* floor, u16 result) {
+    u32 old = fightGetFightResultId();
+    u32 draw = fightFloor_GetFightKindDrawFlag(floor);
+    if (static_cast<u16>(old) == result) return 0;
+    if (static_cast<u16>(old) == 1) return 1;
+    if (result == 0 || result == 1) {
+        fightSetFightResultId(result);
+        return 1;
+    }
+    if (static_cast<u8>(draw) == 0) {
+        if (static_cast<u16>(old) == 3 || static_cast<u16>(old) == 5) return 0;
+        if (result == 7) { fightSetFightResultId(3); return 1; }
+        if (result == 6) { fightSetFightResultId(5); return 1; }
+    } else {
+        if (static_cast<u16>(old) == 7 || static_cast<u16>(old) == 6) return 0;
+        if (static_cast<u16>(old) == 3 && result == 2) { fightSetFightResultId(7); return 1; }
+        if (static_cast<u16>(old) == 2 && result == 3) { fightSetFightResultId(7); return 1; }
+        if (static_cast<u16>(old) == 4 && result == 5) { fightSetFightResultId(6); return 1; }
+        if (static_cast<u16>(old) == 5 && result == 4) { fightSetFightResultId(6); return 1; }
+    }
+    fightSetFightResultId(result);
+    return 1;
+}
+FightTrainer* fightFloorGetGcHeroFightTrainerPtr(FIGHT_FLOOR* floor) {
+    FightSide* sidePtr;
+    u16 trainer;
+    u16 side;
+    u32 trainers;
+    FightTrainer* record;
+    fightFloor_GetFightType(floor);
+    trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+        if (sidePtr != nullptr) {
+            for (trainer = 0; trainer < trainers; trainer++) {
+                record = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+                if (record != nullptr && fightTrainerIsGcHero(record) == 1) return record;
+            }
+        }
+    }
+    return nullptr;
+}
+void fightFloorInitFightStart(FIGHT_FLOOR* floor) {
+    FightSide* sidePtr;
+    FightTrainer* trainerPtr;
+    u16 trainer;
+    u16 pokemon;
+    u16 side;
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloor_GetFightSidePtr(floor, side);
+        if (sidePtr != nullptr) {
+            for (trainer = 0; trainer < 2; trainer++) {
+                trainerPtr = fightSide_GetFightTrainerPtr(sidePtr, trainer);
+                if (trainerPtr != nullptr) {
+                    for (pokemon = 0; pokemon < 2; pokemon++) {
+                        FightOutPokemon* record = fightTrainer_GetFightoutPokemonPtr(trainerPtr, pokemon);
+                        if (record != nullptr) fightOutPokemon_SetUsedItemDataId(record, 0);
+                    }
+                }
+            }
+        }
+    }
+}
+}
+
+struct FightFloorValidPokemonCount {
+    void* target;
+    u32 count;
+    s32 relation;
+    u32 fightOutOnly;
+};
+struct FightFloorSealedMoveSearch {
+    FightOutPokemon* target;
+    u32 move;
+    u32 found;
+};
+extern "C" {
+FightWaza* fightOutPokemon_GetFightWazaPtr(FightOutPokemon*);
+void fightWazaInitJoutai(FightWaza*);
+u8 fightOutPokemonIsAlly(FightOutPokemon*,FightOutPokemon*);
+s8 pokemonSearchWazaDataId(Pokemon*,u16);
+}
+static u8 _fightFloorInitFightOutPokemonPtrAryFightWazaJoutaiSub(void* object, u16 type, void* context) {
+    fightWazaInitJoutai(fightOutPokemon_GetFightWazaPtr(static_cast<FightOutPokemon*>(object)));
+    return 1;
+}
+static u8 _fightFloorCheckHuuinWazaFightOutPokemonSub(void* object, u16 type, void* context) {
+    FightFloorSealedMoveSearch* search = static_cast<FightFloorSealedMoveSearch*>(context);
+    FightOutPokemon* pokemon = static_cast<FightOutPokemon*>(object);
+    FightOutPokemon* target = search->target;
+    u16 move = search->move;
+    if (!fightOutPokemonCheckFightOut(pokemon)) return 1;
+    if (!fightOutPokemonIsAlly(pokemon, target)) {
+        if (fightOutPokemonIsJoutaiDataId(pokemon, 0x27) == 1) {
+            if (pokemonSearchWazaDataId(fightOutPokemonGetPokemonPtr(pokemon), move) >= 0) {
+                search->found = 1;
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+static u8 _fightFloorGetValidFightOutPokemonCountSub(void* object, u16 type, void* context) {
+    FightFloorValidPokemonCount* search = static_cast<FightFloorValidPokemonCount*>(context);
+    FightOutPokemon* pokemon = static_cast<FightOutPokemon*>(object);
+    void* target = search->target;
+    void* side;
+    if (static_cast<u8>(search->fightOutOnly != 0) == 1 && !fightOutPokemonCheckFightOut(pokemon)) return 1;
+    if (target == nullptr) side = nullptr;
+    else if (search->relation == 1) side = fightTargetGetPtrAsNowFightType(2, target);
+    else if (search->relation == 2) side = fightTargetGetPtrAsNowFightType(3, target);
+    else side = nullptr;
+    void* ownSide = fightTargetGetPtrAsNowFightType(2, pokemon);
+    if ((search->relation == 1 || search->relation == 2) && side == nullptr) return 1;
+    if (search->relation == 0) {
+        if (target != nullptr && target == pokemon) return 1;
+    } else if (search->relation == 1 || search->relation == 2) {
+        if (side != ownSide) return 1;
+    } else return 1;
+    search->count++;
+    return 1;
+}
+extern "C" {
+void fightFloorInitFightOutPokemonPtrAryFightWazaJoutai(FIGHT_FLOOR* floor) {
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorInitFightOutPokemonPtrAryFightWazaJoutaiSub, nullptr, 0);
+}
+u8 fightFloorCheckHuuinWazaFightOutPokemon(FIGHT_FLOOR* floor, FightOutPokemon* target, u16 move) {
+    FightFloorSealedMoveSearch search;
+    search.target = target;
+    search.move = move;
+    search.found = 0;
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorCheckHuuinWazaFightOutPokemonSub, &search, 0);
+    return search.found != 0;
+}
+u16 fightFloorGetValidFightOutPokemonCount(FIGHT_FLOOR* floor, u8 relation, void* target, u8 fightOutOnly) {
+    FightFloorValidPokemonCount search;
+    search.target = target;
+    search.count = 0;
+    search.relation = relation;
+    search.fightOutOnly = fightOutOnly;
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorGetValidFightOutPokemonCountSub, &search, 0);
+    return search.count;
+}
+}
+
+struct FightActionBuff;
+// The action menu begins with an eleven-character name and its escape lock.
+struct FightFloorActionMenu { u16 name[11]; u8 escapeDisabled; };
+struct FightOutPokemonEnemy { u8 reserved[12]; };
+extern "C" {
+u8 fightOutPokemonIsFightActionAttackWazaOut(FightOutPokemon*, u32, u32);
+void fightOutPokemon_SetFightActionFlag(FightOutPokemon*, u8);
+u32 fightOutPokemon_GetFightActionFlag(FightOutPokemon*);
+FightActionBuff* fightOutPokemon_GetFightActionBuffPtr(FightOutPokemon*);
+u8 fightActionCheckValid(FightActionBuff*);
+u16* fightOutPokemonGetNicknamePtr(FightOutPokemon*);
+void GScharCpy(u16*, const u16*);
+u32 fightFloor_GetFightKindNigeruFlag(FIGHT_FLOOR*);
+void fightFloor_SetAttackPokemonPtr(FIGHT_FLOOR*, void*);
+void fightFloor_SetDefPokemonAndAtkFightWazaTargetId(FIGHT_FLOOR*, void*);
+u32 fightSideGetNokoriFightPokemonNum(FightSide*, u16, u16);
+u32 fightSideGetFightPokemonNokoriHp(FightSide*, u16, u16);
+u32 fightSideGetFightPokemonMaxHp(FightSide*, u16, u16);
+FightOutPokemonEnemy* fightOutPokemon_GetFightOutPokemonEnemyPtr(FightOutPokemon*, u16);
+u8 fightOutPokemonEnemyCheckValid(FightOutPokemonEnemy*);
+FightOutPokemon* fightOutPokemonEnemyBiosGetTargetFightOutPokemonPtr(FightOutPokemonEnemy*);
+u32 fightOutPokemonEnemyBiosGetInitHp(FightOutPokemonEnemy*);
+u32 fightOutPokemonEnemyBiosGetDamage(FightOutPokemonEnemy*);
+u32 fightOutPokemonNowHpWaruValue(FightOutPokemon*, u16);
+u32 fightOutPokemonMaxHpWaruValue(FightOutPokemon*, u16);
+u32 HSD_Rand();
+}
+static u8 _fightFloorSetTuusinErrorFightResultSub(void* object, u16 type, void* context) {
+    fightOutPokemon_SetFightActionFlag(static_cast<FightOutPokemon*>(object), 1);
+    return 1;
+}
+static s16 _fightFloorSetFightOutPokemonPtrAry(FightOutPokemon** output, FightOutPokemon* pokemon) {
+    for (u16 i = 0; i < 8; i++) {
+        if (output[i] == nullptr) { output[i] = pokemon; return i; }
+    }
+    return -1;
+}
+static u32 _fightFloorCreateFightOutPokemonPtrAry(FIGHT_FLOOR* floor, FightOutPokemon** output, bool fightOutOnly, u8 relation, FightOutPokemon* target) {
+    FightSide* sidePtr;
+    FightSide* targetSide;
+    u16 trainer;
+    u16 slot;
+    u16 side;
+    u32 trainers;
+    u32 pokemonCount;
+    u32 count;
+    u32 type;
+    FightTrainer* trainerPtr;
+    FightOutPokemon* pokemon;
+    _fightFloorInitFightOutPokemonPtrAry(output);
+    count = 0;
+    type = static_cast<u8>(fightFloor_GetFightType(floor));
+    trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    pokemonCount = fightFloor_GetFightTypeFightoutPokemonNum(floor);
+    if (relation != 0) {
+        if (!fightOutPokemonCheckValid(target)) return 0;
+        targetSide = static_cast<FightSide*>(fightTargetGetPtr(2, target, type));
+    } else targetSide = nullptr;
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+        if (sidePtr == nullptr) continue;
+        if (relation == 1) { if (targetSide != sidePtr) continue; }
+        else if (relation == 2) { if (targetSide == sidePtr) continue; }
+        for (trainer = 0; trainer < trainers; trainer++) {
+            trainerPtr = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+            if (trainerPtr == nullptr) continue;
+            for (slot = 0; slot < pokemonCount; slot++) {
+                pokemon = fightTrainerGetValidFightOutPokemonPtr(trainerPtr, slot);
+                if (pokemon == nullptr) continue;
+                if (fightOutOnly == 1 && !fightOutPokemonCheckFightOut(pokemon)) continue;
+                if (relation == 3 && pokemon == target) continue;
+                if (_fightFloorSetFightOutPokemonPtrAry(output, pokemon) >= 0) count++;
+            }
+        }
+    }
+    return count;
+}
+extern "C" {
+void fightFloorSetTuusinErrorFightResult(FIGHT_FLOOR* floor) {
+    fightFloorLoopValidFightOutPokemon(floor, _fightFloorSetTuusinErrorFightResultSub, nullptr, 0);
+    fightFloorSetFightResultId(floor, 1);
+}
+void fightFloorSetTimeOutAllFightResult(FIGHT_FLOOR* floor) {
+    u32 enemyHp;
+    u32 allyHp;
+    u32 allyCount;
+    u32 enemyRate;
+    u32 allyRate;
+    u32 trainers;
+    u32 pokemonCount;
+    FightSide* enemy;
+    FightSide* ally;
+    u32 allyMax;
+    u32 enemyCount;
+    u32 enemyMax;
+    if (static_cast<u16>(fightGetFightResultId()) == 1) return;
+    trainers = static_cast<u8>(fightFloor_GetFightTypeTrainerNum(floor));
+    pokemonCount = static_cast<u8>(fightFloor_GetFightTypeEntryPokemonNum(floor));
+    ally = static_cast<FightSide*>(fightTargetGetPtrAsNowFightType(4, nullptr));
+    allyCount = fightSideGetNokoriFightPokemonNum(ally, trainers, pokemonCount);
+    allyHp = fightSideGetFightPokemonNokoriHp(ally, trainers, pokemonCount);
+    allyMax = fightSideGetFightPokemonMaxHp(ally, trainers, pokemonCount);
+    allyRate = allyHp * 100 / allyMax;
+    enemy = static_cast<FightSide*>(fightTargetGetPtrAsNowFightType(5, nullptr));
+    enemyCount = fightSideGetNokoriFightPokemonNum(enemy, trainers, pokemonCount);
+    enemyHp = fightSideGetFightPokemonNokoriHp(enemy, trainers, pokemonCount);
+    enemyMax = fightSideGetFightPokemonMaxHp(enemy, trainers, pokemonCount);
+    enemyRate = enemyHp * 100 / enemyMax;
+    fightFloorSetFightResultId(floor, 0);
+    if (static_cast<u16>(allyCount) > static_cast<u16>(enemyCount)) fightFloorSetFightResultId(floor, 2);
+    if (static_cast<u16>(allyCount) < static_cast<u16>(enemyCount)) fightFloorSetFightResultId(floor, 3);
+    if (static_cast<u16>(fightGetFightResultId()) == 0) {
+        if (allyRate >= enemyRate) fightFloorSetFightResultId(floor, 2);
+        if (allyRate <= enemyRate) fightFloorSetFightResultId(floor, 3);
+    }
+}
+void fightFloorSetMenuFightAction(FIGHT_FLOOR* floor, FightOutPokemon* pokemon, FightFloorActionMenu* menu) {
+    GScharCpy(menu->name, fightOutPokemonGetNicknamePtr(pokemon));
+    if (static_cast<u8>(fightFloor_GetFightKindNigeruFlag(floor)) == 1) menu->escapeDisabled = 0;
+    else menu->escapeDisabled = 1;
+}
+u8 fightFloorGetFightTrainerFightOutPokemonIsFightActionAttackWazaOut(FIGHT_FLOOR* floor, void* target, u8 ally, u8 fightOutOnly, u32 move, u32 mode) {
+    FightOutPokemon* output[8];
+    u32 count;
+    FightOutPokemon** array;
+    count = fightFloorGetFightTrainerFightOutPokemonPtrAry(floor, target, output, ally, fightOutOnly);
+    array = output;
+    for (u16 i = 0; i < static_cast<u16>(count); i++) {
+        if (fightOutPokemonIsFightActionAttackWazaOut(array[i], move, mode) == 1) return 1;
+    }
+    return 0;
+}
+u32 fightFloorGetFightOutPokemonPtrAry(FIGHT_FLOOR* floor, bool fightOutOnly, u8 relation, FightOutPokemon* target, FightOutPokemon** output) {
+    _fightFloorInitFightOutPokemonPtrAry(output);
+    return _fightFloorCreateFightOutPokemonPtrAry(floor, output, fightOutOnly, relation, target);
+}
+u8 fightFloorIsLastActionFightOutPokemon(FIGHT_FLOOR* floor) {
+    FightOutPokemon* pokemon;
+    u16 i;
+    u8 last = 1;
+    for (i = 0; i < 8; i++) {
+        pokemon = fightFloor_GetFightOutPokemonPtrAry(floor, i);
+        if (pokemon == nullptr || !fightOutPokemonCheckFightOut(pokemon)) continue;
+        FightActionBuff* action = fightOutPokemon_GetFightActionBuffPtr(pokemon);
+        if (action == nullptr || !fightActionCheckValid(action)) continue;
+        if (static_cast<u8>(fightOutPokemon_GetFightActionFlag(pokemon)) == 0) { last = 0; break; }
+    }
+    return last;
+}
+void fightFloorReplaceFightOutPokemonAttackToDefense(FIGHT_FLOOR* floor) {
+    void* attack = fightTargetGetPtrAsNowFightType(0x11, floor);
+    void* defense = fightTargetGetPtrAsNowFightType(0x12, floor);
+    fightFloor_SetAttackPokemonPtr(floor, defense);
+    fightFloor_SetDefPokemonAndAtkFightWazaTargetId(floor, attack);
+}
+u32 fightFloorGetFightOutBanmeToValidFightOutPokemon(FIGHT_FLOOR* floor, u16 index) {
+    u16 trainer;
+    u16 slot;
+    u16 side;
+    u32 trainers;
+    u32 pokemonCount;
+    u16 count;
+    fightFloor_GetFightType(floor);
+    trainers = fightFloor_GetFightTypeTrainerNum(floor);
+    pokemonCount = fightFloor_GetFightTypeFightoutPokemonNum(floor);
+    count = 0;
+    for (slot = 0; slot < pokemonCount; slot++) {
+        for (trainer = 0; trainer < trainers; trainer++) {
+            for (side = 0; side < 2; side++) {
+                FightOutPokemon* pokemon = _fightFloorLoopValidFightOutPokemonSub(floor, side, trainer, slot);
+                if (pokemon != nullptr && count == index) return reinterpret_cast<u32>(pokemon);
+                count++;
+            }
+        }
+    }
+    return 0;
+}
+s32 fightFloorGetEnemyFightSideManyDamageHpRate(FIGHT_FLOOR*, FightOutPokemon* pokemon) {
+    FightOutPokemonEnemy* enemies;
+    s32 maximum;
+    FightOutPokemonEnemy* enemy;
+    u32 hp;
+    u16 i;
+    if (pokemon == nullptr) return -1;
+    enemies = fightOutPokemon_GetFightOutPokemonEnemyPtr(pokemon, 0);
+    maximum = -1;
+    for (i = 0; i < 4; i++) {
+        enemy = &enemies[i];
+        if (!fightOutPokemonEnemyCheckValid(enemy)) continue;
+        FightOutPokemon* target = fightOutPokemonEnemyBiosGetTargetFightOutPokemonPtr(enemy);
+        if (target == nullptr || !fightOutPokemonCheckValid(target)) continue;
+        hp = fightOutPokemonEnemyBiosGetInitHp(enemy);
+        u32 damage = fightOutPokemonEnemyBiosGetDamage(enemy);
+        if (static_cast<u16>(hp) == 0) hp = 1;
+        s32 rate = static_cast<u16>(damage) * 100 / static_cast<u16>(hp);
+        if (rate > maximum) maximum = rate;
+    }
+    return maximum;
+}
+s32 fightFloorGetEnemyFightSideLittleNokoriHpRate(FIGHT_FLOOR* floor, FightOutPokemon* pokemon) {
+    s32 minimum;
+    u32 bound;
+    u32 count;
+    u32 hp;
+    FightOutPokemon** array;
+    u16 i;
+    FightOutPokemon* target;
+    u32 maxHp;
+    if (pokemon == nullptr) return -1;
+    FightOutPokemon* output[8];
+    _fightFloorInitFightOutPokemonPtrAry(output);
+    count = _fightFloorCreateFightOutPokemonPtrAry(floor, output, true, 2, pokemon);
+    if (static_cast<u16>(count) == 0) return -1;
+    for (i = 0; i < static_cast<u16>(count); i++) {
+        target = output[i];
+        if (target != nullptr) {
+            hp = fightOutPokemonNowHpWaruValue(target, 1);
+            maxHp = fightOutPokemonMaxHpWaruValue(target, 1);
+            if (static_cast<u16>(maxHp) == 0) maxHp = 1;
+            minimum = static_cast<u16>(hp) * 100 / static_cast<u16>(maxHp);
+            break;
+        }
+    }
+    array = output;
+    bound = static_cast<u16>(count);
+    for (i = 0; i < bound; i++) {
+        target = array[i];
+        if (target != nullptr) {
+            hp = fightOutPokemonNowHpWaruValue(target, 1);
+            maxHp = fightOutPokemonMaxHpWaruValue(target, 1);
+            if (static_cast<u16>(maxHp) == 0) maxHp = 1;
+            s32 rate = static_cast<u16>(hp) * 100 / static_cast<u16>(maxHp);
+            if (rate < minimum) minimum = rate;
+        }
+    }
+    return minimum;
+}
+FightOutPokemon* fightFloorGetFightOutPokemonPtrRandom(FIGHT_FLOOR* floor, bool fightOutOnly, u8 relation, FightOutPokemon* target) {
+    FightOutPokemon* output[8];
+    _fightFloorInitFightOutPokemonPtrAry(output);
+    u32 count = _fightFloorCreateFightOutPokemonPtrAry(floor, output, fightOutOnly, relation, target);
+    if (static_cast<u16>(count) == 0) return nullptr;
+    u16 index = static_cast<u16>(HSD_Rand()) % static_cast<u16>(count);
+    if (index >= 8) return nullptr;
+    FightOutPokemon* pokemon = output[index];
+    if (pokemon == nullptr) return nullptr;
+    return pokemon;
+}
+}
+
+extern "C" {
+FightPokemon* fightTrainerSearchIrekaeFightPokemon(FightTrainer*, u16*);
+u8 fightOutPokemonIsZokuseiDataId(FightOutPokemon*, u16);
+u32 fightOutPokemonGetFightActionPri(FightOutPokemon*);
+u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR*, FightOutPokemon*, FightOutPokemon*, u8);
+void fightFloor_SetfightoutPokemonPtrAryPtr(FIGHT_FLOOR*, FightOutPokemon**);
+}
+static u8 _fightFloorIsIrekaeFightOutPokemonSub(void* object, u16 type, void* context) {
+    FightTrainer* trainer = static_cast<FightTrainer*>(object);
+    u16 i;
+    u32 count;
+    u8* result = static_cast<u8*>(context);
+    if (!fightTrainerCheckValid(trainer)) return 1;
+    u16 index = 0;
+    if (fightTrainerSearchIrekaeFightPokemon(trainer, &index) == nullptr) return 1;
+    count = fightFloor_GetFightTypeFightoutPokemonNum(nullptr);
+    for (i = 0; i < count; i++) {
+        FightOutPokemon* pokemon = fightTrainer_GetFightoutPokemonPtr(trainer, i);
+        if (pokemon == nullptr || fightOutPokemonCheckFightOut(pokemon)) continue;
+        if (result != nullptr && *result != 2) {
+            if (fightTrainerIsGcHero(trainer) == 1) *result = 2;
+            else *result = 1;
+        }
+    }
+    return 1;
+}
+extern "C" {
+u8 fightFloorIsIrekaeFightOutPokemon(FIGHT_FLOOR* floor) {
+    u8 result = 0;
+    fightFloorLoopValidFightTrainer(floor, _fightFloorIsIrekaeFightOutPokemonSub, &result, 0);
+    return result;
+}
+u8 fightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_FLOOR* floor, FightOutPokemon* pokemon, FightOutPokemon** blocker) {
+    FightOutPokemon* magnet;
+    FightOutPokemon* arena;
+    FightOutPokemon* shadow;
+    u8 airborne = 0;
+    u8 steel = 0;
+    if (!fightOutPokemonCheckValid(pokemon)) return 0;
+    shadow = fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x17, 0, 2, pokemon);
+    arena = fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x47, 0, 2, pokemon);
+    magnet = fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x2a, 0, 0, pokemon);
+    if (fightOutPokemonIsZokuseiDataId(pokemon, 2) == 1 || static_cast<u16>(fightOutPokemonGetTokuseiDataId(pokemon)) == 0x1a) airborne = 1;
+    if (fightOutPokemonIsZokuseiDataId(pokemon, 8) == 1) steel = 1;
+    if (fightOutPokemonIsJoutaiDataId(pokemon, 0x16) == 1 || fightOutPokemonIsJoutaiDataId(pokemon, 0xe) == 1 || fightOutPokemonIsJoutaiDataId(pokemon, 0x25) == 1) return 1;
+    if (shadow != nullptr) {
+        if (blocker != nullptr) *blocker = shadow;
+        return 2;
+    }
+    if (arena != nullptr && airborne == 0) {
+        if (blocker != nullptr) *blocker = arena;
+        return 2;
+    }
+    if (magnet != nullptr && steel == 1) {
+        if (blocker != nullptr) *blocker = magnet;
+        return 2;
+    }
+    return 0;
+}
+u8 fightFloorSortFightOutPokemonDefault(FightOutPokemon* first, FightOutPokemon* second) {
+    u8 order[4] = {0xc, 0xf, 0xd, 0x10};
+    u8* orderPtr;
+    u32 target;
+    void* floor;
+    u8 i;
+    u8 firstIndex;
+    u8 secondIndex;
+    floor = fightTargetGetPtrAsNowFightType(0xb, nullptr);
+    orderPtr = order;
+    for (i = 0; i < 4; i++) {
+        target = orderPtr[i];
+        if (first == fightTargetGetPtrAsNowFightType(target, floor)) firstIndex = i;
+        if (second == fightTargetGetPtrAsNowFightType(target, floor)) secondIndex = i;
+    }
+    return firstIndex > secondIndex;
+}
+void fightFloorSortFightOutPokemonPtrArySub(FIGHT_FLOOR* floor, FightOutPokemon** output, u16 count, u8 useActions) {
+    u32 bound = count;
+    s32 last = bound - 1;
+    u16 i;
+    u16 j;
+    for (i = 0; static_cast<int>(i) < last; i++) {
+        for (j = i + 1; static_cast<u32>(j) < bound; j++) {
+            if (output[i] == nullptr && output[j] == nullptr) continue;
+            if (output[i] == nullptr) {
+                FightOutPokemon* temp = output[i];
+                output[i] = output[j];
+                output[j] = temp;
+            } else if (output[j] != nullptr) {
+                u32 firstPri;
+                u32 secondPri;
+                if (useActions == 0) { firstPri = 0; secondPri = 0; }
+                else { firstPri = fightOutPokemonGetFightActionPri(output[i]); secondPri = fightOutPokemonGetFightActionPri(output[j]); }
+                if (static_cast<s8>(firstPri) < static_cast<s8>(secondPri)) continue;
+                if (static_cast<s8>(firstPri) > static_cast<s8>(secondPri)) {
+                    FightOutPokemon* temp = output[i];
+                    output[i] = output[j];
+                    output[j] = temp;
+                } else if ((static_cast<s8>(firstPri) == 2 && static_cast<s8>(secondPri) == 2) || (static_cast<s8>(firstPri) == 3 && static_cast<s8>(secondPri) == 3)) {
+                    if (fightFloorSortFightOutPokemonDefault(output[i], output[j])) {
+                        FightOutPokemon* temp = output[i];
+                        output[i] = output[j];
+                        output[j] = temp;
+                    }
+                } else if (!fightFloorCmpfightOutPokemonNimbleness(floor, output[i], output[j], useActions)) {
+                    FightOutPokemon* temp = output[i];
+                    output[i] = output[j];
+                    output[j] = temp;
+                }
+            }
+        }
+    }
+}
+void fightFloorSortFightOutPokemonPtrAry(FIGHT_FLOOR* floor, u8 useActions) {
+    FightOutPokemon* output[8];
+    for (u16 i = 0; i < 8; i++) output[i] = fightFloor_GetFightOutPokemonPtrAry(floor, i);
+    fightFloorSortFightOutPokemonPtrArySub(floor, output, 8, useActions);
+    fightFloor_SetfightoutPokemonPtrAryPtr(floor, output);
+}
+FightOutPokemon* fightFloor_GetFightOutPokemonFromDefaultSortData(u8 index) {
+    FightOutPokemon* output[8];
+    fightTargetGetPtrAsNowFightType(0xb, nullptr);
+    for (u16 i = 0; static_cast<int>(i) < 8; i++) output[i] = fightFloor_GetFightOutPokemonPtrAry(nullptr, i);
+    for (u16 i = 0; static_cast<int>(i) < 7; i++) {
+        for (u16 j = i + 1; static_cast<int>(j) < 8; j++) {
+            if (output[i] == nullptr && output[j] == nullptr) continue;
+            if (output[i] == nullptr) {
+                FightOutPokemon* temp = output[i];
+                output[i] = output[j];
+                output[j] = temp;
+            } else if (output[j] != nullptr && fightFloorSortFightOutPokemonDefault(output[i], output[j])) {
+                FightOutPokemon* temp = output[i];
+                output[i] = output[j];
+                output[j] = temp;
+            }
+        }
+    }
+    return output[index];
+}
+}
+
+struct Hero;
+extern "C" {
+FightPokemon* fightOutPokemon_GetMotoFightPokemonPtr(FightOutPokemon*);
+FightPokemon* fightTrainer_GetFightPokemonPtr(FightTrainer*, u16);
+Hero* fightTrainer_GetHeroPtr(FightTrainer*);
+FightTrainer* fightFloorGetFightPokemonPtrToFightTrainerPtr(FIGHT_FLOOR*, FightPokemon*);
+FightTrainer* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(FIGHT_FLOOR*, FightOutPokemon*);
+Hero* fightFloorGetFightOutPokemonPtrToHeroPtr(FIGHT_FLOOR*, FightOutPokemon*);
+u32 fightFloor_GetFightKindDoBadgeCheckFlag(FIGHT_FLOOR*);
+u32 fightFloor_GetFirstAttackRnd(FIGHT_FLOOR*);
+u32 fightOutPokemonGetNowNimbleness(FightOutPokemon*, u32, u32, u32, Hero*);
+u32 fightOutPokemonGetCmpNimblenessWazaDataId(FightOutPokemon*);
+u32 wazaDB_GetPri(u32);
+
+Hero* fightFloorGetFightOutPokemonPtrToHeroPtr(FIGHT_FLOOR* floor, FightOutPokemon* pokemon) {
+    FightTrainer* trainer = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(floor, pokemon);
+    if (trainer == nullptr) return nullptr;
+    Hero* hero = fightTrainer_GetHeroPtr(trainer);
+    if (hero == nullptr) return nullptr;
+    return hero;
+}
+FightTrainer* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(FIGHT_FLOOR* floor, FightOutPokemon* pokemon) {
+    FightPokemon* original = fightOutPokemon_GetMotoFightPokemonPtr(pokemon);
+    if (original == nullptr) return nullptr;
+    FightTrainer* trainer = fightFloorGetFightPokemonPtrToFightTrainerPtr(floor, original);
+    if (trainer == nullptr) return nullptr;
+    return trainer;
+}
+FightTrainer* fightFloorGetFightPokemonPtrToFightTrainerPtr(FIGHT_FLOOR* floor, FightPokemon* target) {
+    FightSide* sidePtr;
+    u16 trainer;
+    u16 pokemon;
+    u16 side;
+    FightTrainer* trainerPtr;
+    for (side = 0; side < 2; side++) {
+        sidePtr = fightFloor_GetFightSidePtr(floor, side);
+        if (sidePtr == nullptr) continue;
+        for (trainer = 0; trainer < 2; trainer++) {
+            trainerPtr = fightSide_GetFightTrainerPtr(sidePtr, trainer);
+            if (trainerPtr == nullptr) continue;
+            for (pokemon = 0; pokemon < 6; pokemon++) {
+                FightPokemon* record = fightTrainer_GetFightPokemonPtr(trainerPtr, pokemon);
+                if (record != nullptr && target == record) return trainerPtr;
+            }
+        }
+    }
+    return nullptr;
+}
+u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR* floor, FightOutPokemon* first, FightOutPokemon* second, u8 useActions) {
+    u32 weather;
+    u32 badge;
+    u32 firstSpeed;
+    u32 random;
+    u32 firstMove;
+    u32 secondMove;
+    u32 secondSpeed;
+    u32 firstPri;
+    u32 secondPri;
+    if (first == nullptr || second == nullptr) return 1;
+    weather = fightFloorGetNowTenkouDataId(floor, 1);
+    badge = fightFloor_GetFightKindDoBadgeCheckFlag(floor);
+    random = fightFloor_GetFirstAttackRnd(floor);
+    Hero* hero = fightFloorGetFightOutPokemonPtrToHeroPtr(floor, first);
+    firstSpeed = fightOutPokemonGetNowNimbleness(first, badge, weather, random, hero);
+    hero = fightFloorGetFightOutPokemonPtrToHeroPtr(floor, second);
+    secondSpeed = fightOutPokemonGetNowNimbleness(second, badge, weather, random, hero);
+    if (useActions == 0) { firstMove = 0; secondMove = 0; }
+    else {
+        firstMove = fightOutPokemonGetCmpNimblenessWazaDataId(first);
+        secondMove = fightOutPokemonGetCmpNimblenessWazaDataId(second);
+    }
+    firstPri = wazaDB_GetPri(firstMove);
+    secondPri = wazaDB_GetPri(secondMove);
+    if (static_cast<s8>(firstPri) != 0 || static_cast<s8>(secondPri) != 0) {
+        if (static_cast<s8>(firstPri) > static_cast<s8>(secondPri)) return 1;
+        if (static_cast<s8>(firstPri) < static_cast<s8>(secondPri)) return 0;
+    }
+    if (firstSpeed > secondSpeed) return 1;
+    if (firstSpeed < secondSpeed) return 0;
+    if (HSD_Rand() & 1) return 1;
+    return 0;
+}
+}
+
+struct GSThread;
+extern "C" {
+u32 fightTrainer_GetFightTrainerDataId(FightTrainer*);
+u32 fightTrainerDB_GetAiDataId(u32);
+u32 fightTrainer_GetControllerId(FightTrainer*);
+u32 GSfloorGetCurrentFloorGroupID();
+GSThread* GSthreadCreate(u32, u32, u32, u32, u32, FightFloorCallback);
+void GSthreadSetArgs(GSThread*, u32, ...);
+void GSthreadSetName(GSThread*, const char*);
+void GSthreadSwitch();
+u8 GSthreadIsRunning(GSThread*);
+void GSthreadClose(GSThread*);
+void fightFloorLoopValidFightTrainer(FIGHT_FLOOR* floor, FightFloorCallback callback, void* context, u8 concurrent) {
+    u32 trainers;
+    u16 type;
+    type = static_cast<u8>(fightFloor_GetFightType(nullptr));
+    trainers = fightFloor_GetFightTypeTrainerNum(nullptr);
+    GSThread* threads[4];
+    for (u16 i = 0; i < 4; i++) threads[i] = nullptr;
+    if (concurrent == 1) {
+        u16 threadType = type;
+        u16 side;
+        FightSide* sidePtr;
+        u16 trainer;
+        u16 count = 0;
+        FightTrainer* record;
+        u32 ai;
+        for (side = 0; side < 2; side++) {
+            sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+            if (sidePtr == nullptr) continue;
+            for (trainer = 0; trainer < trainers; trainer++) {
+                record = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+                if (record == nullptr) continue;
+                ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(record));
+                fightTrainer_GetControllerId(record);
+                if (static_cast<u16>(ai) != 0 || count >= 4) continue;
+                threads[count] = GSthreadCreate(0x12, GSfloorGetCurrentFloorGroupID(), 0x2000, 1, 0, callback);
+                if (threads != nullptr) {
+                    GSthreadSetArgs(threads[count], 3, record, threadType, context);
+                    GSthreadSetName(threads[count], "fightInput");
+                    count++;
+                }
+            }
+        }
+        u16 i;
+        do {
+            GSthreadSwitch();
+            if (static_cast<u16>(fightGetFightResultId()) == 4 || static_cast<u16>(fightGetFightResultId()) == 5) return;
+            for (i = 0; i < 4; i++) {
+                if (threads[i] != nullptr && GSthreadIsRunning(threads[i]) == 1) break;
+            }
+        } while (i < 4);
+        for (i = 0; i < 4; i++) {
+            if (threads[i] != nullptr) {
+                GSthreadClose(threads[i]);
+                threads[i] = nullptr;
+            }
+        }
+    } else {
+        for (u16 side = 0; side < 2; side++) {
+            FightSide* sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+            if (sidePtr == nullptr) continue;
+            for (u16 trainer = 0; trainer < trainers; trainer++) {
+                FightTrainer* record = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+                if (record == nullptr) continue;
+                u32 ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(record));
+                fightTrainer_GetControllerId(record);
+                if (static_cast<u16>(ai) == 0) callback(record, type, context);
+            }
+        }
+    }
+    for (u16 side = 0; side < 2; side++) {
+        FightSide* sidePtr = fightFloorGetValidFightSidePtr(floor, side);
+        if (sidePtr == nullptr) continue;
+        for (u16 trainer = 0; trainer < trainers; trainer++) {
+            FightTrainer* record = fightSideGetValidFightTrainerPtr(sidePtr, trainer);
+            if (record == nullptr) continue;
+            u32 ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(record));
+            fightTrainer_GetControllerId(record);
+            if (static_cast<u16>(ai) != 0) callback(record, type, context);
+        }
+    }
+}
+}
+
+extern "C" u32 fightFloorCreateFightOutPokemonPtrAry(FIGHT_FLOOR* floor) {
+    fightFloorInitFightOutPokemonPtrAry(floor);
+    FightOutPokemon** output = fightFloor_GetFightOutPokemonPtrAryPtr(floor);
+    if (output == nullptr) return 0;
+    return _fightFloorCreateFightOutPokemonPtrAry(floor, output, false, 0, nullptr);
 }

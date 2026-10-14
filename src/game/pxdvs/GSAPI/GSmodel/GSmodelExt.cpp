@@ -189,3 +189,74 @@ extern "C" void GSmodelEnableEnvMap(GSmodel* model, s32 source, s32 mode, f32 bl
         }
     }
 }
+
+extern "C" {
+void HSD_JObjRemove(HSD_JObj*);
+HSD_JObj* HSD_JObjAlloc();
+void HSD_JObjAddChild(HSD_JObj*, HSD_JObj*);
+void HSD_JObjAddNext(HSD_JObj*, HSD_JObj*);
+u32 HSD_JObjGetFlags(HSD_JObj*);
+void HSD_JObjSetFlags(HSD_JObj*, u32);
+u16 GSmodelGetPartCount(GSmodel*);
+void modelUpdateCenterNull__FP8_GSmodel(GSmodel*);
+void __assert(const char*, int, const char*);
+}
+static inline HSD_JObj* centerChild(HSD_JObj* joint) { HSD_JObj* result; if (!joint) result = 0; else result = joint->child; return result; }
+static inline HSD_JObj* centerNext(HSD_JObj* joint) { HSD_JObj* result; if (!joint) result = 0; else result = joint->next; return result; }
+extern "C" void modelRemoveCenterNull__FP8_GSmodel(GSmodel* model) {
+    if ((model->flags & 0x10000) == 0x10000) {
+        HSD_JObj* root = model->joint;
+        if ((model->flags & 0x20000) == 0x20000) root = root->child;
+        HSD_JObj* joint = centerChild(root);
+        while (centerNext(joint)) joint = centerNext(joint);
+        HSD_JObjRemove(joint);
+        model->flags &= ~0x10000;
+    }
+}
+extern "C" u16 GSmodelCenterNull(GSmodel* model) {
+    if ((model->flags & 0x10000) == 0x10000) return GSmodelGetPartCount(model) - 1;
+    HSD_JObj* joint = HSD_JObjAlloc();
+    if (!joint) return 0;
+    HSD_JObj* root = model->joint;
+    if ((model->flags & 0x20000) == 0x20000) root = root->child;
+    HSD_JObj* child = centerChild(root);
+    if (!child) HSD_JObjAddChild(root, joint);
+    else {
+        while (centerNext(child)) child = centerNext(child);
+        HSD_JObjAddNext(child, joint);
+    }
+    HSD_JObjSetFlags(joint, HSD_JObjGetFlags(root));
+    model->flags |= 0x10000;
+    modelUpdateCenterNull__FP8_GSmodel(model);
+    return GSmodelGetPartCount(model) - 1;
+}
+extern "C" void GSmodelGetRootScale(GSmodel* model, GSvec* out) {
+    HSD_JObj* joint = model->joint;
+    if ((model->flags & 0x20000) == 0x20000) {
+        joint = joint->child;
+        if (!joint) __assert("jobj.h", 849, "jobj");
+        if (!out) __assert("jobj.h", 850, "scale");
+        out->param1 = joint->scale.x; out->param2 = joint->scale.y; out->param3 = joint->scale.z;
+    } else { out->param1 = 1.0f; out->param2 = 1.0f; out->param3 = 1.0f; }
+}
+extern "C" void GSmodelGetRootRotation(GSmodel* model, GSvec* out) {
+    HSD_JObj* joint = model->joint;
+    if ((model->flags & 0x20000) == 0x20000) {
+        joint = joint->child;
+        if (!joint) __assert("jobj.h", 748, "jobj");
+        out->param1 = joint->rotate.x;
+        if (!joint) __assert("jobj.h", 762, "jobj");
+        out->param2 = joint->rotate.y;
+        if (!joint) __assert("jobj.h", 776, "jobj");
+        out->param3 = joint->rotate.z;
+    } else { out->param1 = 0.0f; out->param2 = 0.0f; out->param3 = 0.0f; }
+}
+extern "C" void GSmodelGetRootPosition(GSmodel* model, GSvec* out) {
+    HSD_JObj* joint = model->joint;
+    if ((model->flags & 0x20000) == 0x20000) {
+        joint = joint->child;
+        if (!joint) __assert("jobj.h", 996, "jobj");
+        if (!out) __assert("jobj.h", 997, "translate");
+        out->param1 = joint->translate.x; out->param2 = joint->translate.y; out->param3 = joint->translate.z;
+    } else { out->param1 = 0.0f; out->param2 = 0.0f; out->param3 = 0.0f; }
+}

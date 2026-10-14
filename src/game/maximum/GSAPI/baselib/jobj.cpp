@@ -1,5 +1,10 @@
 /* XD joint traversal, animation attachment and matrix construction. */
 #include "game/maximum/GSAPI/baselib/jobj.h"
+typedef char jobj_flags_offset_check[(unsigned long)&((HSD_JObj*)0)->flags == 0x14 ? 1 : -1];
+typedef char jobj_mtx_offset_check[(unsigned long)&((HSD_JObj*)0)->mtx == 0x44 ? 1 : -1];
+typedef char jobj_aobj_offset_check[(unsigned long)&((HSD_JObj*)0)->aobj == 0x7C ? 1 : -1];
+typedef char jobj_robj_offset_check[(unsigned long)&((HSD_JObj*)0)->robj == 0x80 ? 1 : -1];
+typedef char jobj_id_offset_check[(unsigned long)&((HSD_JObj*)0)->id == 0x84 ? 1 : -1];
 typedef char JObjRuntimeSizeCheck[sizeof(HSD_JObj) == 0x88 ? 1 : -1];
 #include "game/maximum/GSAPI/baselib/dobj.h"
 #include "game/maximum/GSAPI/baselib/robj.h"
@@ -122,7 +127,7 @@ typedef void (*ufc_callback)(HSD_JObj*,unsigned int,float);
 #define JOBJ_MTX_INDEP_SRT (1 << 25)
 #define JOBJ_USE_QUATERNION (1 << 17)
 #define JOBJ_HIDDEN (1 << 4)
-#define union_type_spline(o) (((o)->flags & JOBJ_SPLINE) != 0)
+#define union_type_spline(o) (((o)->flags & JOBJ_SPLINE) >> 14)
 #define union_type_ptcl(o) (((o)->flags & JOBJ_PTCL) != 0)
 void PSMTXIdentity(HSD_Mtx);
 void PSMTXCopy(HSD_Mtx,HSD_Mtx);
@@ -202,7 +207,7 @@ void HSD_JObjSetPtclTargetCallback(void (*cb)(HSD_JObj*,int));
 #define sqrtf hsdSqrt
 #define JOBJ_JOINT (3 << 21)
 #define M_PI 3.14159265358979323846F
-float acosf(float);
+double acos(double);
 void PSVECAdd(HSD_Vec3*,HSD_Vec3*,HSD_Vec3*);
 void PSVECSubtract(HSD_Vec3*,HSD_Vec3*,HSD_Vec3*);
 void PSVECScale(HSD_Vec3*,HSD_Vec3*,float);
@@ -216,8 +221,6 @@ void PSMTXRotAxisRad(HSD_Mtx,HSD_Vec3*,float);
 #define VECDotProduct PSVECDotProduct
 #define VECCrossProduct PSVECCrossProduct
 #define VECNormalize PSVECNormalize
-static const HSD_Vec3 ik_origin = {0.0F,0.0F,0.0F};
-static const HSD_Vec3 ik_unit_scale = {1.0F,1.0F,1.0F};
 static inline HSD_JObj* jobj_get_joint2(HSD_JObj* jobj);
 static inline HSD_JObj* jobj_get_effector(HSD_JObj* jobj);
 static inline HSD_JObj* jobj_get_effector_checked(HSD_JObj* eff);
@@ -433,7 +436,7 @@ static inline HSD_JObj* HSD_JObjGetPrev(HSD_JObj* jobj)
         }
         cur = cur->next;
     }
-    HSD_Panic("jobj.c", 1516,
+    HSD_Panic("jobj.c", 1531,
               "can not find specified jobj. maybe jobj tree is broken.\n");
     return NULL;
 }
@@ -505,7 +508,7 @@ static inline HSD_JObj* HSD_JObjReparent(HSD_JObj* jobj, HSD_JObj* parent)
             jobj->parent->child = next;
         } else {
             HSD_JObj* prev = HSD_JObjGetPrev(jobj);
-            HSD_ASSERT(0x56F, prev);
+            HSD_ASSERT(0x57E, prev);
             prev->next = next;
         }
         RecalcParentTrspBits(jobj->parent);
@@ -529,7 +532,7 @@ static inline HSD_JObj* JObjLoadJointSub(HSD_Joint* joint, HSD_JObj* parent)
         jobj = HSD_JObjAlloc();
     } else {
         jobj = hsdNew(info);
-        HSD_ASSERT(972, jobj);
+        HSD_ASSERT(980, jobj);
     }
     HSD_JOBJ_METHOD(jobj)->load(jobj, joint, parent);
     return jobj;
@@ -560,7 +563,7 @@ static inline HSD_JObj* jobj_get_effector(HSD_JObj* jobj)
 static inline HSD_JObj* jobj_get_effector_checked(HSD_JObj* eff)
 {
     eff = jobj_get_effector(eff);
-    HSD_ASSERT(2084, eff);
+    HSD_ASSERT(2096, eff);
     if (HSD_RObjGetByType(eff->robj, REFTYPE_JOBJ, 1) != NULL) {
         return eff;
     } else {
@@ -592,6 +595,31 @@ void HSD_JObjCheckDepend(HSD_JObj* jobj)
             jobj->flags |= JOBJ_MTX_DIRTY;
         }
         break;
+    }
+}
+
+static inline void checkDependForAnim(HSD_JObj* jobj)
+{
+    if (jobj == NULL) {
+        return;
+    }
+
+    if (!HSD_JObjMtxIsDirty(jobj)) {
+        if ((jobj->flags & JOBJ_USER_DEF_MTX)) {
+            if (!(jobj->flags & JOBJ_MTX_INDEP_PARENT) &&
+                jobj->parent != NULL && HSD_JObjMtxIsDirty(jobj->parent))
+            {
+                jobj->flags |= JOBJ_MTX_DIRTY;
+            }
+        } else if ((jobj->parent != NULL &&
+                    (jobj->parent->flags & JOBJ_MTX_DIRTY)) ||
+                   (jobj->flags & JOBJ_EFFECTOR) == JOBJ_JOINT1 ||
+                   (jobj->flags & JOBJ_EFFECTOR) == JOBJ_JOINT2 ||
+                   (jobj->flags & JOBJ_EFFECTOR) == JOBJ_EFFECTOR ||
+                   jobj->robj != NULL)
+        {
+            jobj->flags |= JOBJ_MTX_DIRTY;
+        }
     }
 }
 
@@ -996,7 +1024,7 @@ static void JObjUpdateFunc(void* obj, enum_t type, HSD_ObjData* val)
 void HSD_JObjAnim(HSD_JObj* jobj)
 {
     if (jobj != NULL) {
-        HSD_JObjCheckDepend(jobj);
+        checkDependForAnim(jobj);
         HSD_AObjInterpretAnim(jobj->aobj, jobj, HSD_JOBJ_METHOD(jobj)->update);
         HSD_RObjAnimAll(jobj->robj);
         if (union_type_dobj(jobj)) {
@@ -1029,6 +1057,11 @@ void HSD_JObjAnimAll(HSD_JObj* jobj)
     }
 }
 
+static inline float (*HSD_CObjGetViewingMtxPtrDirect(HSD_CObj* cobj))[4]
+{
+    return cobj->view_mtx;
+}
+
 static inline void setupInstanceMtx(HSD_Mtx view, HSD_JObj* jobj, HSD_Mtx out) {
     HSD_JObjSetupMatrix(jobj);
     HSD_JObjSetupMatrix(jobj->child);
@@ -1037,7 +1070,7 @@ static inline void setupInstanceMtx(HSD_Mtx view, HSD_JObj* jobj, HSD_Mtx out) {
     if (view) PSMTXConcat(view,out,out);
     else {
         HSD_CObj* cobj = HSD_CObjGetCurrent();
-        if (cobj) PSMTXConcat(cobj->view_mtx,out,out);
+        if (cobj) PSMTXConcat(HSD_CObjGetViewingMtxPtrDirect(cobj),out,out);
     }
 }
 
@@ -1064,11 +1097,9 @@ void HSD_JObjDispAll(HSD_JObj* jobj, HSD_Mtx view, unsigned int flags, unsigned 
 
 static s32 JObjLoad(HSD_JObj* jobj, HSD_Joint* joint, HSD_JObj* parent)
 {
-    if (!(joint->flags & JOBJ_INSTANCE)) {
-        jobj->child = JObjLoadJointSub(joint->child, jobj);
-    }
-    jobj->next = JObjLoadJointSub(joint->next, parent);
-    jobj->parent = parent;
+    jobj->child = NULL;
+    jobj->next = NULL;
+    jobj->parent = NULL;
     jobj->flags |= joint->flags;
     if (union_type_spline(jobj)) {
         jobj->u.spline = joint->u.spline;
@@ -1097,6 +1128,13 @@ static s32 JObjLoad(HSD_JObj* jobj, HSD_Joint* joint, HSD_JObj* parent)
     }
     HSD_IDInsertToTable(NULL, (HSD_IDKey) joint, jobj);
     jobj->id = (HSD_IDKey) joint;
+    if (!(joint->flags & JOBJ_INSTANCE)) {
+        for (joint = joint->child; joint != NULL; joint = joint->next) {
+            HSD_JObj* child = JObjLoadJointSub(joint, jobj);
+            if (child == NULL) return -1;
+            HSD_JObjAddChild(jobj, child);
+        }
+    }
     return 0;
 }
 
@@ -1105,6 +1143,18 @@ HSD_JObj* HSD_JObjLoadJoint(HSD_Joint* arg0)
     HSD_JObj* jobj = JObjLoadJointSub(arg0, 0);
     HSD_JObjResolveRefsAll(jobj, arg0);
     return jobj;
+}
+
+static inline void* HSD_IDGetData(HSD_IDKey id, void* found)
+{
+    return HSD_IDGetDataFromTable(NULL, id, found);
+}
+
+static inline void ref_INC(HSD_JObj* o)
+{
+    ++o->object.ref_count;
+    if (o->object.ref_count == 0xffff)
+        __assert("object.h", 93, "HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF");
 }
 
 void HSD_JObjResolveRefs(HSD_JObj* jobj, HSD_Joint* joint)
@@ -1119,8 +1169,8 @@ void HSD_JObjResolveRefs(HSD_JObj* jobj, HSD_Joint* joint)
     if (!!(jobj->flags & JOBJ_INSTANCE)) {
         HSD_JObjUnref(jobj->child);
         jobj->child =
-            HSD_IDGetDataFromTable(NULL, (HSD_IDKey) joint->child, NULL);
-        HSD_ASSERT(1195, jobj->child);
+            HSD_IDGetData((HSD_IDKey) joint->child, NULL);
+        HSD_ASSERT(1122, jobj->child);
         HSD_JObjRef(jobj->child);
     }
     if (union_type_dobj(jobj)) {
@@ -1149,7 +1199,7 @@ static inline int iref_DEC(HSD_JObj* o) {
 }
 
 static inline void HSD_JObjRef(HSD_JObj* o) {
-    if (o) { ++o->object.ref_count; if (o->object.ref_count == 0xffff) __assert("object.h",93,"HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF"); }
+    if (o) ref_INC(o);
 }
 
 void HSD_JObjResolveRefsAll(HSD_JObj* jobj, HSD_Joint* joint)
@@ -1199,7 +1249,7 @@ HSD_JObj* HSD_JObjRemove(HSD_JObj* jobj)
     }
     child = jobj->child;
     if (child != NULL) {
-        HSD_ASSERT(1216, child->next == NULL);
+        HSD_ASSERT(1230, child->next == NULL);
     }
 
     next = child != NULL ? child : jobj->next;
@@ -1228,17 +1278,17 @@ void HSD_JObjAddChild(HSD_JObj* jobj, HSD_JObj* child)
     if (jobj == NULL || child == NULL) {
         return;
     }
-    HSD_ASSERTREPORT(1350, child->parent == NULL,
+    HSD_ASSERTREPORT(1365, child->parent == NULL,
                      "child should be a orphan.\n");
-    HSD_ASSERTREPORT(1351, child->next == NULL,
+    HSD_ASSERTREPORT(1366, child->next == NULL,
                      "child should not have siblings");
     if (jobj->child == NULL) {
         jobj->child = child;
     } else {
-        HSD_ASSERT(1357, !(jobj->flags & JOBJ_INSTANCE));
+        HSD_ASSERT(1372, !(jobj->flags & JOBJ_INSTANCE));
         last = jobj->child;
         while (last->next != NULL) {
-            HSD_ASSERT(1360, last != child);
+            HSD_ASSERT(1375, last != child);
             last = last->next;
         }
         last->next = child;
@@ -1319,8 +1369,10 @@ void HSD_JObjClearFlagsAll(HSD_JObj* jobj, u32 flags)
 
 static inline void HSD_JObjSetMtxDirty(HSD_JObj* jobj)
 {
-    if (jobj != NULL && !HSD_JObjMtxIsDirty(jobj)) {
-        HSD_JObjSetMtxDirtySub(jobj);
+    if (jobj != NULL) {
+        switch (HSD_JObjMtxIsDirty(jobj)) {
+        case false: HSD_JObjSetMtxDirtySub(jobj); break;
+        }
     }
 }
 
@@ -1328,12 +1380,11 @@ HSD_JObj* HSD_JObjAlloc(void)
 {
     HSD_JObj* jobj =
         hsdNew(default_class != NULL ? default_class : &hsdJObj.parent);
-    HSD_ASSERT(2003, jobj);
+    HSD_ASSERT(2018, jobj);
     return jobj;
 }
 
 void HSD_JObjCountVertices(HSD_JObj* jobj, unsigned int* vertices, unsigned int* triangles) {
-    unsigned int nv, nt;
     unsigned int total_v = 0, total_t = 0;
     HSD_JObj* child;
     if (jobj) {
@@ -1343,6 +1394,7 @@ void HSD_JObjCountVertices(HSD_JObj* jobj, unsigned int* vertices, unsigned int*
             if (!(jobj->flags & 0x10) && union_type_dobj(jobj))
                 HSD_DObjCountVertices(jobj->u.dobj, &total_v, &total_t);
             for (child = jobj->child; child; child = child->next) {
+                unsigned int nv, nt;
                 HSD_JObjCountVertices(child, &nv, &nt);
                 total_v += nv; total_t += nt;
             }
@@ -1357,6 +1409,7 @@ void HSD_JObjSetCurrent(HSD_JObj* jobj)
     HSD_JObjRef(jobj);
     HSD_JObjUnref(current_jobj);
     current_jobj = jobj;
+
 }
 
 HSD_JObj* HSD_JObjGetCurrent(void)
@@ -1371,7 +1424,6 @@ static void resolveIKJoint1(HSD_JObj* jobj)
     HSD_JObj* var_r31;
     Vec3* temp_r4;
     f32 temp_f1_7;
-    f32 temp_f1_8;
     f32 temp_f31;
     f32 temp_f30;
     f32 temp_f5;
@@ -1407,20 +1459,20 @@ static void resolveIKJoint1(HSD_JObj* jobj)
     var_r30 = 0;
     var_f29 = 0.0F;
     var_r31 = jobj_get_joint2(jobj->child);
-    spB0 = ik_origin;
+    { Vec3 origin = {0.0F,0.0F,0.0F}; spB0 = origin; }
     temp_r4 = jobj->scl;
     var_f5 = 1e-8F;
     if (temp_r4 != NULL) {
         spBC = *temp_r4;
     }
     robj = HSD_RObjGetByType(jobj->robj, REFTYPE_IKHINT, 0);
-    HSD_ASSERT(0x853, robj);
+    HSD_ASSERT(0x85F, robj);
     new_var = &ROBJ_U(robj).ik_hint;
     temp_f26 = new_var->rotate_x;
     temp_f30 = new_var->bone_length * spBC.x;
     if (var_r31 != NULL) {
         robj = HSD_RObjGetByType(var_r31->robj, REFTYPE_IKHINT, 0);
-        HSD_ASSERT(0x85E, robj);
+        HSD_ASSERT(0x86A, robj);
         var_f29 = ROBJ_U(robj).ik_hint.bone_length * var_r31->scale.x * spBC.x;
         var_r30 = robj->flags & 4 ? 1 : 0;
         var_r28 = jobj_get_effector_checked(var_r31->child);
@@ -1471,10 +1523,9 @@ static void resolveIKJoint1(HSD_JObj* jobj)
             temp_f5 = temp_f30 * temp_f30;
             var_f28 = var_f29 * var_f29;
             temp_f1_7 = temp_f5 - var_f28;
-            temp_f1_8 = 0.25F * (((2.0F * (temp_f5 + var_f28)) - temp_f31) -
+            var_f27 = 0.25F * (((2.0F * (temp_f5 + var_f28)) - temp_f31) -
                                  ((temp_f1_7 * temp_f1_7) / temp_f31));
-            var_f27 = temp_f1_8;
-            if (temp_f1_8 < 0.0F) {
+            if (var_f27 < 0.0F) {
                 var_f27 = 0.0F;
             }
             temp_f5_2 = (temp_f5 - var_f27) / temp_f31;
@@ -1514,6 +1565,10 @@ static void resolveIKJoint1(HSD_JObj* jobj)
     }
 }
 
+#pragma force_active on
+static const Vec3 ik_axis = {0.0F,0.0F,1.0F};
+#pragma force_active reset
+
 static void resolveIKJoint2(HSD_JObj* jobj)
 {
     Vec3 spA0;
@@ -1541,7 +1596,7 @@ static void resolveIKJoint2(HSD_JObj* jobj)
     HSD_RObj* robj;
 
     var_f31 = 1.0F;
-    spA0 = ik_unit_scale;
+    { Vec3 unit_scale = {1.0F,1.0F,1.0F}; spA0 = unit_scale; }
     var_r29 = jobj_get_effector_checked(jobj->child);
     if (var_r29 == NULL || jobj->parent == NULL) {
         return;
@@ -1567,7 +1622,7 @@ static void resolveIKJoint2(HSD_JObj* jobj)
         var_f31 = jobj->parent->scl->x;
     }
     robj = HSD_RObjGetByType(jobj->parent->robj, REFTYPE_IKHINT, 0);
-    HSD_ASSERT(0x8FC, robj);
+    HSD_ASSERT(0x908, robj);
     VECScale(&sp7C, &sp7C, ROBJ_U(robj).ik_hint.bone_length * var_f31);
     VECAdd(&sp88, &sp7C, &sp94);
     VECSubtract(&var_r29->translate, &sp94, &sp7C);
@@ -1578,7 +1633,7 @@ static void resolveIKJoint2(HSD_JObj* jobj)
     if ((temp_r28 != NULL) || (temp_r29 != NULL)) {
         var_r27 = 0;
         robj = HSD_RObjGetByType(jobj->robj, REFTYPE_IKHINT, 0);
-        HSD_ASSERT(0x91E, robj);
+        HSD_ASSERT(0x92A, robj);
         var_r30 = robj->flags & 4 ? 1 : 0;
         {
             float (*mtx)[4] = jobj->parent->mtx;
@@ -1588,15 +1643,13 @@ static void resolveIKJoint2(HSD_JObj* jobj)
         }
         VECNormalize(&sp28, &sp28);
         temp_f1_4 = VECDotProduct(&sp28, &sp7C);
-        if (temp_f1_4 >= 1.0F) {
-            var_f1_2 = 0.0F;
-        } else if (temp_f1_4 <= -1.0F) {
-            var_f1_2 = M_PI;
-        } else {
-            var_f1_2 = acosf(temp_f1_4);
-        }
-        if (var_r30 == 0) {
-            var_f1_2 = -var_f1_2;
+        {
+            f32 angle;
+            if (temp_f1_4 >= 1.0F) angle = 0.0F;
+            else if (temp_f1_4 <= -1.0F) angle = M_PI;
+            else angle = (float)acos(temp_f1_4);
+            var_f1_2 = angle;
+            if (var_r30 == 0) var_f1_2 = -angle;
         }
         if (temp_r28 != NULL && var_f1_2 < ROBJ_U(temp_r28).limit) {
             var_f1_2 = ROBJ_U(temp_r28).limit;

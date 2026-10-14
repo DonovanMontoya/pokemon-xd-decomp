@@ -166,4 +166,28 @@ void GSmodelSetMatrix(GSmodel* model, Mtx matrix);
 void GSmodelFree(GSmodel* model);
 f32 GSmodelGetDistanceFromCamera(GSmodel* model);
 }
+struct GSmodelState {
+    u32 flags;
+    GSvec position, rotation, scale;
+    u32 animationIndex, textureAnimationIndex;
+    f32 animationFrame, animationRate, textureAnimationFrame, textureAnimationRate;
+    s32 animationType, textureAnimationType;
+    GSvec rootPosition, rootRotation, rootScale;
+};
+typedef char GSmodelStateSizeCheck[sizeof(GSmodelState) == 0x6c ? 1 : -1];
+struct GSpart;
+struct GSmtx;
+typedef void (*GSmodelParseCallback)(HSD_PObj*, GSmtx*, GSmtx*, GSmtx*, void*);
+extern "C" {
+GSpart* GSmodelGetPart(GSmodel*, u32);
+void GSmodelPushState(GSmodel*, GSmodelState*);
+void GSmodelPopState(GSmodel*, GSmodelState*);
+void GSmodelParse(GSmodel*, bool, GSmodelParseCallback, void*);
+void GSmodelDisableAnimBlend(GSmodel*);
+void GSmodelEnableAnimBlend(GSmodel*);
+void modelCalculateBlendModel__FP8_GSmodelf(GSmodel*, f32);
+void modelIntpJObjRotate__FP9_HSD_JObjP9_HSD_JObjP9_HSD_JObjfP5GSvecUl(HSD_JObj*, HSD_JObj*, HSD_JObj*, f32, GSvec*, u32);
+void modelIntpJObjScale__FP9_HSD_JObjP9_HSD_JObjP9_HSD_JObjfP5GSvecUl(HSD_JObj*, HSD_JObj*, HSD_JObj*, f32, GSvec*, u32);
+void modelIntpJObjTrans__FP9_HSD_JObjP9_HSD_JObjP9_HSD_JObjfP5GSvecUl(HSD_JObj*, HSD_JObj*, HSD_JObj*, f32, GSvec*, u32);
+}
 #endif

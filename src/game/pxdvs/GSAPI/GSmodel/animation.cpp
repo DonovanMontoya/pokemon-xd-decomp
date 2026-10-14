@@ -219,3 +219,47 @@ extern "C" void GSmodelSetAnimFrame(GSmodel* m, f32 frame) {
     m->flags &= ~0x4000;
     }
 }
+
+extern "C" void GSmodelSetAnimType(GSmodel* m, s32 type) {
+    if (m->flags & 4) {
+        s32 i;
+        HSD_JObj* joint = m->joint;
+        HSD_JObj* blend = m->animationBlendJoint;
+        if ((m->flags & 0x20000) == 0x20000) joint = joint->child;
+        m->animationType = type; m->blendType = type;
+        if (m->flags & 0x80000000) {
+            for (i = 0; i < 8; ++i) if (m->partAnimations[i].animation) HSD_AObjSetFlags(m->partAnimations[i].animation, 0x10000);
+        }
+        switch (m->animationType) {
+        case 0:
+            HSD_ForeachAnim(joint, JOBJ_TYPE, (HSD_TypeMask)0x9b2f, (void*)_modelSetLoopFlag__FP9_HSD_AObjUl, AOBJ_ARG_AU, 0);
+            if (m->flags & 0x80) HSD_ForeachAnim(blend, JOBJ_TYPE, (HSD_TypeMask)0x9b2f, (void*)_modelSetLoopFlag__FP9_HSD_AObjUl, AOBJ_ARG_AU, 0);
+            break;
+        case 1:
+            HSD_ForeachAnim(joint, JOBJ_TYPE, (HSD_TypeMask)0x9b2f, (void*)_modelSetLoopFlag__FP9_HSD_AObjUl, AOBJ_ARG_AU, 1);
+            if (m->flags & 0x80) HSD_ForeachAnim(blend, JOBJ_TYPE, (HSD_TypeMask)0x9b2f, (void*)_modelSetLoopFlag__FP9_HSD_AObjUl, AOBJ_ARG_AU, 1);
+            break;
+        }
+        if (m->flags & 0x80000000) {
+            for (i = 0; i < 8; ++i) if (m->partAnimations[i].animation) HSD_AObjClearFlags(m->partAnimations[i].animation, 0x10000);
+        }
+    }
+    if (m->flags & 0x2000) GSmodelSetTexAnimType(m, type);
+}
+extern "C" void modelCalculatePartMix__FP5GSvecP5GSvecUl(GSvec* out, GSvec* value, u32 mode) {
+    switch (mode & 0xff) {
+    case 0: break;
+    case 1: out->param1 = value->param1; break;
+    case 2: out->param1 += value->param1; break;
+    }
+    switch (mode & 0xff00) {
+    case 0: break;
+    case 0x100: out->param2 = value->param2; break;
+    case 0x200: out->param2 += value->param2; break;
+    }
+    switch (mode & 0xff0000) {
+    case 0: break;
+    case 0x10000: out->param3 = value->param3; break;
+    case 0x20000: out->param3 += value->param3; break;
+    }
+}

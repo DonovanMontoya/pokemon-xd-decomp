@@ -1,5 +1,12 @@
 /* XD texture animation and descriptor lifecycle. */
 #include "game/maximum/GSAPI/baselib/tobj.h"
+typedef char tobj_repeat_s_offset_check[(unsigned long)&((HSD_TObj*)0)->repeat_s == 0x48 ? 1 : -1];
+typedef char tobj_imagetbl_offset_check[(unsigned long)&((HSD_TObjRuntime*)0)->imagetbl == 0x68 ? 1 : -1];
+typedef char tobj_tluttbl_offset_check[(unsigned long)&((HSD_TObjRuntime*)0)->tluttbl == 0x6C ? 1 : -1];
+typedef char tobj_tlut_no_offset_check[(unsigned long)&((HSD_TObjRuntime*)0)->tlut_no == 0x70 ? 1 : -1];
+typedef char tobj_mtx_offset_check[(unsigned long)&((HSD_TObjRuntime*)0)->mtx == 0x74 ? 1 : -1];
+typedef char tobj_coord_offset_check[(unsigned long)&((HSD_TObjRuntime*)0)->coord == 0xA4 ? 1 : -1];
+typedef char tobj_tev_offset_check[(unsigned long)&((HSD_TObjRuntime*)0)->tev == 0xA8 ? 1 : -1];
 typedef char TObjRuntimeSizeCheck[sizeof(HSD_TObjRuntime) == 0xAC ? 1 : -1];
 typedef char TObjPrefixSizeCheck[sizeof(HSD_TObj) == 0x68 ? 1 : -1];
 typedef char TObjTevSizeCheck[sizeof(HSD_TObjTev) == 0x20 ? 1 : -1];
@@ -238,6 +245,14 @@ void HSD_TObjAddNext(HSD_TObj* tobj, HSD_TObj* next);
 
 static inline float clamp_unit(float value) {
     return value <= 0.0F ? 0.0F : value >= 1.0F ? 1.0F : value;
+}
+
+static inline u8 Float2Color(float value) {
+    float clamped;
+    if (value <= 0.0F) clamped = 0.0F;
+    else if (value >= 1.0F) clamped = 1.0F;
+    else clamped = value;
+    return 255.0F * clamped;
 }
 
 static inline HSD_Tlut* HSD_TlutAlloc(void) {
@@ -481,7 +496,9 @@ static inline void TObjSetupTevModulateShadow(HSD_TObj* shadow)
         GX_TB_ZERO,     GX_ENABLE,     GX_TEVPREV,          GX_TEV_ADD,
         GX_CA_ZERO,     GX_CA_ZERO,    GX_CA_ZERO,          GX_CA_APREV,
         GX_CS_SCALE_1,  GX_TB_ZERO,    GX_ENABLE,           GX_TEVPREV,
-        GX_TC_LINEAR,
+        GX_TC_LINEAR, GX_TEV_SWAP0, GX_TEV_SWAP0,
+        (GXTevKColorSel) 0, (GXTevKAlphaSel) 0,
+        GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA,
     };
 
     for (; shadow && tobj_coord(shadow) == TEX_COORD_SHADOW;
@@ -503,7 +520,9 @@ static inline void SetupEmbossBumpTev(HSD_TObj* bump)
         GX_TB_ZERO,     GX_ENABLE,    GX_TEVPREV,          GX_TEV_SUB,
         GX_CA_ZERO,     GX_CA_ZERO,   GX_CA_ZERO,          GX_CA_APREV,
         GX_CS_SCALE_1,  GX_TB_ZERO,   GX_ENABLE,           GX_TEVPREV,
-        GX_TC_LINEAR,
+        GX_TC_LINEAR, GX_TEV_SWAP0, GX_TEV_SWAP0,
+        (GXTevKColorSel) 0, (GXTevKAlphaSel) 0,
+        GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA,
     };
 
     tevdesc.stage = HSD_StateAssignTev();
@@ -523,11 +542,9 @@ static inline void SetupEmbossBumpTev(HSD_TObj* bump)
 
 static inline int DifferentTluts(HSD_Tlut* t0, HSD_Tlut* t1)
 {
-    return
-#ifdef MUST_MATCH
-        (t0->lut != t0->lut) ||
-#endif
-        (t0->n_entries != t1->n_entries);
+    int different = 1;
+    if (t0->n_entries == t1->n_entries) different = 0;
+    return different;
 }
 
 static inline GXTexGenSrc HSD_TexCoordID2TexGenSrc(GXTexCoordID coord)
@@ -690,40 +707,40 @@ static void TObjUpdateFunc(void* obj, enum_t type, HSD_ObjData* val)
         if (tobj->lod) ((HSD_TexLODDesc*)tobj->lod)->LODBias = val->fv;
         break;
     case HSD_A_T_KONST_R:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.r = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.r = Float2Color(val->fv);
         break;
     case HSD_A_T_KONST_G:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.g = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.g = Float2Color(val->fv);
         break;
     case HSD_A_T_KONST_B:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.b = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.b = Float2Color(val->fv);
         break;
     case HSD_A_T_KONST_A:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.a = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->konst.a = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV0_R:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.r = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.r = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV0_G:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.g = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.g = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV0_B:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.b = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.b = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV0_A:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.a = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev0.a = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV1_R:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.r = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.r = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV1_G:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.g = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.g = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV1_B:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.b = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.b = Float2Color(val->fv);
         break;
     case HSD_A_T_TEV1_A:
-        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.a = (u8) (clamp_unit(val->fv) * 255.0F);
+        if (TOBJ_EXT(tobj)->tev) TOBJ_EXT(tobj)->tev->tev1.a = Float2Color(val->fv);
         break;
     case HSD_A_T_TS_BLEND:
         tobj->blending = clamp_unit(val->fv);
@@ -890,6 +907,7 @@ static void TObjSetupMtx(HSD_TObj* tobj)
         case 2:
             C_MTXLightFrustum(projection,cobj->projection_param[0],cobj->projection_param[1],cobj->projection_param[2],cobj->projection_param[3],cobj->near,0.5F,-0.5F,0.5F,0.5F);
             break;
+        case 3:
         default:
             C_MTXLightOrtho(projection,cobj->projection_param[0],cobj->projection_param[1],cobj->projection_param[2],cobj->projection_param[3],0.5F,-0.5F,0.5F,0.5F);
             break;
@@ -902,7 +920,7 @@ static void TObjSetupMtx(HSD_TObj* tobj)
         HSD_Mtx mtx;
         mtx[0][0]=1.0F; mtx[0][1]=0.0F; mtx[0][2]=0.0F; mtx[0][3]=0.0F;
         mtx[1][0]=0.0F; mtx[1][1]=1.0F; mtx[1][2]=0.0F; mtx[1][3]=0.0F;
-        mtx[2][0]=0.0F; mtx[2][1]=0.0F; mtx[2][2]=1.0F; mtx[2][3]=0.0F;
+        mtx[2][2]=0.0F; mtx[2][1]=0.0F; mtx[2][0]=0.0F; mtx[2][3]=1.0F;
         GXLoadTexMtxImm(mtx,tobj->mtxid,GX_MTX3x4);
         break;
     }
@@ -916,7 +934,7 @@ static void TObjSetupMtx(HSD_TObj* tobj)
             float (*vmtx)[4];
 
             cobj = HSD_CObjGetCurrent();
-            HSD_ASSERT(0x2A8, cobj);
+            HSD_ASSERT(0x30D, cobj);
             vmtx = HSD_CObjGetViewingMtxPtrDirect(cobj);
             HSD_LObjGetLightVector(lobj, &ldir);
             PSMTXMultVecSR(vmtx, &ldir, &ldir);
@@ -1213,7 +1231,7 @@ static void MakeColorGenTExp(u32 lightmap, HSD_TObj* tobj, HSD_TExp** c,
                 exp[i] = tmp;
                 break;
             default:
-                HSD_ASSERT(0x4A7, 0);
+                HSD_ASSERT(0x52A, 0);
                 break;
             }
         }
@@ -1281,7 +1299,7 @@ static void MakeColorGenTExp(u32 lightmap, HSD_TObj* tobj, HSD_TExp** c,
                 exp[i] = tmp;
                 break;
             default:
-                HSD_ASSERT(0x4F0, 0);
+                HSD_ASSERT(0x573, 0);
                 break;
             }
         }
@@ -1302,7 +1320,7 @@ static void TObjMakeTExp(HSD_TObj* tobj, u32 lightmap, u32 lightmap_done,
     HSD_TExp *e0, *e1;
     HSD_TExp *c_src, *a_src;
     HSD_TEInput c_sel, a_sel;
-    int repeat = !!(lightmap_done & tobj_lightmap(tobj));
+    int repeat = (lightmap_done & tobj_lightmap(tobj)) != 0;
 
     c_src = HSD_TEXP_TEX;
     c_sel = HSD_TE_RGB;
@@ -1546,7 +1564,7 @@ void HSD_TObjSetup(HSD_TObj* tobj)
         lod = tobj->lod != NULL ? tobj->lod : &default_lod;
         min_filter = lod->minFilt;
 
-        switch (imagedesc->format) {
+        switch ((GXTexFmt)imagedesc->format) {
         case GX_TF_C4:
         case GX_TF_C8:
         case GX_TF_C14X2: {
@@ -1568,7 +1586,7 @@ void HSD_TObjSetup(HSD_TObj* tobj)
             if (i < nb_tluts) {
                 tlut->tlut_name = tluts[i]->tlut_name;
             } else if (nb_tluts < 8) {
-                if (tlut->n_entries >= 256) {
+                if (tlut->n_entries > 256) {
                     tlut->tlut_name = big_tlut_name++;
                 } else {
                     tlut->tlut_name = tlut_name++;
