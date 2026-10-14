@@ -577,33 +577,6 @@ void HSD_JObjCheckDepend(HSD_JObj* jobj)
         return;
     }
 
-    switch (HSD_JObjMtxIsDirty(jobj)) {
-    case false:
-        if ((jobj->flags & JOBJ_USER_DEF_MTX)) {
-            if (!(jobj->flags & JOBJ_MTX_INDEP_PARENT) &&
-                jobj->parent != NULL && HSD_JObjMtxIsDirty(jobj->parent))
-            {
-                jobj->flags |= JOBJ_MTX_DIRTY;
-            }
-        } else if ((jobj->parent != NULL &&
-                    (jobj->parent->flags & JOBJ_MTX_DIRTY)) ||
-                   (jobj->flags & JOBJ_EFFECTOR) == JOBJ_JOINT1 ||
-                   (jobj->flags & JOBJ_EFFECTOR) == JOBJ_JOINT2 ||
-                   (jobj->flags & JOBJ_EFFECTOR) == JOBJ_EFFECTOR ||
-                   jobj->robj != NULL)
-        {
-            jobj->flags |= JOBJ_MTX_DIRTY;
-        }
-        break;
-    }
-}
-
-static inline void checkDependForAnim(HSD_JObj* jobj)
-{
-    if (jobj == NULL) {
-        return;
-    }
-
     if (!HSD_JObjMtxIsDirty(jobj)) {
         if ((jobj->flags & JOBJ_USER_DEF_MTX)) {
             if (!(jobj->flags & JOBJ_MTX_INDEP_PARENT) &&
@@ -1024,7 +997,7 @@ static void JObjUpdateFunc(void* obj, enum_t type, HSD_ObjData* val)
 void HSD_JObjAnim(HSD_JObj* jobj)
 {
     if (jobj != NULL) {
-        checkDependForAnim(jobj);
+        HSD_JObjCheckDepend(jobj);
         HSD_AObjInterpretAnim(jobj->aobj, jobj, HSD_JOBJ_METHOD(jobj)->update);
         HSD_RObjAnimAll(jobj->robj);
         if (union_type_dobj(jobj)) {

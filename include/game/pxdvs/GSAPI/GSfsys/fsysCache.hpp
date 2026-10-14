@@ -10,7 +10,7 @@ struct GSfsysCache {
 typedef char GSfsysCacheSizeCheck[sizeof(GSfsysCache) == 0x24 ? 1 : -1];
 extern "C" {
 u8 _fsysCheckCache(u32, u32);
-void _fsysIncCacheUniqueGroupID();
+u32 _fsysIncCacheUniqueGroupID();
 s32 _fsysInitCache(u32, u32);
 s32 _fsysGetFreeCacheHeapSize();
 void _fsysFreeCacheFromHeap(void*, u32);

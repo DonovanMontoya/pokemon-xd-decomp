@@ -53,7 +53,9 @@ struct FightOutPokemon {
     u8 abicntNimbleness; // 0x7b4
     u8 abicntAverage; // 0x7b5
     u8 abicntAvoid; // 0x7b6
-    u8 reserved7b7[0x5];
+    u8 reserved7b7;
+    u16 hensinMotoPkxId; // 0x7b8
+    u16 reserved7ba;
     u16 fightoutTurnCount; // 0x7bc
     s16 meetEnemyFightPokemonEntryId[12]; // 0x7be
     u8 reserved7d6[0x2];

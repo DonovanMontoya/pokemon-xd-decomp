@@ -39,7 +39,7 @@ static void _fsysARQCallbackRead(u32);
 }
 extern "C" {
 u8 _fsysCheckCache(u32 group, u32 identifier) { return _fsysGetCacheManage(group, identifier) != 0; }
-void _fsysIncCacheUniqueGroupID() { ++_fsysCACHEuniqueGroupID; }
+u32 _fsysIncCacheUniqueGroupID() { return _fsysCACHEuniqueGroupID++; }
 s32 _fsysInitCache(u32 cacheSize, u32 entryCount) {
     _fsysCACHEManageRoot = 0;
     _fsysCACHEManageIndex = 0;

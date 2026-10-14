@@ -1,41 +1,28 @@
-extern "C" {
-typedef unsigned int (*HashIndexCallback)(void *, void *);
-typedef int (*HashCompareCallback)(void *, void *, void *);
+#include <game/maximum/GSAPI/baselib/hash.h>
 
-struct HashMethods {
-    void *unused[15];
-    HashIndexCallback index;
-    HashCompareCallback compare;
-};
+extern void __assert(const char*, int, const char*);
 
-struct Hash {
-    HashMethods *methods;
-    struct HashNode **buckets;
-    unsigned int table_size;
-};
-
-struct HashNode {
-    HashNode *next;
-    void *key;
-    void *data;
-};
-
-extern void __assert(const char *, int, const char *);
-
-void *HSD_HashSearch(Hash *hash, void *key, int *success) {
-    unsigned int index = hash->methods->index(hash, key);
-    HashNode *node;
+void* HSD_HashSearch(HSD_Hash* hash, void* key, int* success)
+{
+    unsigned int index = hash->class_info->getidx(hash, key);
+    HSD_HashEntry* entry;
 
     if (index >= hash->table_size) {
-        __assert("hash.c", 113, "idx < hash->table_size");
+        __assert("hash.c", 0x71, "idx < hash->table_size");
     }
-    node = hash->buckets[index];
-    while (node != 0 && hash->methods->compare(hash, node->key, key)) {
-        node = node->next;
+    entry = hash->table[index];
+    if (entry == 0) {
+        entry = 0;
+    } else {
+        while (hash->class_info->keycheck(hash, entry->key, key) != 0) {
+            entry = entry->next;
+            if (entry == 0) {
+                break;
+            }
+        }
     }
     if (success != 0) {
-        *success = node != 0;
+        *success = entry != 0;
     }
-    return node != 0 ? node->data : 0;
-}
+    return entry != 0 ? entry->value : 0;
 }

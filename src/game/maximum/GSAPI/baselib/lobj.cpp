@@ -30,7 +30,7 @@ HSD_SList* HSD_SListPrepend(HSD_SList*,void*); HSD_SList* HSD_SListRemove(HSD_SL
 typedef char LObjRuntimeSizeCheck[sizeof(HSD_LObjRuntime)==0xD4?1:-1];
 typedef char LObjPrefixSizeCheck[sizeof(HSD_LObj)==0x4C?1:-1];
 typedef char LObjInfoSizeCheck[sizeof(HSD_LObjInfo)==0x44?1:-1];
-static inline float clamp_unit(float v) { return v <= 0.0F ? 0.0F : v >= 1.0F ? 1.0F : v; }
+static inline float clamp_unit(float v) { if (v <= 0.0F) return 0.0F; if (v >= 1.0F) return 1.0F; return v; }
 static inline u32 HSD_LObjGetType(HSD_LObj* lobj);
 static inline void HSD_LObjSetActive(HSD_LObj* lobj);
 static inline void HSD_LObjClearActive(void);
@@ -680,8 +680,8 @@ void HSD_LObjSetColor(HSD_LObj* lobj, GXColor color)
 
 HSD_LObj* HSD_LObjGetCurrentByType(u16 flags)
 {
-    HSD_SList* cur = current_lights;
     u32 type = flags & LOBJ_TYPE_MASK;
+    HSD_SList* cur = current_lights;
     while (cur != NULL) {
         HSD_LObj* lobj = cur->data;
         if (type == (lobj->flags & LOBJ_TYPE_MASK)) {
@@ -993,16 +993,16 @@ static void LObjUpdateFunc(void* obj, enum_t type, HSD_ObjData* val)
         }
         break;
     case HSD_A_L_LITC_R:
-        LOBJ_EXT(lobj)->color.r = clamp_unit(val->fv) * 255.0F;
+        { float v = clamp_unit(val->fv); LOBJ_EXT(lobj)->color.r = 255.0F * v; }
         break;
     case HSD_A_L_LITC_G:
-        LOBJ_EXT(lobj)->color.g = clamp_unit(val->fv) * 255.0F;
+        { float v = clamp_unit(val->fv); LOBJ_EXT(lobj)->color.g = 255.0F * v; }
         break;
     case HSD_A_L_LITC_B:
-        LOBJ_EXT(lobj)->color.b = clamp_unit(val->fv) * 255.0F;
+        { float v = clamp_unit(val->fv); LOBJ_EXT(lobj)->color.b = 255.0F * v; }
         break;
     case HSD_A_L_LITC_A:
-        LOBJ_EXT(lobj)->color.a = clamp_unit(val->fv) * 255.0F;
+        { float v = clamp_unit(val->fv); LOBJ_EXT(lobj)->color.a = 255.0F * v; }
         break;
     }
 }
