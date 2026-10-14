@@ -88,12 +88,16 @@ static const char* _dbgMenuFlagInfoGetMsg(s32 index);
 static s8 _dbgMenuFlagGetMenuNum(void* window, s32* width);
 
 void dbgMenuFlagInfoDraw(DbgMenuWindow* window) {
-    s32 y;
+    u8 dispMax;
     s32 height;
-    u8 dispMax = menuDataBiosGetDispMax(window->menu);
-    s32 count = flag_data_number->count;
+    s32 count;
+    s32 y;
     s32 i;
     u32 color;
+
+    y = 0x28;
+    dispMax = menuDataBiosGetDispMax(window->menu);
+    count = flag_data_number->count;
 
     if (count > dispMax) {
         count = dispMax;
@@ -106,7 +110,6 @@ void dbgMenuFlagInfoDraw(DbgMenuWindow* window) {
     if ((u32)(flag_data_number->count - _dbgMenuFlagCursor.base) > dispMax) {
         menuSubDrawTriangle(window->layer, 0x46, height + 0x2F, 0x5A, height + 0x2F, 0x50, height + 0x39);
     }
-    y = 0x28;
     for (i = 0; i < count; i++) {
         if (_dbgMenuFlagCursor.sel == i) {
             color = 0xFF0000FF;
@@ -239,7 +242,7 @@ void dbgMenuFlagCursor(DbgMenuWindow* window) {
 s32 dbgMenuFlagCheck(void) {
     s32 value;
     s32 result;
-    s32 selected;
+    u32 selected;
     s32 i;
 
     if (GSfloorIsFloorPushed()) {

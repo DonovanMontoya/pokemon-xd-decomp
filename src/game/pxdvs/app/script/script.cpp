@@ -877,11 +877,13 @@ void scriptStoreTemochiPokemon(u32 hero) {
 }
 
 u16 scriptGetEarthRibbon() {
-    u32 count = 0;
-    u32 hero = savedataGetStatus(0, 2);
+    u32 hero;
+    Pokemon* pokemon;
     u16 i;
+    u32 count = 0;
+    hero = savedataGetStatus(0, 2);
     for (i = 0; i < 6; ++i) {
-        Pokemon* pokemon = heroBiosGetPokemonPtr(hero, i);
+        pokemon = heroBiosGetPokemonPtr(hero, i);
         if (pokemonCheckValid(pokemon)) {
             exribbonSetEarthRibbon(pokemon);
             ++count;
@@ -890,7 +892,7 @@ u16 scriptGetEarthRibbon() {
     return count;
 }
 
-s32 scriptCatchPokemon(u8 kind) {
+s16 scriptCatchPokemon(u8 kind) {
     Hero* hero = (Hero*)savedataGetStatus(0, 2);
     switch (kind) {
     case 1: return heroPokemonGetBlacky(hero, 0x259);
@@ -1042,35 +1044,40 @@ u32 scriptGetPokemonNickName(s32 index) {
 }
 
 u16 scriptGetDarkPointZeroPokemonNum() {
-    u32 count = 0;
-    u32 hero = savedataGetStatus(0, 2);
+    u32 hero;
+    Pokemon* pokemon;
     u16 i;
+    u32 count = 0;
+    hero = savedataGetStatus(0, 2);
     for (i = 0; i < 6; ++i) {
-        Pokemon* pokemon = heroBiosGetPokemonPtr(hero, i);
+        pokemon = heroBiosGetPokemonPtr(hero, i);
         if (pokemonCheckValid(pokemon) && pokemonBiosGetDarkFlag(pokemon) && pokemonGetDp(pokemon) == 0.0f) ++count;
     }
     return count;
 }
 
 u16 scriptGetDarkPokemonNum() {
-    u32 count = 0;
-    u32 hero = savedataGetStatus(0, 2);
+    u32 hero;
+    Pokemon* pokemon;
     u16 i;
+    u32 count = 0;
+    hero = savedataGetStatus(0, 2);
     for (i = 0; i < 6; ++i) {
-        Pokemon* pokemon = heroBiosGetPokemonPtr(hero, i);
+        pokemon = heroBiosGetPokemonPtr(hero, i);
         if (pokemonCheckValid(pokemon) && pokemonBiosGetDarkFlag(pokemon)) ++count;
     }
     return count;
 }
 
 u16 scriptGetPokemonNum() {
-    u16 count = 0;
-    u32 hero = savedataGetStatus(0, 2);
+    u32 hero;
     u16 i;
+    u16 count = 0;
+    hero = savedataGetStatus(0, 2);
     for (i = 0; i < 6; ++i) {
         if (pokemonCheckValid(heroBiosGetPokemonPtr(hero, i))) ++count;
     }
-    return count;
+    return (u32)count;
 }
 
 s32 scriptFloorCharSetPos(f32 x, f32 y, f32 z) {

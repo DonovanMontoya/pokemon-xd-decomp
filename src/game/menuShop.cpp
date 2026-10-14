@@ -457,10 +457,12 @@ s32 menuShopNumDrawBuyNum(ShopWindow *win, ShopSprite *spr) {
 
 s32 menuShopNumDrawCursor(ShopWindow *win, ShopSprite *spr) {
     s16 sel = win->selected;
+    s32 target;
     if (sel < 0 || sel >= 2) {
         return 0;
     }
-    if (spr->id == NumWinItem[sel][1]) {
+    target = NumWinItem[sel][1];
+    if (target == spr->id) {
         spr->alpha = 0xFF;
     } else {
         spr->alpha = 0;
@@ -1043,16 +1045,14 @@ static void couponExchangeMain__FiUc(s32 shop, u8 mode) {
     VPC_BOX *boxp;
     u8 m;
     s32 ok;
-    s32 done;
     s32 min;
     u16 item;
     s32 max;
     s32 point;
     s32 num;
     s32 cost;
-    s32 answer;
-    boxp = &arg.vpc;
-    m = mode;
+    s8 answer;
+    s32 done;
     done = 0;
     switch (mode) {
     case 2:
@@ -1070,6 +1070,8 @@ static void couponExchangeMain__FiUc(s32 shop, u8 mode) {
                 return;
             }
         }
+        boxp = &arg.vpc;
+        m = mode;
         while (done == 0) {
             for (;;) {
                 item = selectItem__FiUcUcP13SHOP_MENU_ARG(shop, mode, 0, &arg);
@@ -1351,14 +1353,11 @@ static s32 _getIsBattleDiskShopAllSelWithAllSellOutYet__Fv(void) {
     level = _getBattleDiskShopLevel__Fv();
     if (level == 0 || level == 1) {
         base = level * 3;
-        i = 0;
-        do {
+        for (i = 0; i < 3; base++, i++) {
             if (savedataGetBattleDiskSellOut(base) == 0) {
                 return 0;
             }
-            base++;
-            i++;
-        } while (i < 3);
+        }
         return 1;
     }
     return 0;

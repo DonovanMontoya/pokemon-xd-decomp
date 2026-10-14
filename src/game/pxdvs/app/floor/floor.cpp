@@ -1299,7 +1299,8 @@ void floorInitMap(u32 group, u32 mapRes) {
                     }
                 }
             }
-            void *cam = GSresGetResource(group, floorReadMakeCameraResID(mapRes));
+            u32 camID = floorReadMakeCameraResID(mapRes);
+            void *cam = GSresGetResource(group, camID);
             if (cam != 0) cameraSetGScamera(cam);
             GSfloor_dd_ *fd = floorDataBiosGetPtr(floorGetCurrent());
             if (fd != 0) {
