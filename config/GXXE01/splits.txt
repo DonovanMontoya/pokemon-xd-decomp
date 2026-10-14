@@ -729,7 +729,7 @@ dolphin/base/PPCArch.c:
 dolphin/os/OS.c:
 	.text       start:0x800A96AC end:0x800AA178
 	.data       start:0x803D0818 end:0x803D0A10
-	.bss        start:0x8043D6C0 end:0x8043D730
+	.bss        start:0x8043D6C0 end:0x8043D730 align:32
 	.sdata      start:0x804E8100 end:0x804E8110
 	.sbss       start:0x804EAAB0 end:0x804EAAE8
 
@@ -1159,7 +1159,7 @@ runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c:
 	.bss        start:0x804413C8 end:0x80441948
 
 runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Export/targsupp.s:
-	.text       start:0x800D8080 end:0x800D80A0
+	.text       start:0x800D8080 end:0x800D80A0 align:16
 
 runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c:
 	.text       start:0x800D80A0 end:0x800D8410
