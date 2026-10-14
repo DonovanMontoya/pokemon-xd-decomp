@@ -403,6 +403,13 @@ int HSD_ViewingRectCheck(HSD_ViewingRect* rect)
     return !rect->invalid && rect->top > rect->bottom && rect->right > rect->left;
 }
 
+/* Stripped from the DOL; its assertion string still occupies .rodata. */
+void HSD_ViewingRectScale(HSD_ViewingRect* rect, float a)
+{
+    HSD_ASSERT(860, a > 0.0F);
+    rect->top *= a;
+}
+
 void HSD_ViewingRectAddRect(HSD_ViewingRect* rect, Vec3* position, float top,
                             float bottom, float left, float right)
 {

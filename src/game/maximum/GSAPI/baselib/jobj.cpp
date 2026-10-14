@@ -71,6 +71,7 @@ typedef unsigned int u32; typedef float f32; typedef int s32; typedef int bool; 
 #define false 0
 #define true 1
 void HSD_Panic(const char*, int, const char*);
+int hsdIsDescendantOf(void*, void*);
 void* memcpy(void*, const void*, unsigned long);
 void* memset(void*, int, unsigned long);
 #define HSD_ASSERT(line, cond) do { if (!(cond)) __assert(FILE_NAME, line, #cond); } while (0)
@@ -79,6 +80,9 @@ typedef HSD_Vec3 Vec3;
 typedef struct HSD_MatAnimJoint { struct HSD_MatAnimJoint *child, *next; HSD_MatAnim* matanim; } HSD_MatAnimJoint;
 typedef struct HSD_ShapeAnimJoint { struct HSD_ShapeAnimJoint *child, *next; HSD_ShapeAnimDObj* shapeanimdobj; } HSD_ShapeAnimJoint;
 typedef void (*HSD_JObjWalkTreeCallback)(HSD_JObj*, float**, unsigned int);
+#define JOBJ_SKELETON (1 << 0)
+#define JOBJ_SKELETON_ROOT (1 << 1)
+#define JOBJ_ENVELOPE_MODEL (1 << 2)
 #define JOBJ_CLASSICAL_SCALE (1 << 3)
 #define JOBJ_MTX_DIRTY (1 << 6)
 #define JOBJ_JOINT1 (1 << 21)
@@ -1068,6 +1072,14 @@ void HSD_JObjDispAll(HSD_JObj* jobj, HSD_Mtx view, unsigned int flags, unsigned 
     }
 }
 
+void HSD_JObjSetDefaultClass(HSD_ClassInfo* info)
+{
+    if (info != NULL) {
+        HSD_ASSERT(933, hsdIsDescendantOf(info, &hsdJObj));
+    }
+    default_class = info;
+}
+
 static s32 JObjLoad(HSD_JObj* jobj, HSD_Joint* joint, HSD_JObj* parent)
 {
     jobj->child = NULL;
@@ -1128,6 +1140,13 @@ static inline void ref_INC(HSD_JObj* o)
     ++o->object.ref_count;
     if (o->object.ref_count == 0xffff)
         __assert("object.h", 93, "HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF");
+}
+
+/* Stripped from the DOL; its strings still occupy .rodata. */
+void HSD_JObjSetRoot(HSD_JObj* jobj_root)
+{
+    HSD_ASSERT(1023, jobj_root);
+    HSD_ASSERT(1024, jobj_root == NULL);
 }
 
 void HSD_JObjResolveRefs(HSD_JObj* jobj, HSD_Joint* joint)
@@ -1347,6 +1366,30 @@ static inline void HSD_JObjSetMtxDirty(HSD_JObj* jobj)
         case false: HSD_JObjSetMtxDirtySub(jobj); break;
         }
     }
+}
+
+/* Stripped from the DOL; its strings still occupy .rodata. */
+void HSD_JObjDumpStat(HSD_JObj* jobj, int depth, int index)
+{
+    OSReport("jobj[%d,%d]", depth, index);
+    if (jobj->flags & JOBJ_SKELETON_ROOT) {
+        OSReport("SKELETON_ROOT ");
+    }
+    if (jobj->flags & JOBJ_SKELETON) {
+        OSReport("SKELETON ");
+    }
+    if (jobj->flags & JOBJ_ENVELOPE_MODEL) {
+        OSReport("ENVELOPE_MODEL ");
+    }
+    if ((jobj->flags & JOBJ_EFFECTOR) == JOBJ_EFFECTOR) {
+        OSReport("EFFECTOR ");
+    }
+    OSReport("  rot(L): ");
+    OSReport("  sca(L): ");
+    OSReport("  tra(L): ");
+    OSReport("  rot(G): ");
+    OSReport("  sca(G): ");
+    OSReport("  tra(G): ");
 }
 
 HSD_JObj* HSD_JObjAlloc(void)

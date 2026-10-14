@@ -638,7 +638,7 @@ void peopleMoveNeckTarget(u32 group, u32 resource, u32 targetGroup, u32 targetRe
         if (rate > 0.0f) {
             f32 step = 0.07853982f * rate;
             work->neckMaxStep = step;
-            work->neckMinStep = step * 0.5f;
+            work->neckMinStep = step / 2.0f;
             return;
         }
         work->neckMaxStep = 3.1415927f;
@@ -659,7 +659,7 @@ void peopleMoveNeckTargetXYZ(u32 group, u32 resource, s32 x, s32 y, s32 z, f32 r
         if (rate > 0.0f) {
             f32 step = 0.07853982f * rate;
             work->neckMaxStep = step;
-            work->neckMinStep = step * 0.5f;
+            work->neckMinStep = step / 2.0f;
         } else {
             work->neckMaxStep = 3.1415927f;
             work->neckMinStep = 3.1415927f;
@@ -678,7 +678,7 @@ void peopleRemoveNeckTarget(u32 group, u32 resource, f32 rate) {
         if (rate > 0.0f) {
             f32 step = 0.07853982f * rate;
             work->neckMaxStep = step;
-            work->neckMinStep = step * 0.5f;
+            work->neckMinStep = step / 2.0f;
             work->neckInstant = 0;
             return;
         }

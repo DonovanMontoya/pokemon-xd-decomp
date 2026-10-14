@@ -1087,15 +1087,13 @@ static void TExp2TevDesc(HSD_TExp* texp, HSD_TExpTevDesc* desc,
 
 static void HSD_TExpSetReg(HSD_TExp* texp)
 {
-    static GXTevKColorID id1[4] = { GX_KCOLOR0, GX_KCOLOR1, GX_KCOLOR2, GX_KCOLOR3 };
-    static GXTevRegID id2[3] = { GX_TEVREG0, GX_TEVREG1, GX_TEVREG2 };
     int i;
     GXColor reg[8];
     u32 changed;
     HSD_TECnst* clist;
 
-    clist = &texp->cnst;
     changed = 0;
+    clist = &texp->cnst;
 
     while (clist != 0) {
         if (!(clist->type == HSD_TE_CNST)) __assert("texp.c", 1453, "clist->type == HSD_TE_CNST");
@@ -1203,14 +1201,20 @@ static void HSD_TExpSetReg(HSD_TExp* texp)
     }
     if (changed != 0) {
         GXPixModeSync();
-        for (i = 0; i < 4; i++) {
-            if (changed & (1 << i)) {
-                GXSetTevKColor(id1[i], reg[i]);
+        {
+            static GXTevKColorID id[4] = { GX_KCOLOR0, GX_KCOLOR1, GX_KCOLOR2, GX_KCOLOR3 };
+            for (i = 0; i < 4; i++) {
+                if (changed & (1 << i)) {
+                    GXSetTevKColor(id[i], reg[i]);
+                }
             }
         }
-        for (i = 4; i < 7; i++) {
-            if (changed & (1 << i)) {
-                GXSetTevColor(id2[i - 4], reg[i]);
+        {
+            static GXTevRegID id[3] = { GX_TEVREG0, GX_TEVREG1, GX_TEVREG2 };
+            for (i = 4; i < 7; i++) {
+                if (changed & (1 << i)) {
+                    GXSetTevColor(id[i - 4], reg[i]);
+                }
             }
         }
         HSD_StateInvalidate(0x10);

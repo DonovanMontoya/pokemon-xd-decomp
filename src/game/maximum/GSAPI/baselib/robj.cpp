@@ -3,6 +3,8 @@
 #include "game/maximum/GSAPI/baselib/jobj.h"
 #include "game/maximum/GSAPI/baselib/bytecode.h"
 #include "game/maximum/GSAPI/baselib/math_support.h"
+#include "game/maximum/GSAPI/baselib/quatlib.h"
+#include "game/maximum/GSAPI/baselib/class.h"
 #define HSD_ASSERT_STRING(line, condition, label) do { if (!(condition)) __assert("robj.c", line, label); } while (0)
 #define HSD_ASSERT(line, condition) HSD_ASSERT_STRING(line, condition, #condition)
 #ifdef __cplusplus
@@ -76,7 +78,7 @@ static inline void HSD_RvalueRemoveAll(HSD_Rvalue* rvalue);
 static HSD_Rvalue* loadRvalue(HSD_RvalueList* list);
 static void expLoadDesc(HSD_Exp* exp, HSD_ExpDesc* desc);
 static void bcexpLoadDesc(HSD_Exp* exp, HSD_ByteCodeExpDesc* desc);
-static inline void HSD_RvalueResolveRefs(HSD_Rvalue* rvalue, HSD_RvalueList* list);
+void HSD_RvalueResolveRefs(HSD_Rvalue* rvalue, HSD_RvalueList* list);
 static inline void HSD_RvalueResolveRefsAll(HSD_Rvalue* rvalue, HSD_RvalueList* list);
 void _HSD_RObjForgetMemory(void* low, void* high);
 float* HSD_SetExpArgBuffer(float* ptr, unsigned int nitems);
@@ -285,16 +287,6 @@ static inline void HSD_RvalueRemoveAll(HSD_Rvalue* rvalue)
     for (; rvalue != 0; rvalue = next) {
         next = rvalue->next;
         HSD_RvalueRemove(rvalue);
-    }
-}
-
-static inline void HSD_RvalueResolveRefs(HSD_Rvalue* rvalue, HSD_RvalueList* list)
-{
-    if (rvalue != 0 && list != 0) {
-        HSD_JObjUnrefThis(rvalue->jobj);
-        rvalue->jobj = (HSD_JObj*)HSD_IDGetDataFromTable(0, (HSD_IDKey) list->joint, 0);
-        HSD_ASSERT(1266, rvalue->jobj);
-        HSD_JObjRefThis(rvalue->jobj);
     }
 }
 
@@ -756,7 +748,7 @@ static void expEvaluate(HSD_Exp* exp, unsigned int type, void* obj,
     int cur_bit;
     HSD_JObj* jobj;
     HSD_Vec3 scale;
-    HSD_Vec3 sp2C;
+    HSD_Quaternion sp2C;
     float temp_f31;
     HSD_ObjData sp1C;
 
@@ -822,15 +814,15 @@ static void expEvaluate(HSD_Exp* exp, unsigned int type, void* obj,
             case 0x800:
                 break;
             case 0x10000:
-                HSD_MtxGetRotation(jobj->mtx, &sp2C);
+                HSD_MtxGetRotation(jobj->mtx, (HSD_Vec3*)&sp2C);
                 *cur_arg++ = temp_f31 * sp2C.x;
                 break;
             case 0x20000:
-                HSD_MtxGetRotation(jobj->mtx, &sp2C);
+                HSD_MtxGetRotation(jobj->mtx, (HSD_Vec3*)&sp2C);
                 *cur_arg++ = temp_f31 * sp2C.y;
                 break;
             case 0x40000:
-                HSD_MtxGetRotation(jobj->mtx, &sp2C);
+                HSD_MtxGetRotation(jobj->mtx, (HSD_Vec3*)&sp2C);
                 *cur_arg++ = temp_f31 * sp2C.z;
                 break;
             case 0x100000:
@@ -927,3 +919,33 @@ void _HSD_RObjForgetMemory(void* low, void* high) {
 #ifdef __cplusplus
 }
 #endif
+
+/* Linker-stripped in the DOL; their pooled strings still lead .rodata. */
+void HSD_RvalueResolveRefs(HSD_Rvalue* rvalue, HSD_RvalueList* list)
+{
+    if (rvalue != 0 && list != 0) {
+        HSD_JObjUnrefThis(rvalue->jobj);
+        rvalue->jobj = (HSD_JObj*)HSD_IDGetDataFromTable(0, (HSD_IDKey) list->joint, 0);
+        HSD_ASSERT(1266, rvalue->jobj);
+        HSD_JObjRefThis(rvalue->jobj);
+    }
+}
+
+extern HSD_ClassInfo hsdJObj;
+
+void HSD_RObjSetConstraintObj(HSD_RObj* robj, void* o)
+{
+    if (robj != 0) {
+        if (ROBJ_U(robj).jobj != 0) {
+            HSD_JObjUnrefThis(ROBJ_U(robj).jobj);
+            ROBJ_U(robj).jobj = 0;
+        }
+        if (hsdIsDescendantOf(HSD_CLASS_METHOD(o), &hsdJObj)) {
+            ROBJ_U(robj).jobj = (HSD_JObj*)o;
+            HSD_JObjRefThis((HSD_JObj*)o);
+        } else {
+            OSReport("constraint only support jobj target.\n");
+            HSD_ASSERT(1309, 0);
+        }
+    }
+}
