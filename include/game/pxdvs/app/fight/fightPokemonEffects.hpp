@@ -5,12 +5,16 @@
 struct FightTrainer;
 struct WazaSequence;
 // Only the model tracking fields accessed by the battle effects are known.
-struct FightModelSequenceView {
-    u8 reserved00[0x61];
+struct ModelSequence {
+    u8 reserved00[8];
+    s32 type; // 0x8: model sequence when equal to 1
+    u8 reserved0c[0x55];
     u8 trackPokemon;
     u8 reserved62[0x16];
     void* trackedPokemonSequence;
+    void DoModelAnimation(int);
 };
+typedef ModelSequence FightModelSequenceView;
 
 extern "C" {
 void* fightTrainer_GetSequencePtr(FightTrainer*);
@@ -21,7 +25,7 @@ u32 fightOutPokemon_GetKanseiSndId(FightOutPokemon*);
 u32 pokemon_GetCatchBallId(Pokemon*);
 u32 itemBallDB_GetOpenWzxDataId(u8);
 u32 itemBallDB_GetOutWzxDataId(u8);
-void Sequence_LoadWaza(void*, u16, u32, void*);
+void Sequence_LoadWaza(void*, u16, u32, u8);
 WazaSequence* Sequence_GetWaza(void*, u16, u32);
 void Sequence_SetLookTarget(void*, void*);
 void WazaSequence_Start(WazaSequence*, u32);
@@ -52,5 +56,32 @@ void battleGridRestoreModelVisibilityFlags();
 void fightOutPokemonFreeSequence(FightOutPokemon*);
 void fightMenuFightOutPokemonCloseStatusMenu(FightOutPokemon*, u8, u32);
 void fightOutPokemonHokakuEffect(FightOutPokemon*, u8, u32, u8, u8*);
+u32 itemBallDB_GetDowninWzxDataId(u8);
+u32 itemBallDB_GetInWzxDataId(u8);
+FightTrainer* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(void*, FightOutPokemon*);
+u32 fightTrainerIsGcHero(FightTrainer*);
+u32 fightFloor_GetEncountDataId(void*);
+void wazaSequenceSysFreeAllWazaExcept(void*, WazaSequence*);
+void fightPokemonSetNonTrainerPokemonIsActiveFlag(u8);
+void fadeSet(u32, float);
+void fadeCheck(u32);
+void fightMainAllCamera(u32, u32);
+void* fightOutPokemonGetNamePtr(FightOutPokemon*);
+void fightMsgctrlSetValue(u32, void*);
+void fightMenuOpenMsg2(u32, u32);
+void fightMenuCloseMsg();
+extern u8 wildPokemonDownFlag;
+void WazaSequence_Stop(WazaSequence*);
+void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon*, u8, u32);
+void fightMenuFightOutPokemonCloseStatusMenuAnotherMine(s32, FightOutPokemon*, u8, u32, u32);
+void* fightOutPokemonGetGsmodelPtr(FightOutPokemon*);
+u32 GSmodelGetVisibility(void*);
+void GSmodelSetVisibility(void*, u32);
+void fightOutPokemonSetVisibility(FightOutPokemon*, u8);
+void fightMainWaitFrame(u32);
+void fightOutPokemonKizetuEffect(FightOutPokemon*, u8);
+void fightOutPokemonDarkPokemonEffect(FightOutPokemon*, u8, u8, u8);
+void fightOutPokemonModosuEffect(FightOutPokemon*, u8);
+void fightOutPokemonDamageEffect(FightOutPokemon*);
 }
 #endif

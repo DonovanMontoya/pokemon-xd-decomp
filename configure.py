@@ -253,6 +253,24 @@ cflags_msl += [
     "-i include/PowerPC_EABI_Support/Runtime/Inc",
 ]
 
+# Input handling uses the original unoptimized recipe and MSL math inlines.
+cflags_xd_input = [
+    *cflags_runtime,
+    "-O0",
+    "-opt peephole,schedule",
+    "-inline deferred,noauto",
+    "-DPLATFORM_GCN=1",
+    "-DMSL_INLINE=inline",
+    "-DMSL_USE_INLINES=1",
+    "-i include/PowerPC_EABI_Support/MSL_C/MSL_Common/Include",
+    "-i include/PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Include",
+]
+
+# Battle objects use balanced optimization, without inherited speed flags.
+cflags_xd_app_fight = [flag for flag in cflags_runtime
+                       if not flag.startswith(("-O", "-inline"))]
+cflags_xd_app_fight += ["-O4", "-inline noauto"]
+
 #pokemon object
 cflags_xd_app_pokemon = [
     *cflags_base,
@@ -920,19 +938,19 @@ config.libs = [
         "objects": [
             # GSmemman
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmemman/GSmemman.cpp", extra_cflags=["-O0", "-opt peephole,schedule", "-inline deferred,noauto"]),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/memOverride.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/OSAlloc.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmemman/memOverride.cpp", extra_cflags=["-O0", "-opt peephole,schedule", "-inline deferred,noauto"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/OSAlloc.cpp", extra_cflags=["-O0", "-opt peephole,schedule", "-inline deferred,noauto", "-str reuse,nopool,readonly"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmemman/sysdolmem.cpp", extra_cflags=["-O0", "-opt peephole,schedule", "-inline deferred,noauto"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmemman/poolAlloc.cpp", extra_cflags=["-O0", "-opt peephole,schedule", "-inline deferred,noauto"]),
 
-            Object(NonMatching, "game/pxdvs/GSAPI/GScamera/GScamera.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSlight/GSlight.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmaterial/GSmaterial.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScamera/GScamera.cpp", extra_cflags=["-inline auto,deferred", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSlight/GSlight.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmaterial/GSmaterial.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
 
             # GSmath
             Object(NonMatching, "game/pxdvs/GSAPI/GSmath/GSmtx.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmath/GSmtx44.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmath/GSquat.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSmtx44.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSquat.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmath/init.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmath/GSbezier.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSlerp.cpp"),
@@ -943,9 +961,9 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/effects.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/blend.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/bound.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/animation.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/GSmodel.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/GSmodelExt.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/animation.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/GSmodel.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/GSmodelExt.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/parse.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/part.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/save_state.cpp"),
@@ -956,7 +974,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSscratch/GSscratch.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GStexture/GStexture.cpp", extra_cflags=["-O4", "-inline deferred,auto"]),
             Object(NonMatching, "game/pxdvs/GSAPI/GSthread/GSthread.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSinput/GSinput.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSinput/GSinput.cpp", cflags=cflags_xd_input),
             Object(NonMatching, "game/pxdvs/GSAPI/GSres/GSres.cpp"),
 
             # GSmsg
@@ -1034,7 +1052,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSnetwork/GSnetwork.cpp"),
 
             # GSprim
-            Object(NonMatching, "game/pxdvs/GSAPI/GSprim/GSprim.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSprim/GSprim.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSprim/2d.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSprim/text.cpp"),
 
@@ -1253,23 +1271,23 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/fight/fightKind.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightTarget.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightType.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightWaza.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightWaza.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightWazaBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightEncount.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightEncountBios.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightFloor.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightFloor.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightFloorBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightFloorDB.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightSideBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightSide.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightSideDB.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightTrainer.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainer.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightTrainerBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightTrainerDB.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightTrainerEnemy.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightItemBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightItem.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightPokemon.cpp", extra_cflags=["-O4", "-inline noauto"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightPokemon.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightPokemonBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightPokemonEnemy.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightActionBios.cpp"),
@@ -1439,41 +1457,41 @@ config.libs = [
             Object(NonMatching, "game/maximum/GSAPI/particle/generator.cpp"),
 
             # hsdbase_gs
-            Object(NonMatching, "game/maximum/GSAPI/baselib/wobj.cpp"),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/wobj.cpp", extra_cflags=["-str reuse,nopool,readonly", "-inline auto,deferred"]),
             Object(NonMatching, "game/maximum/GSAPI/baselib/archive.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/bytecode.cpp"),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/bytecode.cpp", extra_cflags=['-lang c', '-str reuse,nopool,readonly']),
             Object(NonMatching, "game/maximum/GSAPI/baselib/class.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/cobj.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/debug.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/displayfunc.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/dobj.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/fobj.cpp"),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/dobj.cpp", extra_cflags=["-str reuse,nopool,readonly", "-inline auto,deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/fobj.cpp", extra_cflags=['-DMUST_MATCH', '-lang c', '-inline auto,deferred', '-str reuse,nopool,readonly']),
             Object(NonMatching, "game/maximum/GSAPI/baselib/fog.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/hash.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/id.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/initialize.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/jobj.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/jobj.cpp", extra_cflags=["-lang c", "-str reuse,nopool,readonly", "-inline auto,deferred"]),
             Object(NonMatching, "game/maximum/GSAPI/baselib/list.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/lobj.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/memory.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/mobj.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/mtx_base.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/mtx_base.cpp", extra_cflags=['-str reuse,nopool,readonly']),
             Object(NonMatching, "game/maximum/GSAPI/baselib/objalloc.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/object.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/pobj.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/quatlib.cpp"),
             Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/random.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/robj.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/robj.cpp", extra_cflags=["-str reuse,nopool,readonly", "-lang c", "-inline auto,deferred"]),
             Object(NonMatching, "game/maximum/GSAPI/baselib/shadow_base.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/spline.cpp"),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/spline.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/state.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/tev.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/texp.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/texp.cpp", extra_cflags=["-str reuse,nopool,readonly", "-lang c", "-inline auto,deferred"]),
             Object(NonMatching, "game/maximum/GSAPI/baselib/texpdag.cpp"),
             Object(NonMatching, "game/maximum/GSAPI/baselib/texpopt.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/tobj.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/util.cpp"),
-            Object(NonMatching, "game/maximum/GSAPI/baselib/aobj.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/tobj.cpp", extra_cflags=["-lang c", "-str reuse,nopool,readonly", "-inline auto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/util.cpp", extra_cflags=["-str reuse,nopool,readonly", "-lang c", "-inline auto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/aobj.cpp", extra_cflags=['-lang c', '-str reuse,nopool,readonly', '-inline auto,deferred', '-lang c++']),
         ]
     },
     {

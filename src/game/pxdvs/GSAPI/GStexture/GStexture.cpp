@@ -31,28 +31,42 @@ static inline s32 textureGetGXformat(const GStexture* texture, u8 direct) {
     default: return -1;
     }
 }
+static inline void textureCopyRow(const u16*& source, u16*& destination) {
+    destination[0] = source[0];
+    destination[1] = source[1];
+    destination[2] = source[2];
+    destination[3] = source[3];
+    source += 4;
+    destination += 4;
+}
+
 extern "C" {
 void GStextureConvertToHW(GStexture* texture) {
-    if ((texture->format == 0x44 || texture->format == 0x90) && !(texture->width & 2)) {
+    s32 format = texture->format;
+    if ((format == 0x44 || format == 0x90) && !(texture->width & 2)) {
         if (texture->height & 2) return;
+        s32 y = 0;
         ++texture->lockCount;
         u8* image = (u8*)texture->images[0];
-        for (s32 y = 0; y < texture->height; y += 4) {
+        while (y < texture->height) {
             u16* out = _texXformBuf;
+            s32 x = 0;
             s32 byteOffset = 0;
-            for (s32 x = 0; x < texture->width; x += 4) {
-                u16* row = (u16*)(image + y * texture->width * 2 + byteOffset);
+            u16 width;
+            while ((width = texture->width), x < width) {
+                x += 4;
+                const u16* row = (const u16*)(image + y * width * 2 + byteOffset);
                 byteOffset += 8;
-                out[0] = row[0]; out[1] = row[1]; out[2] = row[2]; out[3] = row[3];
-                row += texture->width;
-                out[4] = row[0]; out[5] = row[1]; out[6] = row[2]; out[7] = row[3];
-                row += texture->width;
-                out[8] = row[0]; out[9] = row[1]; out[10] = row[2]; out[11] = row[3];
-                row += texture->width;
-                out[12] = row[0]; out[13] = row[1]; out[14] = row[2]; out[15] = row[3];
-                out += 16;
+                textureCopyRow(row, out);
+                row = (const u16*)((const u8*)row + texture->width * 2 - 8);
+                textureCopyRow(row, out);
+                row = (const u16*)((const u8*)row + texture->width * 2 - 8);
+                textureCopyRow(row, out);
+                row = (const u16*)((const u8*)row + texture->width * 2 - 8);
+                textureCopyRow(row, out);
             }
-            memcpy(image + y * texture->width * 2, _texXformBuf, texture->width * 8);
+            memcpy(image + y * width * 2, _texXformBuf, width * 8);
+            y += 4;
         }
         DCStoreRange(texture->images[0], texture->imageSize);
         GXInvalidateTexAll();
@@ -239,7 +253,7 @@ static inline void textureInitHardware(GStexture* texture) {
     }
 }
 
-static inline void textureSetMipImages(GStexture* texture, u32 imageBytes) {
+static inline void textureSetMipImages(GStexture* texture, u32 imageBytes, s32 tlutFormat) {
     for (s32 i = 1; i < 8; ++i) {
         if (i < texture->mipCount) {
             texture->images[i] = (u8*)texture->images[i - 1] + imageBytes;
@@ -248,10 +262,12 @@ static inline void textureSetMipImages(GStexture* texture, u32 imageBytes) {
             texture->images[i] = 0;
         }
     }
-    if (texture->tlutFormat > 0 && texture->tlutFormat < 4) {
+    switch (tlutFormat) {
+    case 1: case 2: case 3: {
         texture->palette = (u8*)texture->images[texture->mipCount - 1] + imageBytes;
-    } else {
-        texture->palette = 0;
+        break;
+    }
+    default: texture->palette = 0; break;
     }
 }
 
@@ -294,10 +310,13 @@ extern "C" s32 GStextureCreateFromMemory(GStexture* texture, u16 width, u16 heig
         size >>= 1;
     }
     if (entries) {
-        if (tlutFormat == 0 || tlutFormat < 0 || tlutFormat >= 4) return 0;
-        texture->imageSize += (entries * 16) >> 3;
+        if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
+            texture->imageSize += (entries * 16) >> 3;
+        } else {
+            return 0;
+        }
     }
-    textureSetMipImages(texture, (u32)(texture->bitsPerPixel * pixelCount) >> 3);
+    textureSetMipImages(texture, (u32)(texture->bitsPerPixel * pixelCount) >> 3, tlutFormat);
     textureInitHardware(texture);
     DCStoreRange(texture->images[0], texture->imageSize);
     return 1;
@@ -354,8 +373,11 @@ extern "C" GStexture* GStextureCreate(u16 width, u16 height, s32 format,
         size >>= 1;
     }
     if (entries) {
-        if (tlutFormat == 0 || tlutFormat < 0 || tlutFormat >= 4) return 0;
-        texture->imageSize += (entries * 16) >> 3;
+        if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
+            texture->imageSize += (entries * 16) >> 3;
+        } else {
+            return 0;
+        }
     }
     texture->allocation = GSmemAllocAlign(texture->imageSize, 32);
     if (!texture->allocation) return 0;
@@ -374,7 +396,7 @@ extern "C" GStexture* GStextureCreate(u16 width, u16 height, s32 format,
     texture->mipFilter = mipCount > 1 ? 2 : 0;
     texture->lockCount = 0;
     texture->reserved = 0;
-    textureSetMipImages(texture, (u32)(texture->bitsPerPixel * (width * height)) >> 3);
+    textureSetMipImages(texture, (u32)(texture->bitsPerPixel * (width * height)) >> 3, tlutFormat);
     textureInitHardware(texture);
     texture->dirty = 1;
     return texture;

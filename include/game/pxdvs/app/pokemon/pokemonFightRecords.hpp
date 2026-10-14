@@ -37,6 +37,7 @@ struct FightPokemon {
 };
 
 struct FightOutPokemon {
+    void setComboFuncId(u8);
     FightPokemon* motoFightPokemon; // 0x0
     FightPokemon* fightPokemon; // 0x4
     FightPokemon fightPokemonHensinBuff; // 0x8
@@ -155,12 +156,24 @@ void fightOutPokemon_SetDamageSpeTargetId(FightOutPokemon*, u16);
 void fightOutPokemon_SetDamageSpeValue(FightOutPokemon*, s16);
 void fightOutPokemon_SetDamageAtkTargetId(FightOutPokemon*, u16);
 void fightOutPokemon_SetDamageAtkValue(FightOutPokemon*, s16);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+void fightOutPokemon_SetTokuseiDataId(FightOutPokemon*, u32);
+#else
 void fightOutPokemon_SetTokuseiDataId(FightOutPokemon*, u16);
+#endif
 void fightOutPokemon_SetSuccessCnt(FightOutPokemon*, u8);
 void fightOutPokemon_SetStockItemDataId(FightOutPokemon*, u16);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+void fightOutPokemon_SetUsedItemDataId(FightOutPokemon*, u32);
+#else
 void fightOutPokemon_SetUsedItemDataId(FightOutPokemon*, u16);
+#endif
 void fightOutPokemon_SetNamakeFlag(FightOutPokemon*, u8);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+void fightOutPokemon_SetOumuWazaDataId(FightOutPokemon*, u32);
+#else
 void fightOutPokemon_SetOumuWazaDataId(FightOutPokemon*, u16);
+#endif
 void fightOutPokemon_SetGamanDamageTargetId(FightOutPokemon*, u16);
 void fightOutPokemon_SetGamanDamageValue(FightOutPokemon*, s16);
 void fightOutPokemon_SetHitWazaZokuseiDataId(FightOutPokemon*, u16);
@@ -206,7 +219,11 @@ u16 fightOutPokemon_GetDamageSpeTargetId(FightOutPokemon*);
 int fightOutPokemon_GetDamageSpeValue(FightOutPokemon*);
 u16 fightOutPokemon_GetDamageAtkTargetId(FightOutPokemon*);
 int fightOutPokemon_GetDamageAtkValue(FightOutPokemon*);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+u32 fightOutPokemon_GetTokuseiDataId(FightOutPokemon*);
+#else
 u16 fightOutPokemon_GetTokuseiDataId(FightOutPokemon*);
+#endif
 u8 fightOutPokemon_GetSuccessCnt(FightOutPokemon*);
 u16 fightOutPokemon_GetStockItemDataId(FightOutPokemon*);
 u16 fightOutPokemon_GetUsedItemDataId(FightOutPokemon*);
@@ -218,13 +235,21 @@ u16 fightOutPokemon_GetHitWazaZokuseiDataId(FightOutPokemon*);
 u16 fightOutPokemon_GetHitWazaDataId(FightOutPokemon*);
 u16 fightOutPokemon_GetLastReceiveWazaTargetDataId(FightOutPokemon*);
 u16 fightOutPokemon_GetLastUseWazaDataId(FightOutPokemon*);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+u32 fightOutPokemon_GetLastSelectWazaDataId(FightOutPokemon*);
+#else
 u16 fightOutPokemon_GetLastSelectWazaDataId(FightOutPokemon*);
+#endif
 u16 fightOutPokemon_GetSketchWazaDataId(FightOutPokemon*);
 void* fightOutPokemon_GetSequencePtr(FightOutPokemon*);
 u16 fightOutPokemon_GetFightoutTurnCount(FightOutPokemon*);
 u8 fightOutPokemon_GetAbicntAvoid(FightOutPokemon*);
 u8 fightOutPokemon_GetAbicntAverage(FightOutPokemon*);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+u32 fightOutPokemon_GetAbicntNimbleness(FightOutPokemon*);
+#else
 u8 fightOutPokemon_GetAbicntNimbleness(FightOutPokemon*);
+#endif
 u8 fightOutPokemon_GetAbicntSpeDef(FightOutPokemon*);
 u8 fightOutPokemon_GetAbicntSpeAtk(FightOutPokemon*);
 u8 fightOutPokemon_GetAbicntPhyDef(FightOutPokemon*);
@@ -246,7 +271,11 @@ FightPokemon* fightOutPokemon_GetFightPokemonHensinBuffPtr(FightOutPokemon*);
 Pokemon* fightPokemon_GetPokemonBuffPtr(FightPokemon*);
 void fightOutPokemon_SetZokuseiDataId(FightOutPokemon*,u8,u16);
 u16 fightOutPokemon_GetZokuseiDataId(FightOutPokemon*,u8);
+#ifdef FIGHT_POKEMON_COMMAND_ABI
+void fightOutPokemon_SetMeetEnemyFightPokemonEntryId(FightOutPokemon*,u8,s32);
+#else
 void fightOutPokemon_SetMeetEnemyFightPokemonEntryId(FightOutPokemon*,u8,s16);
+#endif
 int fightOutPokemon_GetMeetEnemyFightPokemonEntryId(FightOutPokemon*,u8);
 FightOutPokemonEnemy* fightOutPokemon_GetFightOutPokemonEnemyPtr(FightOutPokemon*,u16);
 FightJoutai* fightOutPokemon_GetFightoutJoutaiPtr(FightOutPokemon*,u16);
