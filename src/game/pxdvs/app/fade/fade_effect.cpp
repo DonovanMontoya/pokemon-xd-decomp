@@ -538,8 +538,8 @@ static void _disp_four_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 ang
     point.param1 = scale;
     point.param2 = scale;
     point.param3 = scale;
-    f32 value = (f32)(f64)scale;
-    PSMTXScale(transform, value, value, value);
+    f64 dv = scale;
+    PSMTXScale(transform, dv, dv, dv);
     PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
     PSMTXConcat(rotation, transform, transform);
     PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
@@ -709,8 +709,8 @@ static void _disp_bound_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 an
     point.param1 = scale;
     point.param2 = scale;
     point.param3 = scale;
-    f32 value = (f32)(f64)scale;
-    PSMTXScale(transform, value, value, value);
+    f64 dv = scale;
+    PSMTXScale(transform, dv, dv, dv);
     PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
     PSMTXConcat(rotation, transform, transform);
     PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
@@ -960,8 +960,8 @@ static void _dispball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 angle, in
     point.param1 = scale;
     point.param2 = scale;
     point.param3 = scale;
-    f32 value = (f32)(f64)scale;
-    PSMTXScale(transform, value, value, value);
+    f64 dv = scale;
+    PSMTXScale(transform, dv, dv, dv);
     PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
     PSMTXConcat(rotation, transform, transform);
     PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
@@ -1074,15 +1074,14 @@ static void _fadeEffectFunction_ball_FirstInit() {
 }
 
 static bool fadeEffectHookFunction_tate(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
-    GStexture* texture = (GStexture*)opaque;
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (!layer) return active;
-    if (!texture) return active;
+    if (!opaque) return active;
     if (_fadeEffectFirstFlag == 1) {
         _fadeEffectFirstFlag = 0;
-        _fadeEffectFunction_UDLR_FirstInit(texture, 8);
+        _fadeEffectFunction_UDLR_FirstInit((GStexture*)opaque, 8);
     }
-    return _fadeEffectFunction_UDLR_Main(layer, active, elapsed, duration, elapsedSecond, durationSecond, texture);
+    return _fadeEffectFunction_UDLR_Main(layer, active, elapsed, duration, elapsedSecond, durationSecond, (GStexture*)opaque);
 }
 
 static bool fadeEffectHookFunction_yoko(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
@@ -1183,8 +1182,8 @@ static void _fadeEffectSnapshotFadeFunction(GSgfxLayer* layer, GStexture* textur
     point.param1 = scale; point.param2 = scale; point.param3 = scale;
     f32 baseAlpha = (s32)(255.0f * blend.param1);
     s32 alpha = (s32)(baseAlpha * (1.0f - progress));
-    f32 value = (f32)(f64)scale;
-    PSMTXScale(transform, value, value, value);
+    f64 dv = scale;
+    PSMTXScale(transform, dv, dv, dv);
     PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
     PSMTXConcat(rotation, transform, transform);
     PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
@@ -2043,16 +2042,17 @@ static void _disp_dist_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 ang
     point.param1 = scale;
     point.param2 = scale;
     point.param3 = scale;
-    f32 value = (f32)(f64)scale;
-    PSMTXScale(transform, value, value, value);
+    f64 dv = scale;
+    PSMTXScale(transform, dv, dv, dv);
     PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
     PSMTXConcat(rotation, transform, transform);
     PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
     layer->beginSurface(4);
-    f32 left = (center->param1 - 32.0f) / 640.0f;
-    f32 right = (32.0f + center->param1) / 480.0f;
-    f32 top = (center->param2 - 32.0f) / 640.0f;
-    f32 bottom = (32.0f + center->param2) / 480.0f;
+    f32 left, top, right, bottom;
+    left = (center->param1 - 32.0f) / 640.0f;
+    right = (32.0f + center->param1) / 480.0f;
+    top = (center->param2 - 32.0f) / 640.0f;
+    bottom = (32.0f + center->param2) / 480.0f;
     point.param1 = -32.0f;
     point.param2 = -32.0f;
     point.param3 = 0.0f;
@@ -2112,19 +2112,20 @@ static void _disp_blur_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 ang
     PSMTXConcat(rotation, transform, transform);
     PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
     layer->beginSurface(4);
-    GXPosition3f32(center->param1, center->param2 - 60.0f, center->param3);
-    u8 trailAlpha = (u8)alpha / 5;
+    f32 ext = 60.0f; f32 half = 0.5f; f32 zero = 0.0f; f32 one = 1.0f;
+    GXPosition3f32(center->param1, center->param2 - ext, center->param3);
+    u8 trailAlpha = alpha / 5;
     GXColor4u8(255, 255, 255, trailAlpha);
-    GXTexCoord2f32(0.5f, 0.0f);
-    GXPosition3f32(center->param1, 60.0f + center->param2, center->param3);
+    GXTexCoord2f32(half, zero);
+    GXPosition3f32(center->param1, ext + center->param2, center->param3);
     GXColor4u8(255, 255, 255, trailAlpha);
-    GXTexCoord2f32(0.5f, 1.0f);
-    GXPosition3f32(scale, center->param2 - 60.0f, center->param3);
+    GXTexCoord2f32(half, one);
+    GXPosition3f32(scale, center->param2 - ext, center->param3);
     GXColor4u8(255, 255, 255, 0);
-    GXTexCoord2f32(0.5f, 0.0f);
-    GXPosition3f32(scale, 60.0f + center->param2, center->param3);
+    GXTexCoord2f32(half, zero);
+    GXPosition3f32(scale, ext + center->param2, center->param3);
     GXColor4u8(255, 255, 255, 0);
-    GXTexCoord2f32(0.5f, 1.0f);
+    GXTexCoord2f32(half, one);
     layer->endSurface();
     layer->beginSurface(4);
     point.param1 = -60.0f;

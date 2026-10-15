@@ -28,11 +28,12 @@ void GSgfxTokenWaitForClearAndReset(u16 *ptr) {
     u16 token; register u16 *saved=ptr; token=*saved; if(*saved!=0) { if(outsideFrame(token)) { GSgfxRenderWaitData data;GSgfxRenderWaitInit__FP19GSgfxRenderWaitData(&data);while(!completedToken(token)) GSgfxRenderWaitTick__FP19GSgfxRenderWaitData(&data);GSgfxRenderWaitExit__FP19GSgfxRenderWaitData(&data); }*saved=0; }
 }
 void GSgfxTokenIfClearedReset(u16 *ptr) {u16 token;register u16 *saved=ptr;token=*saved;if(*saved!=0) {u8 clear;if(!validToken(*saved)) clear=1;else clear=completedToken(token);if(clear==1) *saved=0;} }
+
 void GSgfxTokenWaitForClear(u16 token) { if(outsideFrame(token)) { GSgfxRenderWaitData data;GSgfxRenderWaitInit__FP19GSgfxRenderWaitData(&data);while(!completedToken(token)) GSgfxRenderWaitTick__FP19GSgfxRenderWaitData(&data);GSgfxRenderWaitExit__FP19GSgfxRenderWaitData(&data); } }
 u8 GSgfxTokenCleared(u16 token) {if(!validToken(token)) return 1; return completedToken(token);}
 
 u16 GSgfxTokenMark_Sub__Fv() {
-    u16 token=_tokenCurrent; if(token==_tokenFrameEnd) return _tokenFrameEnd;
+    u32 token=_tokenCurrent; if(token==_tokenFrameEnd) return _tokenFrameEnd;
     GXSetDrawSync(token);if(++_tokenCurrent>=_tokenMaximum) _tokenCurrent=1;return token;
 }
 void GSgfxTokenMarkFrame__Fv() { _tokenFrameStart=_tokenCurrent;_tokenFrameEnd=_tokenCurrent+0x1000;if(_tokenFrameEnd>=_tokenMaximum) _tokenFrameEnd-=_tokenMaximum; }

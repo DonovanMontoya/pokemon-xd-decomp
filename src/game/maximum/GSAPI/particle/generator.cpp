@@ -1,7 +1,7 @@
 #include "game/maximum/GSAPI/particle/generator.h"
 #define NULL ((void*)0)
 #include "game/maximum/GSAPI/baselib/math_support.h"
-f64 fabs(f64);
+f64 __fabs(f64);
 PSGenerator *activeGenerator,*freeGenerator,*lastGP;
 void* standbyGenerator;
 PSCamera* psCamera;
@@ -16,84 +16,103 @@ void psGeneratorSetCamera(PSGenerator *arg0, s32 arg1) {
     arg0->camera = arg1;
 }
 
-void psKillAllGenerator(void) {
-    PSAppSRT *temp_r3;
-    PSGenerator *temp_r0;
-    PSGenerator *temp_r0_2;
-    PSGenerator *temp_r30;
-    PSGenerator *var_r29;
-    PSGenerator *var_r31;
-    PSGenerator *var_r3;
+static inline int psRefDec(PSCamera *o) {
+    int ret;
+    if ((ret = (o->references == 0xFFFF))) {
+        return ret;
+    }
+    return o->references-- == 0;
+}
 
-    var_r31 = activeGenerator;
-while (var_r31 != NULL) {
-        temp_r30 = var_r31->next;
-        var_r3 = activeGenerator;
-        lastGP = NULL;
-while (var_r3 != NULL) {
-            if (var_r3 == var_r31) {
-                var_r29 = lastGP;
-                if (var_r31->type & 0x80) {
-                    psKillGeneratorChild(var_r31);
-                }
-                if ((u32) var_r31->children != 0) {
-                    var_r29 = var_r31;
-                    var_r31->random = 0.0f;
-                    var_r31->life = 1;
-                } else if ((var_r31->type & 0x3800) && (temp_r3 = var_r31->appsrt, ((temp_r3 == NULL) == 0)) && ((PSGenerator *) temp_r3->generator == var_r31) && ((u16) temp_r3->references != 1)) {
-                    var_r29 = var_r31;
-                    var_r31->random = 0.0f;
-                    var_r31->life = 1;
-                } else {
-                    if (var_r29 == NULL) {
-                        activeGenerator = var_r31->next;
-                    } else {
-                        var_r29->next = var_r31->next;
-                    }
-                    if ((PSAppSRT *) var_r31->appsrt != NULL) {
-                        psRemoveGeneratorAppSRT(var_r31);
-                    }
-                    var_r31->next = freeGenerator;
-                    freeGenerator = var_r31;
-                    numActiveGenerators -= 1;
-                }
-                lastGP = var_r29;
-                if (var_r29 != NULL) {
-loop_21:
-                    temp_r0 = lastGP->next;
-                    if (temp_r0 != NULL) {
-                        lastGP = temp_r0;
-                        goto loop_21;
-                    }
-                } else if ((PSGenerator *) activeGenerator != NULL) {
-                    lastGP = activeGenerator;
-loop_26:
-                    temp_r0_2 = lastGP->next;
-                    if (temp_r0_2 != NULL) {
-                        lastGP = temp_r0_2;
-                        goto loop_26;
-                    }
-                }
-            } else {
-                lastGP = var_r3;
-                var_r3 = var_r3->next;
-                continue;
+static inline void psCameraUnref(PSCamera *cam) {
+    if (cam != NULL) {
+        if (cam != NULL && psRefDec(cam)) {
+            if (cam != NULL) {
+                cam->methods->release((PSObject *) cam, cam->methods);
+                cam->methods->destroy((PSObject *) cam, cam->methods);
             }
+        }
+    }
+}
 
-    break;
+static inline void psKillGenNode(PSGenerator *arg0) {
+    PSAppSRT *temp_r3;
+    PSGenerator *var_r30;
+
+    var_r30 = lastGP;
+    if (arg0->type & 0x80) {
+        psKillGeneratorChild(arg0);
+    }
+    if ((u32) arg0->children != 0) {
+        var_r30 = arg0;
+        arg0->random = 0.0f;
+        arg0->life = 1;
+    } else if ((arg0->type & 0x3800) && (temp_r3 = arg0->appsrt, temp_r3 != NULL) && ((PSGenerator *) temp_r3->generator == arg0) && ((u16) temp_r3->references != 1)) {
+        var_r30 = arg0;
+        arg0->random = 0.0f;
+        arg0->life = 1;
+    } else {
+        if (var_r30 == NULL) {
+            activeGenerator = arg0->next;
+        } else {
+            var_r30->next = arg0->next;
+        }
+        if ((PSAppSRT *) arg0->appsrt != NULL) {
+            psRemoveGeneratorAppSRT(arg0);
+        }
+        arg0->next = freeGenerator;
+        freeGenerator = arg0;
+        numActiveGenerators -= 1;
+    }
+    lastGP = var_r30;
 }
-        var_r31 = temp_r30;
+
+static inline void psKillGeneratorSub(PSGenerator *arg0) {
+    PSGenerator *temp_r0;
+    PSGenerator *var_r4;
+
+    var_r4 = activeGenerator;
+    lastGP = NULL;
+    while (var_r4 != NULL) {
+        if (var_r4 == arg0) {
+            psKillGenNode(arg0);
+            if (lastGP != NULL) {
+                while ((temp_r0 = lastGP->next) != NULL) {
+                    lastGP = temp_r0;
+                }
+            } else if ((temp_r0 = activeGenerator) != NULL) {
+                lastGP = temp_r0;
+                while ((temp_r0 = lastGP->next) != NULL) {
+                    lastGP = temp_r0;
+                }
+            }
+            return;
+        }
+        lastGP = var_r4;
+        var_r4 = var_r4->next;
+    }
 }
-while ((void *) standbyGenerator != NULL) {
+
+void psKillAllGenerator(void) {
+    PSGenerator *cur;
+    PSGenerator *next;
+
+    cur = activeGenerator;
+    while (cur != NULL) {
+        next = cur->next;
+        psKillGeneratorSub(cur);
+        cur = next;
+    }
+    while ((void *) standbyGenerator != NULL) {
         standbyGenerator = HSD_SListRemove(standbyGenerator);
-}
+    }
 }
 
 void psKillGeneratorID(u16 arg0) {
     PSAppSRT *temp_r3;
-    PSGenerator *temp_r28;
-    PSGenerator *var_r29;
     PSGenerator *var_r30;
+    PSGenerator *var_r29;
+    PSGenerator *temp_r28;
 
     var_r29 = activeGenerator;
     lastGP = NULL;
@@ -134,69 +153,28 @@ while (var_r29 != NULL) {
 }
 
 void psKillGenerator(PSGenerator *arg0) {
-    PSAppSRT *temp_r3;
     PSGenerator *temp_r0;
-    PSGenerator *temp_r0_2;
-    PSGenerator *var_r30;
     PSGenerator *var_r4;
 
     var_r4 = activeGenerator;
     lastGP = NULL;
-loop_28:
-    if (var_r4 == NULL) {
-
-    } else {
+    while (var_r4 != NULL) {
         if (var_r4 == arg0) {
-            var_r30 = lastGP;
-            if (arg0->type & 0x80) {
-                psKillGeneratorChild(arg0);
-            }
-            if ((u32) arg0->children != 0) {
-                var_r30 = arg0;
-                arg0->random = 0.0f;
-                arg0->life = 1;
-            } else if ((arg0->type & 0x3800) && (temp_r3 = arg0->appsrt, ((temp_r3 == NULL) == 0)) && ((PSGenerator *) temp_r3->generator == arg0) && ((u16) temp_r3->references != 1)) {
-                var_r30 = arg0;
-                arg0->random = 0.0f;
-                arg0->life = 1;
-            } else {
-                if (var_r30 == NULL) {
-                    activeGenerator = arg0->next;
-                } else {
-                    var_r30->next = arg0->next;
-                }
-                if ((PSAppSRT *) arg0->appsrt != NULL) {
-                    psRemoveGeneratorAppSRT(arg0);
-                }
-                arg0->next = freeGenerator;
-                freeGenerator = arg0;
-                numActiveGenerators -= 1;
-            }
-            lastGP = var_r30;
-            if (var_r30 != NULL) {
-loop_20:
-                temp_r0 = lastGP->next;
-                if (temp_r0 != NULL) {
+            psKillGenNode(arg0);
+            if (lastGP != NULL) {
+                while ((temp_r0 = lastGP->next) != NULL) {
                     lastGP = temp_r0;
-                    goto loop_20;
                 }
-                return;
-            }
-            if ((PSGenerator *) activeGenerator != NULL) {
-                lastGP = activeGenerator;
-loop_25:
-                temp_r0_2 = lastGP->next;
-                if (temp_r0_2 != NULL) {
-                    lastGP = temp_r0_2;
-                    goto loop_25;
+            } else if ((temp_r0 = activeGenerator) != NULL) {
+                lastGP = temp_r0;
+                while ((temp_r0 = lastGP->next) != NULL) {
+                    lastGP = temp_r0;
                 }
-                return;
             }
             return;
         }
         lastGP = var_r4;
         var_r4 = var_r4->next;
-        goto loop_28;
     }
 }
 
@@ -253,38 +231,14 @@ u16 psGetNewIDNum(void) {
 
 
 void psSetBillboardCamera(PSCamera *arg0) {
-    PSCamera *temp_r30;
-    PSClass *temp_r4_2;
-    PSClass *temp_r4_3;
-    s32 temp_cr0_eq;
-    s32 temp_cr0_eq_2;
-    s32 var_r0;
-    u16 temp_r4;
-
-    temp_r30 = psCamera;
-    if (arg0 != temp_r30) {
-        /* null checks below retain the original nested guards */
-        if ((temp_r30 != NULL) && (temp_r30 != NULL)) {
-            temp_r4 = temp_r30->references;
-            var_r0 = temp_r4 == 0xFFFF;
-            if (var_r0 != 0) {
-
-            } else {
-                temp_r30->references = temp_r4 - 1;
-                var_r0 = temp_r4 == 0;
-            }
-            if ((var_r0 != 0) && (temp_r30 != NULL)) {
-                temp_r4_2 = temp_r30->methods;
-                temp_r4_2->release((PSObject *) temp_r30, temp_r4_2);
-                temp_r4_3 = temp_r30->methods;
-                temp_r4_3->destroy((PSObject *) temp_r30, temp_r4_3);
-            }
-        }
-        /* null checks below retain the original nested guards */
-        if ((arg0 != NULL) && (arg0 != NULL)) {
-            arg0->references += 1;
-            if ((u16) arg0->references == -1U) {
-                __assert("object.h", 0x5D, "HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF");
+    if (arg0 != psCamera) {
+        psCameraUnref(psCamera);
+        if (arg0 != NULL) {
+            if (arg0 != NULL) {
+                arg0->references++;
+                if (arg0->references == 0xFFFF) {
+                    __assert("object.h", 0x5D, "HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF");
+                }
             }
         }
         psCamera = arg0;
@@ -292,8 +246,6 @@ void psSetBillboardCamera(PSCamera *arg0) {
 }
 
 void psExecGenerator(s32 arg0) {
-    PSAppSRT *temp_r3_4;
-    PSGenerator *var_r29;
     PSGenerator *var_r31;
     PSJObj *temp_r29;
     f32 temp_f1;
@@ -352,35 +304,9 @@ while (var_r31 != NULL) {
             if (var_r31->count >= 1.0f) {
                 var_r31->count = generateParticle(var_r31);
             }
-            temp_r3_2 = var_r31->life;
-            if ((temp_r3_2 != 0) && (temp_r3_3 = temp_r3_2 - 1, var_r31->life = temp_r3_3, ((temp_r3_3 == 0) != 0))) {
+            if (var_r31->life != 0 && --var_r31->life == 0) {
                 if ((u8) var_r31->state == 0) {
-                    var_r29 = lastGP;
-                    if (var_r31->type & 0x80) {
-                        psKillGeneratorChild(var_r31);
-                    }
-                    if ((u32) var_r31->children != 0) {
-                        var_r29 = var_r31;
-                        var_r31->random = 0.0f;
-                        var_r31->life = 1;
-                    } else if ((var_r31->type & 0x3800) && (temp_r3_4 = var_r31->appsrt, ((temp_r3_4 == NULL) == 0)) && ((PSGenerator *) temp_r3_4->generator == var_r31) && ((u16) temp_r3_4->references != 1)) {
-                        var_r29 = var_r31;
-                        var_r31->random = 0.0f;
-                        var_r31->life = 1;
-                    } else {
-                        if (var_r29 == NULL) {
-                            activeGenerator = var_r31->next;
-                        } else {
-                            var_r29->next = var_r31->next;
-                        }
-                        if ((PSAppSRT *) var_r31->appsrt != NULL) {
-                            psRemoveGeneratorAppSRT(var_r31);
-                        }
-                        var_r31->next = freeGenerator;
-                        freeGenerator = var_r31;
-                        numActiveGenerators -= 1;
-                    }
-                    lastGP = var_r29;
+                    psKillGenNode(var_r31);
                 } else {
                     var_r31->kind |= 0x800;
                 }
@@ -398,113 +324,72 @@ while (var_r31 != NULL) {
 }
 
 void psRemoveGenerator(void) {
-    PSAppSRT *temp_r3;
-    PSCamera *temp_r29_2;
-    PSClass *temp_r4_2;
-    PSClass *temp_r4_3;
-    PSGenerator *temp_r0;
-    PSGenerator *temp_r0_2;
-    PSGenerator *temp_r29;
-    PSGenerator *temp_r31;
-    PSGenerator *var_r29;
-    PSGenerator *var_r30;
-    PSGenerator *var_r3;
-    PSGenerator *var_r3_2;
-    s32 temp_cr0_eq;
-    s32 var_r0;
-    u16 temp_r4;
+    PSGenerator *next;
+    PSGenerator *cur;
+    PSGenerator *free_cur;
 
     psKillAllParticle();
-    var_r30 = activeGenerator;
-while (var_r30 != NULL) {
-        temp_r31 = var_r30->next;
-        var_r3 = activeGenerator;
-        lastGP = NULL;
-while (var_r3 != NULL) {
-            if (var_r3 == var_r30) {
-                var_r29 = lastGP;
-                if (var_r30->type & 0x80) {
-                    psKillGeneratorChild(var_r30);
-                }
-                if ((u32) var_r30->children != 0) {
-                    var_r29 = var_r30;
-                    var_r30->random = 0.0f;
-                    var_r30->life = 1;
-                } else if ((var_r30->type & 0x3800) && (temp_r3 = var_r30->appsrt, ((temp_r3 == NULL) == 0)) && ((PSGenerator *) temp_r3->generator == var_r30) && ((u16) temp_r3->references != 1)) {
-                    var_r29 = var_r30;
-                    var_r30->random = 0.0f;
-                    var_r30->life = 1;
-                } else {
-                    if (var_r29 == NULL) {
-                        activeGenerator = var_r30->next;
-                    } else {
-                        var_r29->next = var_r30->next;
-                    }
-                    if ((PSAppSRT *) var_r30->appsrt != NULL) {
-                        psRemoveGeneratorAppSRT(var_r30);
-                    }
-                    var_r30->next = freeGenerator;
-                    freeGenerator = var_r30;
-                    numActiveGenerators -= 1;
-                }
-                lastGP = var_r29;
-                if (var_r29 != NULL) {
-loop_21:
-                    temp_r0 = lastGP->next;
-                    if (temp_r0 != NULL) {
-                        lastGP = temp_r0;
-                        goto loop_21;
-                    }
-                } else if ((PSGenerator *) activeGenerator != NULL) {
-                    lastGP = activeGenerator;
-loop_26:
-                    temp_r0_2 = lastGP->next;
-                    if (temp_r0_2 != NULL) {
-                        lastGP = temp_r0_2;
-                        goto loop_26;
-                    }
-                }
-            } else {
-                lastGP = var_r3;
-                var_r3 = var_r3->next;
-                continue;
-            }
-
-    break;
-}
-        var_r30 = temp_r31;
-}
-while ((void *) standbyGenerator != NULL) {
+    cur = activeGenerator;
+    while (cur != NULL) {
+        next = cur->next;
+        psKillGeneratorSub(cur);
+        cur = next;
+    }
+    while ((void *) standbyGenerator != NULL) {
         standbyGenerator = HSD_SListRemove(standbyGenerator);
-}
-    var_r3_2 = freeGenerator;
-while (var_r3_2 != NULL) {
-        temp_r29 = var_r3_2->next;
-        HSD_Free(var_r3_2);
-        var_r3_2 = temp_r29;
-}
-    temp_r29_2 = psCamera;
+    }
+    free_cur = freeGenerator;
+    while (free_cur != NULL) {
+        next = free_cur->next;
+        HSD_Free(free_cur);
+        free_cur = next;
+    }
     freeGenerator = NULL;
-    /* null checks below retain the original nested guards */
-    if (temp_r29_2 != NULL) {
-        if ((temp_r29_2 != NULL) && (temp_r29_2 != NULL)) {
-            temp_r4 = temp_r29_2->references;
-            var_r0 = temp_r4 == 0xFFFF;
-            if (var_r0 != 0) {
-
-            } else {
-                temp_r29_2->references = temp_r4 - 1;
-                var_r0 = temp_r4 == 0;
-            }
-            if ((var_r0 != 0) && (temp_r29_2 != NULL)) {
-                temp_r4_2 = temp_r29_2->methods;
-                temp_r4_2->release((PSObject *) temp_r29_2, temp_r4_2);
-                temp_r4_3 = temp_r29_2->methods;
-                temp_r4_3->destroy((PSObject *) temp_r29_2, temp_r4_3);
-            }
-        }
+    if (psCamera != NULL) {
+        psCameraUnref(psCamera);
         psCamera = NULL;
     }
+}
+
+static inline PSGenerator *psAllocGenerator(void) {
+    PSGenerator *gen;
+    PSGenerator *temp_r3;
+    PSGenerator *temp_r3_3;
+
+    if (freeGenerator == NULL) {
+        temp_r3 = (PSGenerator *) HSD_Alloc(0xB8U);
+        freeGenerator = temp_r3;
+        memset(temp_r3, 0, 0xB8U);
+    }
+    gen = freeGenerator;
+    if (gen == NULL) {
+        gen = NULL;
+    } else {
+        numActiveGenerators++;
+        if (numActiveGenerators > numPeakGenerators) {
+            numPeakGenerators = numActiveGenerators;
+        }
+        freeGenerator = gen->next;
+        if ((lastGP == NULL) || (temp_r3_3 = lastGP->next, temp_r3_3 == NULL)) {
+            if (activeGenerator == NULL) {
+                gen->next = NULL;
+                activeGenerator = gen;
+            } else {
+                gen->next = activeGenerator->next;
+                activeGenerator->next = gen;
+            }
+        } else {
+            gen->next = temp_r3_3->next;
+            lastGP->next->next = gen;
+        }
+        if (++psIDNum < 0x100U) {
+            psIDNum = 0x100;
+        }
+        gen->id = psIDNum;
+        gen->appsrt = NULL;
+        gen->state = 0;
+    }
+    return gen;
 }
 
 PSGenerator *psCreateGeneratorID(s32 arg0, s32 arg1, s32 arg2) {
@@ -559,42 +444,7 @@ PSGenerator *psCreateGeneratorID(s32 arg0, s32 arg1, s32 arg2) {
     if ((PSCmd *) psCmdListArray[arg1][arg2] == NULL) {
         return NULL;
     }
-    if ((PSGenerator *) freeGenerator == NULL) {
-        temp_r3 = HSD_Alloc(0xB8U);
-        freeGenerator = temp_r3;
-        memset(temp_r3, 0, 0xB8U);
-    }
-    var_r29 = freeGenerator;
-    if (var_r29 == NULL) {
-        var_r29 = NULL;
-    } else {
-        temp_r3_2 = numActiveGenerators + 1;
-        numActiveGenerators = temp_r3_2;
-        if (temp_r3_2 > (u16) numPeakGenerators) {
-            numPeakGenerators = temp_r3_2;
-        }
-        freeGenerator = var_r29->next;
-        if (((PSGenerator *) lastGP == NULL) || (temp_r3_3 = lastGP->next, ((temp_r3_3 == NULL) != 0))) {
-            if ((PSGenerator *) activeGenerator == NULL) {
-                var_r29->next = NULL;
-                activeGenerator = var_r29;
-            } else {
-                var_r29->next = activeGenerator->next;
-                activeGenerator->next = var_r29;
-            }
-        } else {
-            var_r29->next = temp_r3_3->next;
-            lastGP->next->next = var_r29;
-        }
-        temp_r3_4 = psIDNum + 1;
-        psIDNum = temp_r3_4;
-        if (temp_r3_4 < 0x100U) {
-            psIDNum = 0x100;
-        }
-        var_r29->id = psIDNum;
-        var_r29->appsrt = NULL;
-        var_r29->state = 0;
-    }
+    var_r29 = psAllocGenerator();
     if (var_r29 != NULL) {
         var_r29->type = psCmdListArray[arg1][arg2]->type;
         var_r29->bank = (u8) arg1;
@@ -621,12 +471,7 @@ PSGenerator *psCreateGeneratorID(s32 arg0, s32 arg1, s32 arg2) {
         if (var_r29->kind & 0x100) {
             temp_f0 = var_r29->random;
             if (temp_f0 < 0.0f) {
-                var_f2 = 1.0f;
-                if ((1.0f + temp_f0) > __float_epsilon[0]) {
-
-                } else {
-                    var_f2 = 0.0f;
-                }
+                var_f2 = (1.0f + temp_f0) > __float_epsilon[0] ? 1.0f : 0.0f;
                 var_r29->count = var_f2;
             } else {
                 var_r29->count = 1.0f - __float_epsilon[0];
@@ -702,80 +547,9 @@ PSGenerator *psCreateGeneratorID(s32 arg0, s32 arg1, s32 arg2) {
             }
             break;
         case 8:                                     /* switch 1 */
-            temp_f1 = var_r29->velocity.x;
-            temp_f0_5 = var_r29->velocity.y;
-            temp_f3 = var_r29->velocity.z;
-            var_f4 = (temp_f3 * temp_f3) + ((temp_f1 * temp_f1) + (temp_f0_5 * temp_f0_5));
-            if (var_f4 > 0.0f) {
-                temp_f1_2 = __frsqrte(var_f4);
-                temp_f1_3 = 0.5 * temp_f1_2 * -(((f64) var_f4 * (temp_f1_2 * temp_f1_2)) - 3.0);
-                temp_f1_4 = 0.5 * temp_f1_3 * -(((f64) var_f4 * (temp_f1_3 * temp_f1_3)) - 3.0);
-                var_f4 = (f32) ((f64) var_f4 * (0.5 * temp_f1_4 * -(((f64) var_f4 * (temp_f1_4 * temp_f1_4)) - 3.0)));
-            } else if (var_f4 < 0.0) {
-                var_f4 = __float_nan[0];
-            } else {
-                spC = var_f4;
-                temp_r3_8 = *(s32*)&spC & 0x7F800000;
-                switch (temp_r3_8) {                /* switch 2; irregular */
-                case 0x7F800000:                    /* switch 2 */
-                    if (*(s32*)&spC & 0x7FFFFF) {
-                        var_r0 = 1;
-                    } else {
-                        var_r0 = 2;
-                    }
-                    break;
-                case 0x0:                           /* switch 2 */
-                    if (*(s32*)&spC & 0x7FFFFF) {
-                        var_r0 = 5;
-                    } else {
-                        var_r0 = 3;
-                    }
-                    break;
-                default:                            /* switch 2 */
-                    var_r0 = 4;
-                    break;
-                }
-                if (var_r0 == 1) {
-                    var_f4 = __float_nan[0];
-                }
-            }
+            var_f4 = hsdSqrt(var_r29->velocity.x * var_r29->velocity.x + var_r29->velocity.y * var_r29->velocity.y + var_r29->velocity.z * var_r29->velocity.z);
             var_r29->param1 = var_f4;
-            temp_f2_3 = var_r29->velocity.x;
-            temp_f1_5 = var_r29->velocity.z;
-            var_f2_2 = (temp_f2_3 * temp_f2_3) + (temp_f1_5 * temp_f1_5);
-            if (var_f2_2 > 0.0f) {
-                temp_f1_6 = __frsqrte(var_f2_2);
-                temp_f1_7 = 0.5 * temp_f1_6 * -(((f64) var_f2_2 * (temp_f1_6 * temp_f1_6)) - 3.0);
-                temp_f1_8 = 0.5 * temp_f1_7 * -(((f64) var_f2_2 * (temp_f1_7 * temp_f1_7)) - 3.0);
-                var_f2_2 = (f32) ((f64) var_f2_2 * (0.5 * temp_f1_8 * -(((f64) var_f2_2 * (temp_f1_8 * temp_f1_8)) - 3.0)));
-            } else if (var_f2_2 < 0.0) {
-                var_f2_2 = __float_nan[0];
-            } else {
-                sp8 = var_f2_2;
-                temp_r3_9 = *(s32*)&sp8 & 0x7F800000;
-                switch (temp_r3_9) {                /* switch 3; irregular */
-                case 0x7F800000:                    /* switch 3 */
-                    if (*(s32*)&sp8 & 0x7FFFFF) {
-                        var_r0_2 = 1;
-                    } else {
-                        var_r0_2 = 2;
-                    }
-                    break;
-                case 0x0:                           /* switch 3 */
-                    if (*(s32*)&sp8 & 0x7FFFFF) {
-                        var_r0_2 = 5;
-                    } else {
-                        var_r0_2 = 3;
-                    }
-                    break;
-                default:                            /* switch 3 */
-                    var_r0_2 = 4;
-                    break;
-                }
-                if (var_r0_2 == 1) {
-                    var_f2_2 = __float_nan[0];
-                }
-            }
+            var_f2_2 = hsdSqrt(var_r29->velocity.x * var_r29->velocity.x + var_r29->velocity.z * var_r29->velocity.z);
             if (var_f2_2 < __float_min[0]) {
                 if (var_r29->velocity.y >= 0.0f) {
                     var_r29->param2 = 1.5707964f;
@@ -786,7 +560,7 @@ PSGenerator *psCreateGeneratorID(s32 arg0, s32 arg1, s32 arg2) {
                 var_r29->param2 = (f32) atan2((f64) var_r29->velocity.y, (f64) var_f2_2);
             }
             temp_f2_4 = var_r29->velocity.x;
-            if (fabs(temp_f2_4) < __float_min[0]) {
+            if (__fabs(temp_f2_4) < __float_min[0]) {
                 if (var_r29->velocity.z >= 0.0f) {
                     var_r29->axisXX = 1.5707964f;
                 } else {
@@ -1073,7 +847,7 @@ f32 generateParticle(PSGenerator *arg0) {
         direction.y = arg0->velocity.y;
         direction.z = arg0->velocity.z;
         PSVECNormalize((PSVec *) &direction.x, (PSVec *) &direction.x);
-        if (fabs(direction.z) < __float_min[0]) {
+        if (__fabs(direction.z) < __float_min[0]) {
             if (direction.y >= 0.0f) {
                 var_f20 = 1.5707964f;
             } else {
@@ -1085,7 +859,7 @@ f32 generateParticle(PSGenerator *arg0) {
         temp_f22 = (f32) sin((f64) var_f20);
         temp_f24 = (f32) cos((f64) var_f20);
         temp_f2_2 = (direction.y * temp_f22) + (direction.z * temp_f24);
-        if (fabs(temp_f2_2) < __float_min[0]) {
+        if (__fabs(temp_f2_2) < __float_min[0]) {
             if (direction.x >= 0.0f) {
                 var_f21 = 1.5707964f;
             } else {
@@ -1112,7 +886,7 @@ f32 generateParticle(PSGenerator *arg0) {
         PSMTXConcat((f32 (*)[4]) &transform[0][0], (f32 (*)[4]) &directionMatrix[0][0], (f32 (*)[4]) &transform[0][0]);
     }
     if ((s32) (arg0->type & 0xF) == 2) {
-        if (fabs(transform[2][2]) < __float_min[0]) {
+        if (__fabs(transform[2][2]) < __float_min[0]) {
             if (transform[1][2] >= 0.0f) {
                 var_f25 = 1.5707964f;
             } else {
@@ -1123,7 +897,7 @@ f32 generateParticle(PSGenerator *arg0) {
         }
         temp_f20_2 = (f32) cos((f64) var_f25);
         temp_f2_3 = (transform[1][2] * (f32) sin((f64) var_f25)) + (transform[2][2] * temp_f20_2);
-        if (fabs(temp_f2_3) < __float_min[0]) {
+        if (__fabs(temp_f2_3) < __float_min[0]) {
             if (transform[0][2] >= 0.0f) {
                 var_f23 = 1.5707964f;
             } else {
@@ -1228,7 +1002,7 @@ loop_215:
                 temp_f2_4 = arg0->angle;
                 if (temp_f2_4 < 0.0f) {
                     var_f31 += var_f30;
-                    if (fabs(var_f21_2) < __float_min[0]) {
+                    if (__fabs(var_f21_2) < __float_min[0]) {
                         if (arg0->param3 >= 0.0f) {
                             var_f22 = -temp_f2_4;
                         } else {
@@ -1240,7 +1014,7 @@ loop_215:
                 } else {
                     temp_f22_2 = arg0->param1;
                     var_f31 = ((arg0->param2 - temp_f22_2) * HSD_Randf()) + temp_f22_2;
-                    if (fabs(var_f21_2) < __float_min[0]) {
+                    if (__fabs(var_f21_2) < __float_min[0]) {
                         if (arg0->param3 >= 0.0f) {
                             var_f22 = arg0->angle;
                         } else {

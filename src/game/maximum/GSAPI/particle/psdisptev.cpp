@@ -1,19 +1,19 @@
 #include "game/maximum/GSAPI/particle/psdisptev.h"
 #define NULL ((void*)0)
 #include <dolphin/gx.h>
-static u32 prevTev[2];
+static u32 prevTev;
 void psSetupTev(PSParticle* pp)
 {
     u32 temp_r5 = pp->kind & 0x80100480;
-    if (temp_r5 == prevTev[0]) {
+    if (temp_r5 == prevTev) {
         return;
     }
 
-    prevTev[0] = temp_r5;
-    switch (prevTev[0]) {
+    prevTev = temp_r5;
+    switch (prevTev) {
     case 0x80000080:
         pp->kind &= 0xFFFFFF7F;
-        prevTev[0] &= 0xFFFFFF7F;
+        prevTev &= 0xFFFFFF7F;
     case 0x80000000:
         GXSetNumTevStages(2);
         GXSetNumTexGens(0);
@@ -31,7 +31,7 @@ void psSetupTev(PSParticle* pp)
 
     case 0x80:
         pp->kind &= 0xFFFFFF7F;
-        prevTev[0] &= 0xFFFFFF7F;
+        prevTev &= 0xFFFFFF7F;
     case 0x0:
         GXSetNumTevStages(1);
         GXSetNumTexGens(0);
@@ -141,7 +141,7 @@ void psSetupTev(PSParticle* pp)
 
     case 0x100080:
         pp->kind &= 0xFFFFFF7F;
-        prevTev[0] &= 0xFFFFFF7F;
+        prevTev &= 0xFFFFFF7F;
     case 0x100000:
         GXSetNumTevStages(1);
         GXSetNumTexGens(0);
@@ -155,7 +155,7 @@ void psSetupTev(PSParticle* pp)
 
     case 0x80100080:
         pp->kind &= 0xFFFFFF7F;
-        prevTev[0] &= 0xFFFFFF7F;
+        prevTev &= 0xFFFFFF7F;
     case 0x80100000:
         GXSetNumTevStages(2);
         GXSetNumTexGens(0);
@@ -175,7 +175,7 @@ void psSetupTev(PSParticle* pp)
 
 void psSetupTevInvalidState(void)
 {
-    prevTev[0] = -1;
+    prevTev = -1;
 }
 
 void psSetupTevCommon(void)

@@ -1,3 +1,4 @@
+#pragma pool_strings off
 extern "C" {
 #include <libc/stdio.h>
 #include <libc/string.h>
@@ -65,8 +66,44 @@ static FsysQueue* _fsysQueManageRoot[3];
 static u32 headerTop[8];
 static u32* _headerTop;
 
+// Stripped from the DOL; its strings still occupy .rodata.
+void _fsysPrintStatus(FsysWork* work, s32 phase) {
+    const char* modeNames[3] = { "READ", "PREREAD", "STREAMING" };
+    const char* name = modeNames[work->mode];
+    switch (phase) {
+    case 0: OSReport("[%d]HEADERSIZE_READ", work->group); break;
+    case 1: OSReport("[%d]HEADERSIZE_READ_WAIT", work->group); break;
+    case 2: OSReport("[%d]START", work->group); break;
+    case 3: OSReport("[%d]%s:---", work->group, name); break;
+    case 4: OSReport("[%d]%s:[%d]ERROR_READDATAEXEC", work->group, name, phase); break;
+    case 5: OSReport("[%d]%s:[%d]ERROR_EXPANDFILE", work->group, name, phase); break;
+    case 6: OSReport("[%d]%s:[%d]ERROR_STREAMING", work->group, name, phase); break;
+    case 7: OSReport("[%d]%s:[%d]STREAMING_COMPLETE", work->group, name, phase); break;
+    case 8: OSReport("[%d]%s:[%d]READY", work->group, name, phase); break;
+    case 9: OSReport("[%d]%s:[%d]NONE", work->group, name, phase); break;
+    default: OSReport("[%d]%s:[%d]default", work->group, name, phase); break;
+    }
+    switch (work->status) {
+    case 0: OSReport("[%d]SEEK", work->group); break;
+    case 1: OSReport("[%d]READ_COMPLETE", work->group); break;
+    case 2: OSReport("[%d]ERROR", work->group); break;
+    case 3: OSReport("[%d]ERROR_READ", work->group); break;
+    case 4: OSReport("[%d]ERROR_PREREAD", work->group); break;
+    case 5: OSReport("[%d]ERROR_SEEK", work->group); break;
+    case 6: OSReport("[%d]ERROR_FILEOPEN", work->group); break;
+    case 7: OSReport("[%d]ERROR_FILECLOSE", work->group); break;
+    case 8: OSReport("[%d]COMPLETE", work->group); break;
+    case 9: OSReport("[%d]ERROR_WAIT", work->group); break;
+    case 10: OSReport("[%d]COMPLETE_WAIT", work->group); break;
+    case 11: OSReport("[%d]READY", work->group); break;
+    case 12: OSReport("[%d]READY_WAIT", work->group); break;
+    case 13: OSReport("[%d]NONE", work->group); break;
+    default: OSReport("[%d]default", work->group); break;
+    }
+}
 void* _fsysDoMalloc(u32 bytes) { return GSmemAllocAlign(bytes, 32); }
 u8 GSfsysInit2(u32 blocks, u32 cacheBytes, u32 cacheEntries) {
+    u32 i;
     if (_initFlag == 1) return 0;
     _fsysQueManageRoot[0] = 0;
     _fsysWorkIndex = 0;
@@ -85,14 +122,14 @@ u8 GSfsysInit2(u32 blocks, u32 cacheBytes, u32 cacheEntries) {
     if (!_fsysBGWork) return 0;
     _fsysQueManage = (FsysQueue*)_fsysDoMalloc(_fsysQueManageMax * sizeof(FsysQueue));
     if (!_fsysQueManage) return 0;
-    for (u32 i = 0; i < _fsysWorkMax; ++i) {
+    for (i = 0; i < _fsysWorkMax; ++i) {
         _fsysWork[i].status = 0;
         _fsysWork[i].pendingStatus = 0xffff;
         _fsysWork[i].header = 0;
         _fsysWork[i].headerLoaded = 0;
     }
-    for (u32 i = 0; i < _fsysBGWorkMax; ++i) _fsysBGWork[i].inUse = 0;
-    for (u32 i = 0; i < _fsysQueManageMax; ++i) _fsysQueManage[i].group = 0;
+    for (i = 0; i < _fsysBGWorkMax; ++i) _fsysBGWork[i].inUse = 0;
+    for (i = 0; i < _fsysQueManageMax; ++i) _fsysQueManage[i].group = 0;
     if (_fsysInitTOC() == 0) return 0;
     _fsysDaemonForegroundHDL = GSgappCreate(1, 0x14, 0, GSfsysDaemonForeground);
     GSgappSetName(_fsysDaemonForegroundHDL, "GSfsysDaemonForeground");
@@ -194,21 +231,6 @@ void GSfsysStreamSetLoopFlag(u32 group, u32 id, u8 loop) {
     }
 }
 
-u8 _fsysInitTOC() {
-    GSdvdWork* dvd = GSdvdOpen("gsfsys.toc");
-    if (!dvd) return 0;
-    u32 length = (GSdvdGetLength(dvd) + 31) & ~31;
-    _fsysTOC = (TocHeader*)_fsysDoMalloc(length);
-    if (!_fsysTOC) return 0;
-    if (GSdvdRead(dvd, _fsysTOC, length, 0) < 0) { GSdvdClose(dvd); return 0; }
-    GSdvdClose(dvd);
-    TocGroup* group = (TocGroup*)((u8*)_fsysTOC + _fsysTOC->tableOffset);
-    for (u32 i = 0; i < _fsysTOC->groupCount; ++i, ++group) {
-        group->name = (const char*)((u32)group->name + (u32)_fsysTOC);
-        group->flags = 0;
-    }
-    return 1;
-}
 TocGroup* _fsysGetGROUP(u32 id) {
     u32 count = _fsysTOC->groupCount;
     TocGroup* group = (TocGroup*)((u8*)_fsysTOC + _fsysTOC->tableOffset);
@@ -406,14 +428,17 @@ u8 _fsysQueExecSub(FsysQueue* queue) {
     return 0;
 }
 void _fsysQueExec() {
+    FsysQueue* queue;
+    FsysQueue* next;
+    s32 i;
     if (_fsysQueManageExec) {
         if (_fsysQueExecSub(_fsysQueManageExec) == 0) return;
         _fsysQueManageExec = 0;
     }
-    for (s32 i = 0; i < 3; ++i) {
-        FsysQueue* queue = _fsysQueManageRoot[i];
+    for (i = 0; i < 3; ++i) {
+        queue = _fsysQueManageRoot[i];
         while (queue) {
-            FsysQueue* next = queue->next;
+            next = queue->next;
             if (_fsysQueExecSub(queue) == 0) { _fsysQueManageExec = queue; return; }
             queue = next;
         }
@@ -536,9 +561,10 @@ void _fsysAddBGWork(FsysBackgroundWork* entry) { _fsysAddTAG(entry, &_fsysBGWork
 FsysBackgroundWork* _fsysGetNewBGWork() {
     FsysBackgroundWork* result = 0;
     BOOL interrupts = OSDisableInterrupts();
+    FsysBackgroundWork* entry;
     u32 index = _fsysBGWorkIndex;
     while (!result) {
-        FsysBackgroundWork* entry = _fsysBGWork + index;
+        entry = _fsysBGWork + index;
         if (entry->inUse == 0) {
             entry->previous = 0;
             entry->next = 0;
@@ -604,13 +630,16 @@ u8 _fsysCloseFile(FsysWork* work, u8 cancelled) {
     return GSdvdClose((GSdvdWork*)dvd);
 }
 FsysWork* _fsysInfo2Work(void* dvd) {
-    for (u32 i = 0; i < _fsysWorkMax; ++i) {
-        FsysWork* work = _fsysWork + i;
+    FsysWork* work;
+    u32 i;
+    u32 j;
+    for (i = 0; i < _fsysWorkMax; ++i) {
+        work = _fsysWork + i;
         switch (work->status) { case -999: case 0: case 1: case 12: continue; }
         if (work->dvd == dvd) return work;
         GSfsysHeader* header = _fsysGetHeader((GSfsysRequest*)work);
         if (header && (header->flags & 1)) {
-            for (u32 j = 0; j < header->fileCount; ++j) {
+            for (j = 0; j < header->fileCount; ++j) {
                 GSfsysResource* resource = _fsysGetResHeader((GSfsysRequest*)work, j);
                 if (resource && resource->dvd == dvd) return work;
             }
@@ -689,6 +718,7 @@ void _fsysBackgroundTaskNormalType(FsysBackgroundWork* entry, u8 copy) {
     }
 }
 u8 _fsysCheckExpandCompleteAll(FsysWork* work) {
+    u32 i;
     GSfsysHeader* header = _fsysGetHeader((GSfsysRequest*)work);
     if (!header) return 0;
     u8 complete = 1;
@@ -845,10 +875,29 @@ void _fsysForegroundTask(FsysWork* work) {
             _fsysWorkSetTaskStatus(work, 12);
         }
         break;
+    case 12:
+    case -999:
+        break;
     }
     interrupts = OSDisableInterrupts();
     if (work->pendingStatus != 0xffff) { work->status = work->pendingStatus; work->pendingStatus = 0xffff; }
     OSRestoreInterrupts(interrupts);
+}
+u8 _fsysInitTOC() {
+    u32 length;
+    GSdvdWork* dvd = GSdvdOpen("gsfsys.toc");
+    if (!dvd) return 0;
+    length = (GSdvdGetLength(dvd) + 31) & ~31;
+    _fsysTOC = (TocHeader*)_fsysDoMalloc(length);
+    if (!_fsysTOC) return 0;
+    if (GSdvdRead(dvd, _fsysTOC, length, 0) < 0) { GSdvdClose(dvd); return 0; }
+    GSdvdClose(dvd);
+    TocGroup* group = (TocGroup*)((u8*)_fsysTOC + _fsysTOC->tableOffset);
+    for (u32 i = 0; i < _fsysTOC->groupCount; ++i, ++group) {
+        group->name = (const char*)((u32)group->name + (u32)_fsysTOC);
+        group->flags = 0;
+    }
+    return 1;
 }
 void _fsysBackgroundTaskCompressType(FsysBackgroundWork* entry) {
     if (entry->loaded == 1 || _fsysBGTaskCancel(entry) == 1) return;

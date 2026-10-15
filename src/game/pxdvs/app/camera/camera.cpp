@@ -1,3 +1,4 @@
+#pragma defer_codegen on
 #include <game/pxdvs/app/camera/camera.hpp>
 #include <game/pxdvs/GSAPI/GSres/GSres.hpp>
 #include <game/pxdvs/GSAPI/GSmodel/GSmodel.hpp>
@@ -45,9 +46,11 @@ extern "C" {
 void fn_80196A14(u8 flag) { if (flag) pCamWork->flags |= 0x20; else pCamWork->flags &= ~0x20; }
 void cameraLockYTarget(u8 flag) { if (flag) pCamWork->flags |= 0x18; else pCamWork->flags &= ~8; }
 void cameraSetMirrorFlag(s32 flags) { pCamWork->flags &= 0x18; pCamWork->flags |= flags; }
+#pragma scheduling off
 void cameraSetOffsetScale(const GSvec* v) { CameraWork* work=pCamWork; work->offsetScale.param1=v->param1; work->offsetScale.param2=v->param2; work->offsetScale.param3=v->param3; }
 void cameraSetOffsetRotation(const GSvec* v) { CameraWork* work=pCamWork; work->offsetRotation.param1=v->param1; work->offsetRotation.param2=v->param2; work->offsetRotation.param3=v->param3; }
 void cameraSetOffsetPosition(const GSvec* v) { CameraWork* work=pCamWork; work->offsetPosition.param1=v->param1; work->offsetPosition.param2=v->param2; work->offsetPosition.param3=v->param3; }
+#pragma scheduling reset
 f32 cameraGetFov() { return pCamWork->fov; }
 f32 cameraGetRotY() { return pCamWork->rotation.param2; }
 f32 cameraGetDistance() { return pCamWork->distance; }
@@ -174,14 +177,22 @@ void cameraMoveTarget(u32 mode,u32 group,u32 id,f32 duration) {
 void cameraGetRotation(GSvec* out) { copyVector(out,&pCamWork->rotation); }
 void cameraSetRotation(const GSvec* value) { GScamera* camera=(GScamera*)GSresGetResource(0,0); CameraWork* work=pCamWork; work->rotation.param1=value->param1; work->rotation.param2=value->param2; work->rotation.param3=value->param3; GScameraSetRotation(camera,vec(value)); }
 void cameraGetPosition(GSvec* out) { copyVector(out,&pCamWork->position); }
+#pragma scheduling off
 void cameraSetPosition(const GSvec* value) { CameraWork* work=pCamWork; work->position.param1=value->param1; work->position.param2=value->param2; work->position.param3=value->param3; }
+#pragma scheduling reset
 void cameraGetTargetPos(GSvec* out) { copyVector(out,&pCamWork->targetPosition); }
+#pragma scheduling off
 void cameraSetTargetPos(const GSvec* value) { CameraWork* work=pCamWork; work->targetPosition.param1=value->param1; work->targetPosition.param2=value->param2; work->targetPosition.param3=value->param3; }
+#pragma scheduling reset
 void cameraGetTargetOfs(GSvec* out) { copyVector(out,&pCamWork->targetOffset); }
+#pragma scheduling off
 void cameraSetTargetOfs(const GSvec* value) { CameraWork* work=pCamWork; work->targetOffset.param1=value->param1; work->targetOffset.param2=value->param2; work->targetOffset.param3=value->param3; }
+#pragma scheduling reset
+#pragma scheduling off
 void cameraSetPartTargetOffset(const GSvec* value) {
     CameraWork* work=pCamWork; work->partTargetOffset.param1=value->param1; work->partTargetOffset.param2=value->param2; work->partTargetOffset.param3=value->param3;
 }
+#pragma scheduling reset
 void cameraSetTargetExt(u32 group,u32 id,s32 part) {
     pCamWork->targetGroup=group; pCamWork->targetID=id; pCamWork->targetPart=part;
     GSvec* offset=&pCamWork->partTargetOffset; offset->param1=0.0f; offset->param2=0.0f; offset->param3=0.0f;
@@ -290,7 +301,9 @@ static inline void interpolate(GSvec* out,const GSvec* a,const GSvec* b,f32 t) {
     PSVECScale(&delta,&delta,t);
     PSVECAdd(vec(a),&delta,vec(out));
 }
+#pragma dont_inline on
 template<class T> CameraAnimation<T>::CameraAnimation() { moving=0; accelerating=0; accelerateOut=0; accelerateIn=0; acceleration=0.05f; }
+#pragma dont_inline off
 template<class T> void CameraAnimation<T>::start(const T* from,const T* to,f32 seconds) {
     if(seconds < 1e-7f && seconds > -1e-7f) return;
     moving=1; duration=seconds; elapsed=0.0f; startPosition=*from; endPosition=*to; acceleration=0.05f; speed=0.0f; phase=0;
@@ -335,6 +348,7 @@ template<class T> u8 CameraAnimation<T>::updateAcceleration(f32 delta) {
 template<class T> void CameraAnimation<T>::setAcceleration(f32 amount) { acceleration=amount; accelerating=1; accelerateOut=1; accelerateIn=1; }
 template<class T> const T* CameraAnimation<T>::getCurrentPos() const { return &currentPosition; }
 #pragma fp_contract off
+#pragma dont_inline on
 template<> u8 CameraAnimation<f32>::update(f32 delta) {
     if(!moving) return 0;
     if(accelerating) return updateAcceleration(delta);
@@ -346,9 +360,12 @@ template<> u8 CameraAnimation<f32>::update(f32 delta) {
     currentPosition=(endPosition-from)*(time/end)+from;
     return 1;
 }
+#pragma dont_inline off
 #pragma fp_contract on
+#pragma dont_inline on
 template class CameraAnimation<GSvec>;
 template class CameraAnimation<f32>;
+#pragma dont_inline off
 
 struct FloorModuleInterface {
     u32 reserved[6];
@@ -424,13 +441,17 @@ void menuClose(s32);
 void menuOpenCustom(s32,s32,s32,s32,u8,s32);
 void menuSetPosition(s32,s32,s32);
 }
-extern "C" f32 __float_nan;
+extern "C" f32 __float_nan[];
 static inline s32 cameraFloatClass(f32 value) {
     union { f32 value; u32 bits; } number;
     number.value=value;
     switch(number.bits & 0x7f800000) {
-    case 0x7f800000: return number.bits & 0x7fffff ? 1 : 2;
-    case 0: return number.bits & 0x7fffff ? 5 : 3;
+    case 0x7f800000:
+        if(number.bits & 0x7fffff) return 1;
+        return 2;
+    case 0:
+        if(number.bits & 0x7fffff) return 5;
+        return 3;
     default: return 4;
     }
 }
@@ -441,8 +462,8 @@ static inline f32 cameraSqrt(f32 value) {
         guess=0.5*guess*(3.0-guess*guess*value);
         guess=0.5*guess*(3.0-guess*guess*value);
         value=(f32)(value*guess);
-    } else if(value<0.0) return __float_nan;
-    else if(cameraFloatClass(value)==1) return __float_nan;
+    } else if(value<0.0) return __float_nan[0];
+    else if(cameraFloatClass(value)==1) return __float_nan[0];
     return value;
 }
 static inline void cameraApplyLockedY(Vec* target) {
@@ -552,9 +573,12 @@ static void _cameraPadMoveUpdate__FP9_GScamera(GScamera* camera) {
         GScameraSetPosition(camera,vec(&pCamWork->position)); GScameraSetRotation(camera,vec(&pCamWork->rotation)); cameraApplyFov(camera);
     }
 }
+static inline u8 cameraAnyMoving() {
+    return pCamWork->targetAnimation.isMove() || pCamWork->offsetAnimation.isMove() || pCamWork->positionAnimation.isMove() || pCamWork->rotationAnimation.isMove() || pCamWork->fovAnimation.isMove();
+}
 void cameraUpdate() {
-    CameraWork* work=pCamWork;
     GScamera* camera=(GScamera*)GSresGetResource(0,0);
+    CameraWork* work=pCamWork;
     if(work->moving==1) {
         f32 delta=timeGetLastFrameSec();
         if(pCamWork->targetAnimation.update(delta)) copyVector(&pCamWork->targetPosition,pCamWork->targetAnimation.getCurrentPos());
@@ -562,26 +586,34 @@ void cameraUpdate() {
         if(pCamWork->positionAnimation.update(delta)) copyVector(&pCamWork->position,pCamWork->positionAnimation.getCurrentPos());
         if(pCamWork->rotationAnimation.update(delta)) copyVector(&pCamWork->rotation,pCamWork->rotationAnimation.getCurrentPos());
         if(pCamWork->fovAnimation.update(delta)) pCamWork->fov=*pCamWork->fovAnimation.getCurrentPos();
+        Vec distance;
         switch(pCamWork->type) {
+        case 0:
+        case 1:
         case 5:
             if(floorFieldCameraDataExist() && floorFieldCameraGetEnabled()) {
-                Vec distance;
                 PSVECAdd(vec(&pCamWork->targetPosition),vec(&pCamWork->targetOffset),&distance);
                 PSVECSubtract(vec(&pCamWork->position),&distance,&distance);
                 pCamWork->height=distance.y;
                 pCamWork->distance=cameraSqrt(distance.x*distance.x+distance.z*distance.z);
             }
             break;
+        case 6:
+            break;
         case 7: {
-            Vec distance;
             PSVECSubtract(vec(&pCamWork->position),vec(&pCamWork->targetPosition),&distance);
             pCamWork->height=distance.y;
             pCamWork->distance=cameraSqrt(distance.x*distance.x+distance.z*distance.z);
             if(!pCamWork->rotationAnimation.isMove() && !(pCamWork->flags&0x20)) pCamWork->rotation.param2=(f32)atan2(distance.x,distance.z);
             break;
         }
+        case 8:
+            break;
         }
-        if(!pCamWork->targetAnimation.isMove() && !pCamWork->offsetAnimation.isMove() && !pCamWork->positionAnimation.isMove() && !pCamWork->rotationAnimation.isMove() && !pCamWork->fovAnimation.isMove()) pCamWork->moving=0;
+        u8 busy;
+        if(!pCamWork->targetAnimation.isMove() && !pCamWork->offsetAnimation.isMove() && !pCamWork->positionAnimation.isMove() && !pCamWork->rotationAnimation.isMove() && !pCamWork->fovAnimation.isMove()) busy=0;
+        else busy=1;
+        if(!busy) pCamWork->moving=0;
     } else {
         switch(work->type) {
         case 0: case 1: case 5: case 7: cameraRefreshTargetPos(); break;
@@ -589,11 +621,14 @@ void cameraUpdate() {
             camera=animationCamera(work);
             if(!camera) { pCamWork->animationGroup=0; pCamWork->animationID=0; cameraSetType(pCamWork->previousType); cameraSetTarget(0,100); camera=(GScamera*)GSresGetResource(0,0); }
             break;
+        case 2: case 3: case 6: case 8:
+            break;
         }
     }
     switch(pCamWork->type) {
     case 0: {
-        Vec displacement={0.0f,pCamWork->height,pCamWork->distance},target,distance;
+        Vec distance,displacement,target;
+        displacement.y=pCamWork->height; displacement.x=0.0f; displacement.z=pCamWork->distance;
         Mtx matrix;
         PSMTXRotRad(matrix,'Y',pCamWork->rotation.param2); PSMTXMultVec(matrix,&displacement,&displacement);
         PSVECAdd(vec(&pCamWork->targetPosition),vec(&pCamWork->targetOffset),&target); PSVECAdd(&target,&displacement,vec(&pCamWork->position));
@@ -605,7 +640,7 @@ void cameraUpdate() {
         cameraApplyFov(camera); break;
     }
     case 1: case 2: {
-        Vec target,distance;
+        Vec distance,target;
         PSVECAdd(vec(&pCamWork->targetPosition),vec(&pCamWork->targetOffset),&target); cameraApplyLockedY(&target);
         GScameraSetPosition(camera,vec(&pCamWork->position)); GScameraLookAt(camera,vec(&gUpVec),&target);
         PSVECSubtract(vec(&pCamWork->position),&target,&distance);
@@ -622,7 +657,8 @@ void cameraUpdate() {
     }
     case 8: _cameraOffsetAnimeUpdate__FP9_GScamera(camera); GScameraLoadActiveCameraMatrix(-1); return;
     case 7: {
-        Vec displacement={0.0f,pCamWork->height,pCamWork->distance},target;
+        Vec displacement,target;
+        displacement.y=pCamWork->height; displacement.x=0.0f; displacement.z=pCamWork->distance;
         Mtx matrix;
         PSMTXRotRad(matrix,'Y',pCamWork->rotation.param2); PSMTXMultVec(matrix,&displacement,&displacement);
         PSVECAdd(vec(&pCamWork->targetPosition),&displacement,vec(&pCamWork->position));

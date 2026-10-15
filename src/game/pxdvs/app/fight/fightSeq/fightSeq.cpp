@@ -213,7 +213,7 @@ u8 tenkouDataBiosGetSolarFlag(u8);
 u8 wazaCheckDarkWaza(u16);
 u8 wazaDB_GetBouon(u16);
 u8 wazaDB_GetDageki(u16);
-u32 wazaDB_GetIryoku(u32);
+u32 wazaDB_GetIryoku(u16);
 u32 wazaDB_GetName(u16);
 u8 wazaDB_GetOujanosirusi(u16);
 u8 wazaDB_GetRangeId(u16);
@@ -586,8 +586,8 @@ s32 _fightSeqSoubiItemCheckWazaHitAfterAllSub__FPvUsPv(void *rawPokemon, u16 arg
         var_r26 = 0;
         while (var_r26 < 7U) {
             temp_r27_2 = (var_r26 * 2) & 0x1FFFE;
-            if (pokemonGetStatus((Pokemon *) arg0, 0U, *(fight_seq_status_id + temp_r27_2), 0U) < 6) {
-                pokemonSetStatus((Pokemon *) arg0, 0U, *(fight_seq_status_id + temp_r27_2), 0U, 6U);
+            if (pokemonGetStatus((Pokemon *) arg0, 0U, *(const u16 *)((const u8 *)fight_seq_status_id + temp_r27_2), 0U) < 6) {
+                pokemonSetStatus((Pokemon *) arg0, 0U, *(const u16 *)((const u8 *)fight_seq_status_id + temp_r27_2), 0U, 6U);
                 var_r30 = 5;
             }
             var_r26 += 1;
@@ -1321,7 +1321,7 @@ u8 fightSeqFightOutPokemonTokuseiCheckWazaHit(FightOutPokemon *arg0, FightOutPok
     u16 temp_r25;
 
     temp_r26 = fightOutPokemonGetTokuseiDataId(arg1);
-    temp_r25 = wazaDB_GetIryoku((u32) arg2);
+    temp_r25 = wazaDB_GetIryoku(arg2);
     temp_r27 = fightOutPokemonGetWazaZokuseiDataId(arg0);
     temp_r31 = fightOutPokemon_GetPassPpdecFlag(arg0);
     var_r30 = 0;
@@ -1870,7 +1870,7 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
     temp_r25 = fightOutPokemonGetTokuseiDataId(temp_r3);
     temp_r3_2 = fightOutPokemon_GetUseWazaDataId(temp_r3);
     var_r30 = temp_r3_2;
-    temp_r24 = wazaDB_GetIryoku((u32) temp_r3_2);
+    temp_r24 = wazaDB_GetIryoku(temp_r3_2);
     temp_r26 = wazaDB_GetSeqId(var_r30);
     var_r22 = 0;
     temp_r27 = fightFloor_GetFightType(NULL);
@@ -3268,7 +3268,7 @@ u16 fightSeqWazaDamageCalc(FightOutPokemon *arg0, FightOutPokemon *arg1, u8 arg2
     temp_r23 = fightFloor_GetFightKindDoBadgeCheckFlag(NULL);
     sp14 = fightFloor_GetFightKindDoItemSoubiTokukoutokubouupFlag(NULL);
     if ((u16) arg4 == 0) {
-        var_r0 = wazaDB_GetIryoku((u32) arg3);
+        var_r0 = wazaDB_GetIryoku(arg3);
     } else {
         var_r0 = (u16) arg4;
     }

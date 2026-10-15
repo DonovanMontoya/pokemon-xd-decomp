@@ -106,6 +106,21 @@ void menuCB_SetSprite(MenuSubSprite *,s32); s32 menuSpriteBiosGetPtr(s32); u16 t
 static const s32 BATTLE_BA_HP_Bar_Char[3] = {0x000002B8, 0x000002B9, 0x000002BA};
 static const s32 BATTLE_BA_FACEWAKU_Char[2] = {0x00000233, 0x00000234};
 static const s32 BATTLE_BA_XP_PRINT_Char[4] = {0x0000020F, 0x0000020E, 0x0000020D, 0x0000020C};
+static s32 submenurule_msg1[3] = {0x4391, 0x4392, 0x4395};
+static s32 submenurule_msg2[4] = {0x4391, 0x4393, 0x4394, 0x4395};
+static s32 submenu_msg1[3] = {0x4398, 0x4399, 0x439A};
+static s32 submenu_msg2[4] = {0x439B, 0x4399, 0x439C, 0x439A};
+static s32 submenu_msg3[3] = {0x439D, 0x439E, 0x439A};
+static s16 submenu1_x[30] = {
+    0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+    0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,
+    0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28};
+static s16 submenu1_y[30] = {
+    0x136, 0x136, 0x136, 0x136, 0x136, 0x136, 0x136, 0x136, 0x136, 0x136,
+    0x136, 0x136, 0x136, 0x136, 0x136, 0x136, 0x136, 0x136,
+    0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64};
+static s32 submenu_msg1s[2] = {0x4399, 0x439A};
+
 void menuCB_GCEntry_ItemKeepJob(void);
 void menuCB_GCEntry_ItemGiveJob(void);
 void menuCBBattleBABatuMark(MenuSubSprite *arg0, s32 arg1, s32 arg2);
@@ -123,6 +138,10 @@ s32 heroBiosGetRnd(void *); int sprintf(char *,const char *,...); void GScharMak
 void _menuCBGCDelPokemon__Fv(void);
 u8 menuCBGCEntry_ErrorDisp__FUlUl(u32 arg0, u32 arg1);
 void menuCB_GCEntry_OkPushErrorCheck(void);
+s32 menuCBBios_ParticipationPokemonMax(void); u16 toolentryTaisenGetPokemonNum(s32); s32 toolentryTaisengetEtnryPokemonOrderNum(s32);
+void spriteSetOffset(s32, s32, s32); void spriteSetEnv(s32); void GSprimSetup2DRender__FP10GSgfxLayer(void *); void drawAndUpdate__4CAntFv(MenuSubAnt *);
+s32 menuSubOpenSelect2(s32, s32 *, s32, s32, s32, s32, s32, s32);
+s8 menuSubOpenYesNo(s32, s32, s32, s32); void winMsgOpen(s32, s32, s32, s32); void winMsgClose(s32);
 void menuCB_WaitGCControler1(void);
 void menuCB_GBADisconnectedErrorJob(void);
 void menuCBPokemonEntryGCControlDisp(MenuSubWindow *arg0, s32 arg1);
@@ -2388,6 +2407,285 @@ u8 menuCBGCEntry_ErrorDisp__FUlUl(u32 arg0, u32 arg1) {
     return 1U;
 }
 
+s32 menuCB_GCEntry_SubWindow_Disp(void) {
+    s16 var_r5;
+    s16 var_r7;
+    u16 var_r4;
+
+    if (_CB.unkAFF0 == 1) {
+        winMsgOpen(2, 0x43A1, 1, 0);
+        switch (pokecoloGetCountryCode()) {
+        case 0:
+            _CB.unkAFE0 = menuSubOpenYesNo(0, 0x3C, 0xD2, 0);
+            break;
+        case 1:
+        case 2:
+            _CB.unkAFE0 = menuSubOpenYesNo(0, 0x3C, 0xC8, 0);
+            break;
+        }
+        if (_CB.unkAFE0 == -1) {
+            _CB.unkAFE0 = 1;
+        }
+        winMsgClose(0);
+        return _CB.unkAFE0;
+    }
+    menuCBGCEntryTypeIndex();
+    var_r4 = _CB.unkB1D8;
+    if ((var_r4 >= 0x1E) && (var_r4 <= 0x23)) {
+        _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg2, 4, 0x28, 0x64, 0, 4, 1);
+        if (_CB.unkAFE0 == -1) {
+            _CB.unkAFE0 = 3;
+        }
+        switch (_CB.unkAFE0) {
+        case 0:
+            return 1;
+        case 1:
+            return 2;
+        case 2:
+            winMsgOpen(2, 0x43A0, 0, 0);
+            _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg3, 3, 0x28, 0x64, 0, 3, 1);
+            if (_CB.unkAFE0 == -1) {
+                _CB.unkAFE0 = 2;
+            }
+            switch (_CB.unkAFE0) {
+            case 0:
+                winMsgClose(0);
+                return 4;
+            case 1:
+                return 5;
+            case 2:
+                winMsgClose(0);
+                return 6;
+            }
+            break;
+        case 3:
+            return 6;
+        }
+    } else {
+        var_r5 = 0x104;
+        var_r7 = 0xC8;
+        switch (_CB.unkB0F0) {
+        case 1:
+            var_r5 = submenu1_x[var_r4];
+            var_r7 = submenu1_y[var_r4];
+            break;
+        case 0:
+        case 4:
+            break;
+        }
+        if (_CB.unkB100 == 6) {
+            _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg1s, 2, var_r5, var_r7, 0, 2, 1);
+            if (_CB.unkAFE0 == -1) {
+                _CB.unkAFE0 = 1;
+            }
+        } else {
+            _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg1, 3, var_r5, var_r7, 0, 3, 1);
+            if (_CB.unkAFE0 == -1) {
+                _CB.unkAFE0 = 2;
+            }
+        }
+        if (_CB.unkB100 == 6) {
+            switch (_CB.unkAFE0) {
+            case 0:
+                return 2;
+            case 1:
+                return 6;
+            }
+        } else {
+            switch (_CB.unkAFE0) {
+            case 0:
+                return 0;
+            case 1:
+                return 2;
+            case 2:
+                return 6;
+            }
+        }
+    }
+    return 6;
+}
+
+void menuCB_TUNAIDE01_Rule_SELECT(void) {
+    switch (_CB.unkB004) {
+    case 0:
+    case 1:
+    case 2:
+        _CB.unkAFE0 = menuSubOpenSelect2(0, submenurule_msg1, 3, 0x28, 0xF4, _CB.unkAFE0, 3, 1);
+        if (_CB.unkAFE0 == -1) {
+            _CB.unkAFE0 = 2;
+        }
+        break;
+    case 3:
+    case 4:
+    case 5:
+        _CB.unkAFE0 = menuSubOpenSelect2(0, submenurule_msg2, 4, 0x28, 0xD4, _CB.unkAFE0, 4, 1);
+        if (_CB.unkAFE0 == -1) {
+            _CB.unkAFE0 = 3;
+        }
+        _CB.unkAFE0 += 0x10;
+        break;
+    }
+    switch (_CB.unkAFE0) {
+    case 0:
+    case 0x10:
+        _CB.unkB10C = 0;
+        break;
+    case 2:
+    case 0x13:
+        _CB.unkB10C = 1;
+        break;
+    }
+}
+
+typedef struct MenuSubPos { s16 x; s16 y; } MenuSubPos;
+
+void menuCB2DPokemonDisp2(MenuSubWindow *arg0, MenuSubSprite *arg1, u32 arg2, u32 arg3) {
+    MenuSubPokemon *pokemon;
+    u32 idx;
+    MenuSubPos pos;
+    MenuSubPos tmp;
+    MenuSubAnt *ptr;
+
+    pokemon = menuCBPokemonPtrGet__FUlUl(arg2, arg3);
+    idx = menuCBPokemonGetIndex__FUlUl(arg2, arg3);
+    if ((pokemon != NULL) && (pokemonCheckValid(pokemon) != 0)) {
+        spriteSetOffset(arg0->unk1C, 0, 0);
+        spriteClearScissor(arg0->unk1C);
+        spriteSetEnv(arg0->unk1C);
+        if (idx < 0x1E) {
+            spriteSetScissor(arg0->unk1C, 0x12, 0x51, 0x180, 0x140);
+        }
+        pos.x = 0x20 + arg1->unk50 + arg0->unk8C;
+        pos.y = 0x20 + arg1->unk52;
+        if (_CB.unkB150 < 0) {
+            ptr = &antR[idx];
+            initByPokemonAndSetColorAnimationInAny__4CAntFP7Pokemon(ptr, pokemon);
+            tmp = pos;
+            antR[idx].unk8 = tmp.x;
+            antR[idx].unkA = tmp.y;
+            setAnimation__4CAntFl(ptr, 0);
+            GSprimSetup2DRender__FP10GSgfxLayer(0);
+            if (ptr->unk0 != 0) {
+                antR[idx].unk10 = arg0->unk93;
+                drawAndUpdate__4CAntFv(ptr);
+            }
+        } else {
+            ptr = &antL[idx];
+            initByPokemonAndSetColorAnimationInAny__4CAntFP7Pokemon(ptr, pokemon);
+            tmp = pos;
+            antL[idx].unk8 = tmp.x;
+            antL[idx].unkA = tmp.y;
+            setAnimation__4CAntFl(ptr, 0);
+            GSprimSetup2DRender__FP10GSgfxLayer(0);
+            if (ptr->unk0 != 0) {
+                antL[idx].unk10 = arg0->unk93;
+                drawAndUpdate__4CAntFv(ptr);
+            }
+        }
+    }
+}
+
+void menuCB2DPokemonDisp(MenuSubWindow *arg0, MenuSubSprite *arg1, u32 arg2, u32 arg3) {
+    MenuSubAnt *ptr;
+    MenuSubPokemon *pokemon;
+    u32 idx;
+    MenuSubPos pos;
+    MenuSubPos tmp;
+
+    pokemon = menuCBPokemonPtrGet__FUlUl(arg2, arg3);
+    idx = menuCBPokemonGetIndex__FUlUl(arg2, arg3);
+    if (idx == 0x1E) {
+        _menuCB2DPokemonNewSet__FUc(0);
+        _menuCB2DPokemonNewSet__FUc(1);
+    }
+    if ((pokemon != NULL) && (pokemonCheckValid(pokemon) != 0)) {
+        spriteSetOffset(arg0->unk1C, 0, 0);
+        spriteClearScissor(arg0->unk1C);
+        spriteSetEnv(arg0->unk1C);
+        if (idx < 0x1E) {
+            spriteSetScissor(arg0->unk1C, 0x12, 0x51, 0x180, 0x140);
+        }
+        pos.x = 0x20 + arg1->unk50 + arg0->unk8C;
+        pos.y = 0x20 + arg1->unk52;
+        ptr = &ant[idx];
+        initByPokemonAndSetColorAnimationInAny__4CAntFP7Pokemon(ptr, pokemon);
+        tmp = pos;
+        ant[idx].unk8 = tmp.x;
+        ant[idx].unkA = tmp.y;
+        setAnimation__4CAntFl(ptr, 0);
+        GSprimSetup2DRender__FP10GSgfxLayer(0);
+        if (ptr->unk0 != 0) {
+            ant[idx].unk10 = arg0->unk93;
+            drawAndUpdate__4CAntFv(ptr);
+        }
+    }
+}
+
+void menuCBPokemonEntryBallAnaDisp(MenuSubSprite *arg0, s32 arg1, u32 arg2) {
+    u16 var_r31;
+    u16 temp_r3;
+
+    var_r31 = menuCBBios_ParticipationPokemonMax();
+    temp_r3 = toolentryTaisenGetPokemonNum(arg1);
+    _CB.unkB426[arg1][arg2] = arg0->unk50;
+    if (_CB.unkB487[arg1][arg2] == 0) {
+        _CB.unkB456[arg1][arg2] = 0x32;
+    }
+    temp_r3 = (temp_r3 < var_r31) ? temp_r3 : var_r31;
+    if (arg2 > temp_r3) {
+        winSpriteSetDisp(arg0, 0);
+    } else {
+        winSpriteSetDisp(arg0, 1);
+    }
+}
+
+void menuCBPokemonEntryBallDisp(MenuSubSprite *arg0, s32 arg1, u32 arg2) {
+    MenuSubPlayer *players;
+    u16 var_r28;
+    u16 var_r27;
+    u16 temp_r3;
+    u16 var_r0;
+
+    var_r28 = menuCBBios_ParticipationPokemonMax();
+    var_r27 = toolentryTaisenGetPokemonNum(arg1);
+    temp_r3 = toolentryTaisengetEtnryPokemonOrderNum(arg1);
+    if (var_r27 < var_r28) {
+        var_r0 = var_r27;
+    } else {
+        var_r0 = var_r28;
+    }
+    if ((arg2 > var_r0) || (arg2 > temp_r3)) {
+        if (pauseIsPause() != 0) {
+            if (_CB.unkB487[arg1][arg2] == 0) {
+                winSpriteSetDisp(arg0, 0);
+                return;
+            }
+            winSpriteSetDisp(arg0, 1);
+            return;
+        }
+        winSpriteSetDisp(arg0, 0);
+        _CB.unkB487[arg1][arg2] = 0;
+        return;
+    }
+    if (pauseIsPause() != 0) {
+        if (_CB.unkB487[arg1][arg2] != 1) {
+            winSpriteSetDisp(arg0, 0);
+            _CB.unkB487[arg1][arg2] = 0;
+            return;
+        }
+    }
+    _CB.unkB487[arg1][arg2] = 1;
+    arg0->unk50 = _CB.unkB426[arg1][arg2] + _CB.unkB456[arg1][arg2];
+    if (_CB.unkB456[arg1][arg2] != 0) {
+        _CB.unkB456[arg1][arg2] -= 5;
+    }
+    winSpriteSetDisp(arg0, 1);
+    players = (MenuSubPlayer *)&_CB;
+    if (players[arg1].unk1C[arg2] == 0xF) {
+        winSpriteSetDisp(arg0, 0);
+    }
+}
+
 void menuCB_GCEntry_OkPushErrorCheck(void) {
     u32 var_r30;
     u32 var_r30_2;
@@ -2608,34 +2906,11 @@ void menuCB_Trainer_Error_Disp(MenuSubWindow *arg0, MenuSubSprite *arg1, s32 arg
 
     var_r5 = arg2;
     {
-        err_msgID[0] = 0;
-        err_msgID2[0] = 0;
-        err_msgID[1] = 0;
-        err_msgID2[1] = 0;
-        err_msgID[2] = 0;
-        err_msgID2[2] = 0;
-        err_msgID[3] = 0;
-        err_msgID2[3] = 0;
-        err_msgID[4] = 0;
-        err_msgID2[4] = 0;
-        err_msgID[5] = 0;
-        err_msgID2[5] = 0;
-        err_msgID[6] = 0;
-        err_msgID2[6] = 0;
-        err_msgID[7] = 0;
-        err_msgID2[7] = 0;
-        err_msgID[8] = 0;
-        err_msgID2[8] = 0;
-        err_msgID[9] = 0;
-        err_msgID2[9] = 0;
-        err_msgID[0xA] = 0;
-        err_msgID2[0xA] = 0;
-        err_msgID[0xB] = 0;
-        err_msgID2[0xB] = 0;
-        err_msgID[0xC] = 0;
-        err_msgID2[0xC] = 0;
-        err_msgID[0xD] = 0;
-        err_msgID2[0xD] = 0;
+        s32 i;
+        for (i = 0; i < 14; i++) {
+            err_msgID[i] = 0;
+            err_msgID2[i] = 0;
+        }
     }
     temp_r0 = var_r5 * 4;
     _CB.unkB0E4 = 0;

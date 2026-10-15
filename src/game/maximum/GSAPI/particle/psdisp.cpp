@@ -48,193 +48,115 @@ s32 psDispHasRenderData(s32 mask) {
     return 0;
 }
 
-__declspec(weak) void setupChanReg(PSParticle *arg0) {
-    union { f64 alignment; u8 bytes[35]; } stack;
-    s32 temp_r0;
-    s32 temp_r10;
-    s32 temp_r5_2;
-    u16 temp_r5;
-    u16 temp_r5_3;
-    u8 temp_r0_2;
-    u8 temp_r11;
-    u8 temp_r12;
-    u8 temp_r6;
-    u8 temp_r6_2;
-    u8 temp_r6_3;
-    u8 temp_r7;
-    void *temp_r3;
+static inline void getColorPrimEnv(PSParticle *pp, GXColor *primCol, GXColor *envCol) {
+    if (pp->primCount) {
+        int scale = 65536 * pp->primRemain / pp->primCount;
+        primCol->r = ((pp->primTarget[0] << 16) + (pp->primColor[0] - pp->primTarget[0]) * scale) >> 16;
+        primCol->g = ((pp->primTarget[1] << 16) + (pp->primColor[1] - pp->primTarget[1]) * scale) >> 16;
+        primCol->b = ((pp->primTarget[2] << 16) + (pp->primColor[2] - pp->primTarget[2]) * scale) >> 16;
+        primCol->a = ((pp->primTarget[3] << 16) + (pp->primColor[3] - pp->primTarget[3]) * scale) >> 16;
+    } else {
+        *primCol = *(GXColor *) pp->primColor;
+    }
+    if (pp->envCount) {
+        int scale = 65536 * pp->envRemain / pp->envCount;
+        envCol->r = ((pp->envTarget[0] << 16) + (pp->envColor[0] - pp->envTarget[0]) * scale) >> 16;
+        envCol->g = ((pp->envTarget[1] << 16) + (pp->envColor[1] - pp->envTarget[1]) * scale) >> 16;
+        envCol->b = ((pp->envTarget[2] << 16) + (pp->envColor[2] - pp->envTarget[2]) * scale) >> 16;
+        envCol->a = ((pp->envTarget[3] << 16) + (pp->envColor[3] - pp->envTarget[3]) * scale) >> 16;
+    } else {
+        *envCol = *(GXColor *) pp->envColor;
+    }
+}
 
-    if (arg0->kind & 0x80000000) {
-        temp_r5 = arg0->ambCount;
-        if (temp_r5 != 0) {
-            temp_r6 = arg0->ambRGBTarget;
-            temp_r5_2 = (s32) (arg0->ambRemain << 0x10) / (s32) temp_r5;
-            temp_r0 = (s32) ((temp_r6 << 0x10) + (temp_r5_2 * (arg0->ambRGB - temp_r6))) >> 0x10;
-            (*(u8*)(stack.bytes+0x16)) = (u8) temp_r0;
-            (*(u8*)(stack.bytes+0x15)) = (u8) temp_r0;
-            (*(u8*)(stack.bytes+0x14)) = (u8) temp_r0;
-            temp_r6_2 = arg0->ambAlphaTarget;
-            (*(u8*)(stack.bytes+0x17)) = (u8) ((s32) ((temp_r6_2 << 0x10) + (temp_r5_2 * (arg0->ambAlpha - temp_r6_2))) >> 0x10);
+static inline void getColorMatAmb(PSParticle *pp, GXColor *matCol, GXColor *ambCol) {
+    if (pp->matCount) {
+        int scale = 65536 * pp->matRemain / pp->matCount;
+        u8 rgb = ((pp->matRGBTarget << 16) + (pp->matRGB - pp->matRGBTarget) * scale) >> 16;
+        matCol->r = matCol->g = matCol->b = rgb;
+        matCol->a = ((pp->matAlphaTarget << 16) + (pp->matAlpha - pp->matAlphaTarget) * scale) >> 16;
+    } else {
+        matCol->r = matCol->g = matCol->b = pp->matRGB;
+        matCol->a = pp->matAlpha;
+    }
+    if (pp->ambCount) {
+        int scale = 65536 * pp->ambRemain / pp->ambCount;
+        u8 rgb = ((pp->ambRGBTarget << 16) + (pp->ambRGB - pp->ambRGBTarget) * scale) >> 16;
+        ambCol->r = ambCol->g = ambCol->b = rgb;
+        ambCol->a = ((pp->ambAlphaTarget << 16) + (pp->ambAlpha - pp->ambAlphaTarget) * scale) >> 16;
+    } else {
+        ambCol->r = ambCol->g = ambCol->b = pp->ambRGB;
+        ambCol->a = pp->ambAlpha;
+    }
+}
+
+__declspec(weak) void setupChanReg(PSParticle *pp) {
+    GXColor prim_color;
+    GXColor amb_color;
+    GXColor mat_color;
+    void *lobj;
+
+    if (pp->kind & 0x80000000) {
+        getColorMatAmb(pp, &mat_color, &amb_color);
+        if (pp->kind & 0x80) {
+            prim_color.r = prim_color.g = prim_color.b = 0xFF;
         } else {
-            temp_r0_2 = arg0->ambRGB;
-            (*(u8*)(stack.bytes+0x16)) = temp_r0_2;
-            (*(u8*)(stack.bytes+0x15)) = temp_r0_2;
-            (*(u8*)(stack.bytes+0x14)) = temp_r0_2;
-            (*(u8*)(stack.bytes+0x17)) = arg0->ambAlpha;
+            getColorPrimEnv(pp, &prim_color, &mat_color);
+            amb_color.r = (u8) ((amb_color.r * prim_color.r) >> 8);
+            amb_color.g = (u8) ((amb_color.g * prim_color.g) >> 8);
+            amb_color.b = (u8) ((amb_color.b * prim_color.b) >> 8);
         }
-        if (arg0->kind & 0x80) {
-            (*(u8*)(stack.bytes+0x1A)) = 0xFF;
-            (*(u8*)(stack.bytes+0x19)) = 0xFF;
-            (*(s8*)(stack.bytes+0x18)) = 0xFF;
+        if (prim_color.r != prevChanMat.r || prim_color.g != prevChanMat.g || prim_color.b != prevChanMat.b) {
+            prevChanMat = prim_color;
+            GXSetChanMatColor(GX_COLOR0, prevChanMat);
+        }
+        lobj = HSD_LObjGetActiveByID(0x100U);
+        if (lobj != NULL) {
+            HSD_MulColor(&amb_color, (GXColor *) ((u8 *) lobj + 0x10), &amb_color);
         } else {
-            temp_r5_3 = arg0->primCount;
-            if (temp_r5_3 != 0) {
-                temp_r6_3 = arg0->primTarget[0];
-                temp_r10 = (s32) (arg0->primRemain << 0x10) / (s32) temp_r5_3;
-                temp_r7 = arg0->primTarget[1];
-                temp_r11 = arg0->primTarget[2];
-                temp_r12 = arg0->primTarget[3];
-                (*(s8*)(stack.bytes+0x18)) = (s8) ((s32) ((temp_r6_3 << 0x10) + (temp_r10 * (arg0->primColor[0] - temp_r6_3))) >> 0x10);
-                (*(u8*)(stack.bytes+0x19)) = (u8) ((s32) ((temp_r7 << 0x10) + (temp_r10 * (arg0->primColor[1] - temp_r7))) >> 0x10);
-                (*(u8*)(stack.bytes+0x1A)) = (u8) ((s32) ((temp_r11 << 0x10) + (temp_r10 * (arg0->primColor[2] - temp_r11))) >> 0x10);
-                (*(s8*)(stack.bytes+0x1B)) = (s8) ((s32) ((temp_r12 << 0x10) + (temp_r10 * (arg0->primColor[3] - temp_r12))) >> 0x10);
-            } else {
-                *(u32*)&(*(s8*)(stack.bytes+0x18)) = (s32) *(u32*)arg0->primColor;
-            }
-            (*(u8*)(stack.bytes+0x14)) = (u8) ((s32) ((*(u8*)(stack.bytes+0x14)) * (u8) (*(s8*)(stack.bytes+0x18))) >> 8);
-            (*(u8*)(stack.bytes+0x15)) = (u8) ((s32) ((*(u8*)(stack.bytes+0x15)) * (*(u8*)(stack.bytes+0x19))) >> 8);
-            (*(u8*)(stack.bytes+0x16)) = (u8) ((s32) ((*(u8*)(stack.bytes+0x16)) * (*(u8*)(stack.bytes+0x1A))) >> 8);
+            amb_color.r = amb_color.g = amb_color.b = 0;
         }
-        if (((u8) (*(s8*)(stack.bytes+0x18)) != (u8) prevChanMat.r) || ((*(u8*)(stack.bytes+0x19)) != (u8) prevChanMat.g) || ((*(u8*)(stack.bytes+0x1A)) != (u8) prevChanMat.b)) {
-            *(u32*)&prevChanMat = *(u32*)&(*(s8*)(stack.bytes+0x18));
-            (*(s32*)(stack.bytes+0x10)) = *(u32*)&(*(s8*)(stack.bytes+0x18));
-            GXSetChanMatColor(GX_COLOR0, *(GXColor*)&(*(s32*)(stack.bytes+0x10)));
-        }
-        temp_r3 = HSD_LObjGetActiveByID(0x100U);
-        if (temp_r3 != NULL) {
-            HSD_MulColor((GXColor *) &(*(u8*)(stack.bytes+0x14)), (GXColor*)((u8*)temp_r3 + 0x10), (GXColor *) &(*(u8*)(stack.bytes+0x14)));
-        } else {
-            (*(u8*)(stack.bytes+0x16)) = 0;
-            (*(u8*)(stack.bytes+0x15)) = 0;
-            (*(u8*)(stack.bytes+0x14)) = 0;
-        }
-        if (((*(u8*)(stack.bytes+0x14)) != (u8) prevChanAmb.r) || ((*(u8*)(stack.bytes+0x15)) != (u8) prevChanAmb.g) || ((*(u8*)(stack.bytes+0x16)) != (u8) prevChanAmb.b)) {
-            (*(s32*)(stack.bytes+0x8)) = *(s32*)&(*(u8*)(stack.bytes+0x14));
-            *(u32*)&prevChanAmb = *(s32*)&(*(u8*)(stack.bytes+0x14));
-            (*(s32*)(stack.bytes+0xC)) = *(s32*)&(*(u8*)(stack.bytes+0x14));
-            GXSetChanAmbColor(GX_COLOR0, *(GXColor*)&(*(s32*)(stack.bytes+0xC)));
+        if (amb_color.r != prevChanAmb.r || amb_color.g != prevChanAmb.g || amb_color.b != prevChanAmb.b) {
+            prevChanAmb = amb_color;
+            GXSetChanAmbColor(GX_COLOR0, prevChanAmb);
         }
     }
 }
 
-__declspec(weak) void setupTevReg(PSParticle *arg0) {
-    union { f64 alignment; u8 bytes[55]; } stack;
-    s32 temp_r0;
-    s32 temp_r10;
-    s32 temp_r10_2;
-    s32 temp_r4_4;
-    s32 temp_r6_3;
-    u16 temp_r4;
-    u16 temp_r4_2;
-    u16 temp_r4_3;
-    u32 temp_r3;
-    u32 temp_r8;
-    u8 temp_r11;
-    u8 temp_r11_2;
-    u8 temp_r12;
-    u8 temp_r12_2;
-    u8 temp_r3_2;
-    u8 temp_r5;
-    u8 temp_r5_2;
-    u8 temp_r5_3;
-    u8 temp_r6;
-    u8 temp_r6_2;
-    u8 temp_r7;
+__declspec(weak) void setupTevReg(PSParticle *pp) {
+    GXColor prim_color;
+    GXColor env_color;
+    GXColor mat_color;
+    GXColor amb_color;
 
-    temp_r4 = arg0->primCount;
-    if (temp_r4 != 0) {
-        temp_r5 = arg0->primTarget[0];
-        temp_r6 = arg0->primTarget[1];
-        temp_r10 = (s32) (arg0->primRemain << 0x10) / (s32) temp_r4;
-        temp_r11 = arg0->primTarget[2];
-        temp_r12 = arg0->primTarget[3];
-        (*(s8*)(stack.bytes+0x2C)) = (s8) ((s32) ((temp_r5 << 0x10) + (temp_r10 * (arg0->primColor[0] - temp_r5))) >> 0x10);
-        (*(u8*)(stack.bytes+0x2D)) = (u8) ((s32) ((temp_r6 << 0x10) + (temp_r10 * (arg0->primColor[1] - temp_r6))) >> 0x10);
-        (*(u8*)(stack.bytes+0x2E)) = (u8) ((s32) ((temp_r11 << 0x10) + (temp_r10 * (arg0->primColor[2] - temp_r11))) >> 0x10);
-        (*(u8*)(stack.bytes+0x2F)) = (u8) ((s32) ((temp_r12 << 0x10) + (temp_r10 * (arg0->primColor[3] - temp_r12))) >> 0x10);
-    } else {
-        *(u32*)&(*(s8*)(stack.bytes+0x2C)) = (s32) *(u32*)arg0->primColor;
-    }
-    temp_r4_2 = arg0->envCount;
-    if (temp_r4_2 != 0) {
-        temp_r5_2 = arg0->envTarget[0];
-        temp_r6_2 = arg0->envTarget[1];
-        temp_r10_2 = (s32) (arg0->envRemain << 0x10) / (s32) temp_r4_2;
-        temp_r11_2 = arg0->envTarget[2];
-        temp_r12_2 = arg0->envTarget[3];
-        (*(s8*)(stack.bytes+0x28)) = (s8) ((s32) ((temp_r5_2 << 0x10) + (temp_r10_2 * (arg0->envColor[0] - temp_r5_2))) >> 0x10);
-        (*(u8*)(stack.bytes+0x29)) = (u8) ((s32) ((temp_r6_2 << 0x10) + (temp_r10_2 * (arg0->envColor[1] - temp_r6_2))) >> 0x10);
-        (*(u8*)(stack.bytes+0x2A)) = (u8) ((s32) ((temp_r11_2 << 0x10) + (temp_r10_2 * (arg0->envColor[2] - temp_r11_2))) >> 0x10);
-        (*(u8*)(stack.bytes+0x2B)) = (u8) ((s32) ((temp_r12_2 << 0x10) + (temp_r10_2 * (arg0->envColor[3] - temp_r12_2))) >> 0x10);
-    } else {
-        *(u32*)&(*(s8*)(stack.bytes+0x28)) = (s32) *(u32*)arg0->envColor;
-    }
-    temp_r3 = arg0->kind;
-    if ((temp_r3 & 0x80) || (!(temp_r3 & 0x80000000) && !(temp_r3 & 0x100000))) {
-        if (((u8) prevColorPrim.r != (u8) (*(s8*)(stack.bytes+0x2C))) || ((u8) prevColorPrim.g != (*(u8*)(stack.bytes+0x2D))) || ((u8) prevColorPrim.b != (*(u8*)(stack.bytes+0x2E))) || ((u8) prevColorPrim.a != (*(u8*)(stack.bytes+0x2F)))) {
-            *(u32*)&prevColorPrim = *(u32*)&(*(s8*)(stack.bytes+0x2C));
-            (*(s32*)(stack.bytes+0x20)) = *(u32*)&(*(s8*)(stack.bytes+0x2C));
-            GXSetTevColor(GX_TEVREG0, *(GXColor*)&(*(s32*)(stack.bytes+0x20)));
+    getColorPrimEnv(pp, &prim_color, &env_color);
+    if ((pp->kind & 0x80) || (!(pp->kind & 0x80000000) && !(pp->kind & 0x100000))) {
+        if (prevColorPrim.r != prim_color.r || prevColorPrim.g != prim_color.g || prevColorPrim.b != prim_color.b || prevColorPrim.a != prim_color.a) {
+            prevColorPrim = prim_color;
+            GXSetTevColor(GX_TEVREG0, prevColorPrim);
         }
-        if (arg0->kind & 0x80) {
-            if (((u8) prevColorEnv.r != (u8) (*(s8*)(stack.bytes+0x28))) || ((u8) prevColorEnv.g != (*(u8*)(stack.bytes+0x29))) || ((u8) prevColorEnv.b != (*(u8*)(stack.bytes+0x2A))) || ((u8) prevColorEnv.a != (*(u8*)(stack.bytes+0x2B)))) {
-                *(u32*)&prevColorEnv = *(u32*)&(*(s8*)(stack.bytes+0x28));
-                (*(s32*)(stack.bytes+0x1C)) = *(u32*)&(*(s8*)(stack.bytes+0x28));
-                GXSetTevColor(GX_TEVREG1, *(GXColor*)&(*(s32*)(stack.bytes+0x1C)));
+        if (pp->kind & 0x80) {
+            if (prevColorEnv.r != env_color.r || prevColorEnv.g != env_color.g || prevColorEnv.b != env_color.b || prevColorEnv.a != env_color.a) {
+                prevColorEnv = env_color;
+                GXSetTevColor(GX_TEVREG1, prevColorEnv);
             }
-        } else if (((u8) prevColorEnv.r != 0) || ((u8) prevColorEnv.g != 0) || ((u8) prevColorEnv.b != 0) || ((u8) prevColorEnv.a != 0)) {
-            prevColorEnv.a = 0;
-            prevColorEnv.b = 0;
-            prevColorEnv.g = 0;
-            prevColorEnv.r = 0;
-            *(u32*)&(*(s32*)(stack.bytes+0x18)) = (s32) *(u32*)&prevColorEnv;
-            GXSetTevColor(GX_TEVREG1, *(GXColor*)&(*(s32*)(stack.bytes+0x18)));
+        } else if (prevColorEnv.r != 0 || prevColorEnv.g != 0 || prevColorEnv.b != 0 || prevColorEnv.a != 0) {
+            prevColorEnv.r = prevColorEnv.g = prevColorEnv.b = prevColorEnv.a = 0;
+            GXSetTevColor(GX_TEVREG1, prevColorEnv);
         }
     }
-    temp_r8 = arg0->kind;
-    if (temp_r8 & 0x80000000) {
-        temp_r4_3 = arg0->matCount;
-        if (temp_r4_3 != 0) {
-            temp_r5_3 = arg0->matRGBTarget;
-            temp_r6_3 = (s32) (arg0->matRemain << 0x10) / (s32) temp_r4_3;
-            temp_r7 = arg0->matAlphaTarget;
-            temp_r4_4 = (s32) ((temp_r5_3 << 0x10) + (temp_r6_3 * (arg0->matRGB - temp_r5_3))) >> 0x10;
-            (*(u8*)(stack.bytes+0x26)) = (u8) temp_r4_4;
-            (*(u8*)(stack.bytes+0x25)) = (u8) temp_r4_4;
-            (*(u8*)(stack.bytes+0x24)) = (u8) temp_r4_4;
-            (*(u8*)(stack.bytes+0x27)) = (u8) ((s32) ((temp_r7 << 0x10) + (temp_r6_3 * (arg0->matAlpha - temp_r7))) >> 0x10);
-        } else {
-            temp_r3_2 = arg0->matRGB;
-            (*(u8*)(stack.bytes+0x26)) = temp_r3_2;
-            (*(u8*)(stack.bytes+0x25)) = temp_r3_2;
-            (*(u8*)(stack.bytes+0x24)) = temp_r3_2;
-            (*(u8*)(stack.bytes+0x27)) = arg0->matAlpha;
-        }
-        if (temp_r8 & 0x80) {
-            if (((u8) prevColorMat.r != (*(u8*)(stack.bytes+0x24))) || ((u8) prevColorMat.g != (*(u8*)(stack.bytes+0x25))) || ((u8) prevColorMat.b != (*(u8*)(stack.bytes+0x26))) || ((u8) prevColorMat.a != (*(u8*)(stack.bytes+0x27)))) {
-                (*(s32*)(stack.bytes+0xC)) = *(s32*)&(*(u8*)(stack.bytes+0x24));
-                *(u32*)&prevColorMat = *(s32*)&(*(u8*)(stack.bytes+0x24));
-                (*(s32*)(stack.bytes+0x14)) = *(s32*)&(*(u8*)(stack.bytes+0x24));
-                GXSetTevColor(GX_TEVREG2, *(GXColor*)&(*(s32*)(stack.bytes+0x14)));
+    if (pp->kind & 0x80000000) {
+        getColorMatAmb(pp, &mat_color, &amb_color);
+        if (pp->kind & 0x80) {
+            if (prevColorMat.r != mat_color.r || prevColorMat.g != mat_color.g || prevColorMat.b != mat_color.b || prevColorMat.a != mat_color.a) {
+                prevColorMat = mat_color;
+                GXSetTevColor(GX_TEVREG2, prevColorMat);
             }
         } else {
-            temp_r0 = (s32) ((*(u8*)(stack.bytes+0x27)) * (*(u8*)(stack.bytes+0x2F))) >> 8;
-            (*(u8*)(stack.bytes+0x27)) = (u8) temp_r0;
-            if (((u8) prevColorMat.r != (*(u8*)(stack.bytes+0x24))) || ((u8) prevColorMat.g != (*(u8*)(stack.bytes+0x25))) || ((u8) prevColorMat.b != (*(u8*)(stack.bytes+0x26))) || ((u8) prevColorMat.a != (u8) temp_r0)) {
-                (*(s32*)(stack.bytes+0x8)) = *(s32*)&(*(u8*)(stack.bytes+0x24));
-                *(u32*)&prevColorMat = *(s32*)&(*(u8*)(stack.bytes+0x24));
-                (*(s32*)(stack.bytes+0x10)) = *(s32*)&(*(u8*)(stack.bytes+0x24));
-                GXSetTevColor(GX_TEVREG2, *(GXColor*)&(*(s32*)(stack.bytes+0x10)));
+            mat_color.a = (u8) ((mat_color.a * prim_color.a) >> 8);
+            if (prevColorMat.r != mat_color.r || prevColorMat.g != mat_color.g || prevColorMat.b != mat_color.b || prevColorMat.a != mat_color.a) {
+                prevColorMat = mat_color;
+                GXSetTevColor(GX_TEVREG2, prevColorMat);
             }
         }
     }

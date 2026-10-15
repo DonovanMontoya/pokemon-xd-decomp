@@ -89,13 +89,14 @@ void GSgfxRenderModuleDoRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
 
 void GSgfxRenderModuleDoPostUpdate(f32 delta) {
     ModuleEntry* entry;
+    u32 i;
     u32 ticks = (u32)(delta + __float_epsilon[0]);
-    for (u32 i = 0; i < ticks; ++i) {
+    for (i = 0; i < ticks; ++i) {
         for (entry = _renderModuleBottom; entry; entry = entry->next) {
             if (entry->module.tick) entry->module.tick();
         }
     }
-    for (ModuleEntry* entry = _renderModuleBottom; entry; entry = entry->next) {
+    for (entry = _renderModuleBottom; entry; entry = entry->next) {
         if (entry->module.postUpdate) entry->module.postUpdate(delta);
     }
 }

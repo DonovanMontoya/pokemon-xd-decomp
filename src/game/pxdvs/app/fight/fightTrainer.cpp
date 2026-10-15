@@ -25,7 +25,7 @@ FightTrainerEnemyPokemon* fightTrainer_GetFightTrainerEnemyPokemonAryPtr(FightTr
 void* fightTrainer_GetSequencePtr(FightTrainer*);
 u8 fightTrainer_GetControllerId(FightTrainer*);
 void fightTrainer_SetFightTrainerDataId(FightTrainer*, u32);
-void fightTrainer_SetControllerId(FightTrainer*, u32);
+void fightTrainer_SetControllerId(FightTrainer*, u8);
 void fightTrainer_SetSequencePtr(FightTrainer*, void*);
 void fightTrainer_SetOkaneBai(FightTrainer*, u32);
 void fightTrainer_SetKoban(FightTrainer*, u32);
@@ -247,7 +247,7 @@ FightPokemon* fightTrainerSearchIrekaeFightPokemon(FightTrainer* trainer, u16* i
     FightPokemon* poke;
     for (; *index < 6; (*index)++) {
         poke = fightTrainer_GetFightPokemonPtr(trainer, *index);
-        if (!fightTrainerCheckCanIrekaeFightPokemon(trainer, poke)) break;
+        if (!(u8)fightTrainerCheckCanIrekaeFightPokemon(trainer, poke)) break;
     }
     if (*index >= 6) return nullptr;
     return poke;
@@ -401,7 +401,7 @@ void fightTrainerCreate(FightTrainer* trainer, Hero* source, u32 id, u32 control
         if (hero != nullptr) {
             heroBiosCopy(hero, source);
             fightTrainer_SetFightTrainerDataId(trainer, id);
-            fightTrainer_SetControllerId(trainer, static_cast<u8>(controller));
+            fightTrainer_SetControllerId(trainer, controller);
             if (sequence != nullptr) {
                 fightTrainer_SetSequencePtr(trainer, sequence);
                 fightFloorSetShadow();
@@ -599,6 +599,7 @@ void Sequence_Free(void*);
 void fightTrainerHokakuThrowEffect(FightTrainer* trainer, u8 ball, u8 phase) {
     void* sequence = fightTrainer_GetSequencePtr(trainer);
     if (sequence == nullptr) return;
+    WazaSequence* animation;
     u32 effect;
     u8 snatch;
     if (fightFloor_GetFightKind(nullptr) == 0xc || fightFloor_GetFightKind(nullptr) == 0xd) {
@@ -625,7 +626,7 @@ void fightTrainerHokakuThrowEffect(FightTrainer* trainer, u8 ball, u8 phase) {
             battleGridStoreModelVisibilityFlags();
             Sequence_SetVisibility(snatchSequencePtr, 1);
         }
-        WazaSequence* animation = Sequence_GetWaza(snatchSequencePtr, effect, 4);
+        animation = Sequence_GetWaza(snatchSequencePtr, effect, 4);
         WazaSequence_Start(animation, 1);
         while (WazaSequence_IsActive(animation)) GSthreadSwitch();
     } else if (phase == 2) {
@@ -640,7 +641,7 @@ void fightTrainerHokakuThrowEffect(FightTrainer* trainer, u8 ball, u8 phase) {
     } else if (phase == 4) {
         WazaSequence_Start(Sequence_GetWaza(sequence, 0x57, 4), 1);
     } else if (phase == 5) {
-        WazaSequence* animation = Sequence_GetWaza(sequence, 0x57, 4);
+        animation = Sequence_GetWaza(sequence, 0x57, 4);
         while (WazaSequence_IsActive(animation)) GSthreadSwitch();
     } else if (phase == 6) {
         WazaSequence_Free(Sequence_GetWaza(sequence, 0x57, 4));
@@ -1417,7 +1418,7 @@ void _fightTrainerCreateDeckVirtual(u16 trainerId, Hero* hero, u16 encounterId) 
     }
 }
 
-class DeckDarkPokemon { public: static DeckDarkPokemon* getDeckDarkPokemonObj(u32); u32 getDeckPokemonID() const; };
+class DeckDarkPokemon { public: static DeckDarkPokemon* getDeckDarkPokemonObj(u32); u16 getDeckPokemonID() const; u32 getWorth() const; };
 extern "C" {
 u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16, Pokemon*, u32, u16, u16);
 void deckCreate(u16, u16, Pokemon*);
@@ -1460,4 +1461,49 @@ u8 _fightTrainerCreateDeckPokemon(Hero* hero, u16 dataId, u16 darkId, u16 ball, 
     deckCreate(dataId, DeckPokemon::getDeckPokemonObj(dataId)->getPokemonID(), pokemon);
     pokemon_SetFightTrainerPokemonDataId(pokemon, dataId);
     return heroCatchPokemon(hero, pokemon, 0, ball, 0) >= 0;
+}
+
+void _fightTrainer_SortUnderTakerDarkPoke(u8* list, u8 count) {
+    u32 escapeJ;
+    u8 tmp;
+    s32 worthI;
+    s32 worthJ;
+    u8 j;
+    u8 i;
+    u32 escapeI;
+    u8 a;
+    u8 b;
+    for (i = 0; i < count - 1; i++) {
+        for (j = i + 1; j < count; j++) {
+            worthI = DeckDarkPokemon::getDeckDarkPokemonObj(list[i])->getWorth();
+            worthJ = DeckDarkPokemon::getDeckDarkPokemonObj(list[j])->getWorth();
+            escapeI = darkPokemonGetDarkPokemon(list[i])->getEscapeTime();
+            escapeJ = darkPokemonGetDarkPokemon(list[j])->getEscapeTime();
+            a = 0;
+            if (((worthI << 16) & 0xFF0000) || escapeI != 0) a = 1;
+            b = 0;
+            if (((worthJ << 16) & 0xFF0000) || escapeJ != 0) b = 1;
+            if (a > b) {
+                tmp = list[i];
+                list[i] = list[j];
+                list[j] = tmp;
+            }
+        }
+    }
+}
+
+u8 _fightTrainer_GetListUnderTakerDarkPoke(u8* list) {
+    DarkPokemon* dark;
+    u8 count;
+    u8 i;
+    DeckDarkPokemon* deck;
+    count = 0;
+    for (i = 0; i < 0x80; i++) {
+        deck = DeckDarkPokemon::getDeckDarkPokemonObj(i);
+        dark = darkPokemonGetDarkPokemon(i);
+        if (dark->getStatus() == 2 && (s32)dark->getSnatchFromWho() == 0 && (u8)deck->getWorth() != 0 && deck->getDeckPokemonID() != 0) {
+            list[count++] = i;
+        }
+    }
+    return count;
 }

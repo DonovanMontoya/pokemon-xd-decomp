@@ -23,7 +23,8 @@ typedef struct MenuSubSprite {
     s16 unk6;
     u8 reserved8[0x44];
     u32 unk4C;
-    u8 reserved50[0x4];
+    s16 unk50;
+    s16 unk52;
     s16 unk54;
     s16 unk56;
     u8 reserved58[0xC];
@@ -44,9 +45,13 @@ typedef struct MenuSubState {
     u8 reserved9C7C[0x8];
     u8 unk9C84;
     u8 unk9C85;
-    u8 reserved9C86[0x135E];
+    u8 reserved9C86[0x135A];
+    s32 unkAFE0;
     s32 unkAFE4;
-    u8 reservedAFE8[0x20];
+    u8 reservedAFE8[0x8];
+    s32 unkAFF0;
+    u8 reservedAFF4[0x10];
+    s32 unkB004;
     s32 unkB008;
     s32 unkB00C;
     u8 reservedB010[0x4];
@@ -69,7 +74,9 @@ typedef struct MenuSubState {
     s32 unkB0F8;
     s32 unkB0FC;
     s32 unkB100;
-    u8 reservedB104[0x14];
+    u8 reservedB104[0x8];
+    s32 unkB10C;
+    u8 reservedB110[0x8];
     s32 unkB118;
     s32 unkB11C;
     u8 reservedB120[0x4];
@@ -109,7 +116,12 @@ typedef struct MenuSubState {
     f32 unkB368;
     u8 reservedB36C[0x5C];
     f32 unkB3C8;
-    u8 reservedB3CC[0xD4];
+    u8 reservedB3CC[0x5A];
+    s16 unkB426[4][6];
+    s16 unkB456[4][6];
+    u8 reservedB486[0x1];
+    s8 unkB487[4][6];
+    u8 reservedB49F[1];
     u8 unkB4A0;
 } MenuSubState;
 typedef struct MenuSubBattleWork {
@@ -117,6 +129,7 @@ typedef struct MenuSubBattleWork {
     s32 unk2C;
     s32 unk30;
 } MenuSubBattleWork;
+typedef struct MenuSubPlayer { u8 reserved0[0x1C]; s32 unk1C[6]; u8 reserved34[0x12EC]; } MenuSubPlayer;
 typedef struct MenuSubPokemon MenuSubPokemon;
 extern MenuSubState _CB;
 extern MenuSubBattleWork _menuCBBattleStartWork;

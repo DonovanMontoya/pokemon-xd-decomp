@@ -1,4 +1,5 @@
 #include <game/menuCB_externDB.hpp>
+#pragma auto_inline off
 
 // Field views describe only offsets accessed by this module.
 // Callback symbols retain the original C linkage.
@@ -237,12 +238,14 @@ void menuCB_tunaideGCEntry03_Disp_1(MenuDBWindow *arg0, MenuDBSprite *arg1) {
 
 void menuCB_tunaideGCEntry02_Disp_1(MenuDBWindow *arg0, MenuDBSprite *arg1) {
     s16 temp_r3;
+    s32 var_r4;
 
     spriteSetOffset(arg0->unk1C, 0, 0);
     spriteSetEnv(arg0->unk1C);
     spriteSetScissor(arg0->unk1C, 0x12, 0x51, 0x180, 0x140);
     if (((s32) _CB.unkB150 != 0) && ((s32) _CB.unkB15C == 1)) {
         temp_r3 = arg1->unk6;
+        var_r4 = _CB.unkB160;
         switch (temp_r3) {
         case 0x5A3:
         case 0x5A4:
@@ -274,97 +277,97 @@ void menuCB_tunaideGCEntry02_Disp_1(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         case 0x5BE:
         case 0x5BF:
         case 0x5C0:
-            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PCBOXBG_Char[_CB.unkB160]));
+            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PCBOXBG_Char[var_r4]));
             return;
         case 0x5C1:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, (_CB.unkB160 * 0x10000) & 0xFFFF0000);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, (var_r4 * 0x10000) & 0xFFFF0000);
             return;
         case 0x5C2:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 1);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 1);
             return;
         case 0x5C3:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 2);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 2);
             return;
         case 0x5C4:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 3);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 3);
             return;
         case 0x5C5:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 4);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 4);
             return;
         case 0x5C6:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 5);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 5);
             return;
         case 0x5C7:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 6);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 6);
             return;
         case 0x5C8:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 7);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 7);
             return;
         case 0x5C9:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 8);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 8);
             return;
         case 0x5CA:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 9);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 9);
             return;
         case 0x5CB:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0xA);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0xA);
             return;
         case 0x5CC:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0xB);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0xB);
             return;
         case 0x5CD:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0xC);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0xC);
             return;
         case 0x5CE:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0xD);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0xD);
             return;
         case 0x5CF:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0xE);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0xE);
             return;
         case 0x5D0:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0xF);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0xF);
             return;
         case 0x5D1:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x10);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x10);
             return;
         case 0x5D2:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x11);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x11);
             return;
         case 0x5D3:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x12);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x12);
             return;
         case 0x5D4:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x13);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x13);
             return;
         case 0x5D5:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x14);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x14);
             return;
         case 0x5D6:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x15);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x15);
             return;
         case 0x5D7:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x16);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x16);
             return;
         case 0x5D8:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x17);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x17);
             return;
         case 0x5D9:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x18);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x18);
             return;
         case 0x5DA:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x19);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x19);
             return;
         case 0x5DB:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x1A);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x1A);
             return;
         case 0x5DC:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x1B);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x1B);
             return;
         case 0x5DD:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x1C);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x1C);
             return;
         case 0x5DE:
-            menuCB2DPokemonDisp2(arg0, arg1, 5, ((_CB.unkB160 * 0x10000) & 0xFFFF0000) | 0x1D);
+            menuCB2DPokemonDisp2(arg0, arg1, 5, ((var_r4 * 0x10000) & 0xFFFF0000) | 0x1D);
             break;
         }
     }
@@ -1923,7 +1926,10 @@ void menuCB_tunaidePokemonSelect1_Disp_Sub__FP14tagWINDOW_WORKP14tagSPRITE_WORKU
     case 0x446:
     case 0x473:
     case 0x4A0:
-        menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PlayerNumber[((MenuDBPlayer *)&_CB)[arg2].control]));
+    {
+        MenuDBPlayer *players = (MenuDBPlayer *)&_CB;
+        menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PlayerNumber[players[arg2].control]));
+    }
         return;
     case 0x41A:
     case 0x447:
@@ -2034,7 +2040,6 @@ void menuTool_tunaidePokemonSelect1_Button(MenuDBWindow *arg0) {
 
 void menuTool_tunaidePokemonSelect1_Ctrl(MenuDBWindow *arg0) {
     s32 temp_r3_2;
-    u16 temp_r30;
     u16 temp_r3;
     u16 var_r30;
 
@@ -2048,8 +2053,8 @@ void menuTool_tunaidePokemonSelect1_Ctrl(MenuDBWindow *arg0) {
     menuCBPokemonEntryButtonTask_20041006();
     if (((s32) _CB.unkB108 < 1) && (pauseIsPause() == 0)) {
         if ((s32) (windowGetKeyInfo()->unk4 & 0x10) != 0) {
-            temp_r30 = menuCBPokemonEntryPokemonNumMin(0);
-            if ((toolentryTaisengetEtnryPokemonOrderNum(0) >= (s32) temp_r30) && (toolentryTaisenGetHomePlace(0) == 0)) {
+            var_r30 = menuCBPokemonEntryPokemonNumMin(0);
+            if ((toolentryTaisengetEtnryPokemonOrderNum(0) >= (s32) var_r30) && (toolentryTaisenGetHomePlace(0) == 0)) {
                 _CB.unkB108 = 1;
                 return;
             }
@@ -2393,7 +2398,36 @@ void menuCB_tunaideGCEntry02_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
     spriteSetScissor(arg0->unk1C, 0x12, 0x51, 0x180, 0x140);
     temp_r0 = arg1->unk6;
     switch (temp_r0) {                              /* irregular */
-    default:
+    case 0x199:
+    case 0x19A:
+    case 0x19B:
+    case 0x19C:
+    case 0x19D:
+    case 0x19E:
+    case 0x19F:
+    case 0x1A0:
+    case 0x1A1:
+    case 0x1A2:
+    case 0x1A3:
+    case 0x1A4:
+    case 0x1A5:
+    case 0x1A6:
+    case 0x1A7:
+    case 0x1A8:
+    case 0x1A9:
+    case 0x1AA:
+    case 0x1AB:
+    case 0x1AC:
+    case 0x1AD:
+    case 0x1AE:
+    case 0x1AF:
+    case 0x1B0:
+    case 0x1B1:
+    case 0x1B2:
+    case 0x1B3:
+    case 0x1B4:
+    case 0x1B5:
+    case 0x1B6:
         menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PCBOXBG_Char[temp_r29]));
         return;
     case 0x1FE:
@@ -2544,8 +2578,8 @@ void menuCB_tunaideGCEntry01_Disp_Sub__FP14tagWINDOW_WORKP14tagSPRITE_WORKUlUl(M
 }
 
 void menuCB_tunaideGCEntry01_Disp_DOWN(MenuDBWindow *arg0, MenuDBSprite *arg1) {
-    s32 var_r30;
     s32 var_r31;
+    s32 var_r30;
     u32 var_r29;
 
     if (((s32) _CB.unkB0F4 == 1) || ((s32) _CB.unkB150 != 0)) {
@@ -2572,8 +2606,8 @@ void menuCB_tunaideGCEntry01_Disp_DOWN(MenuDBWindow *arg0, MenuDBSprite *arg1) {
 }
 
 void menuCB_tunaideGCEntry01_Disp_UP(MenuDBWindow *arg0, MenuDBSprite *arg1) {
-    s32 var_r30;
     s32 var_r31;
+    s32 var_r30;
     u32 var_r29;
 
     if (((s32) _CB.unkB0F4 == 1) || ((s32) _CB.unkB150 != 0)) {
@@ -2600,34 +2634,37 @@ void menuCB_tunaideGCEntry01_Disp_UP(MenuDBWindow *arg0, MenuDBSprite *arg1) {
 }
 
 void menuCB_tunaideGCEntry01_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
-    s16 temp_r0;
-
     if (((s32) _CB.unkB0F4 != 1) && ((s32) _CB.unkB150 == 0)) {
         menuCBGCEntryTypeIndex();
         menuCBPokemonCheck(_CB.unkB1D4, _CB.unkB1D8);
     }
-    temp_r0 = arg1->unk6;
-    if (temp_r0 != 0x590) {
-        if (temp_r0 < 0x590) {
-            if (temp_r0 < 0x587) {
-                return;
-            }
-            if ((s32) _CB.unkB0FC >= 2) {
-                _CB.unkB0FC = 3;
-                winSpriteSetDisp(arg1, 1);
-                return;
-            }
-            winSpriteSetDisp(arg1, 0);
-        }
-    } else {
+    switch (arg1->unk6) {
+    case 0x587:
+    case 0x588:
+    case 0x589:
+    case 0x58A:
+    case 0x58B:
+    case 0x58C:
+    case 0x58D:
+    case 0x58E:
+    case 0x58F:
         if ((s32) _CB.unkB0FC >= 2) {
-            msgctrlSetValue(0x34, (s16) _CB.unkB1E0);
-            msgctrlSetValue(0x2F, (s16) _CB.unkB1E0);
+            _CB.unkB0FC = 3;
+            winSpriteSetDisp(arg1, 1);
+            return;
+        }
+        winSpriteSetDisp(arg1, 0);
+        break;
+    case 0x590:
+        if ((s32) _CB.unkB0FC >= 2) {
+            msgctrlSetValue(0x34, _CB.unkB1E0);
+            msgctrlSetValue(0x2F, _CB.unkB1E0);
             arg1->unk4C = (u32) _CB.unkB1DC;
             winSpriteSetDisp(arg1, 1);
             return;
         }
         winSpriteSetDisp(arg1, 0);
+        break;
     }
 }
 
@@ -4603,7 +4640,6 @@ void menuCB_error01_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
                 var_r30 = 0xA0;
             }
             menuSubDrawCursorBackAnimeOnOffAuto(arg0, winSpriteGetLayerID(arg0, arg1), var_r30, (arg0->unk9E % 7) << 5, arg1->unk54, arg1->unk56, arg0->unk93, 1);
-            return;
         }
         return;
     case 0x4EC:
@@ -4634,27 +4670,14 @@ void menuTool_error01_Button(MenuDBWindow *arg0) {
 }
 
 void menuTool_error01_Ctrl(MenuDBWindow *arg0) {
-    const s32 *var_r30;
-    const s32 *var_r31;
-    s32 var_r29;
+    s32 i;
 
     if ((s8) (u8) arg0->unk1 == 2) {
-        var_r29 = 0;
-        var_r31 = _error01_cursol_item_tbl;
-loop_3:
-        if (var_r29 <= (s32) _CB.unkB0E4) {
-            menuItemBiosSetSelectFlag(0xA7, *var_r31, 1);
-            var_r31 += 4;
-            var_r29 += 1;
-            goto loop_3;
+        for (i = 0; i <= (s32) _CB.unkB0E4; i++) {
+            menuItemBiosSetSelectFlag(0xA7, _error01_cursol_item_tbl[i], 1);
         }
-        var_r30 = &_error01_cursol_item_tbl[var_r29];
-loop_6:
-        if (var_r29 < 0xE) {
-            menuItemBiosSetSelectFlag(0xA7, *var_r30, 0);
-            var_r30 += 4;
-            var_r29 += 1;
-            goto loop_6;
+        for (; i < 0xE; i++) {
+            menuItemBiosSetSelectFlag(0xA7, _error01_cursol_item_tbl[i], 0);
         }
     }
     menuCB_DispEffect(arg0);
@@ -4662,419 +4685,186 @@ loop_6:
 }
 
 void menuCB_error00_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
-    s32 var_r5;
-    s32 var_r5_2;
-    s32 var_r5_3;
-    s32 var_r5_4;
-    s32 var_r5_5;
-    s32 var_r5_6;
-    s32 var_r5_7;
     switch (arg1->unk6) {
     case 0x5:
         menuCBPokemon_ErrorDispSet(arg1, 0);
-          return;
         break;
     case 0x2DC:
-    case 0x2DD:
-    case 0x2DE:
-    case 0x2DF:
-    case 0x2E0:
-    case 0x2E1:
         winSpriteSetDisp(arg1, 0);
-          return;
         break;
     case 0x4:
         menuCBPokemonEntryDispPokemonFace(arg0, arg1, _CB.unkB0D8, 0);
-          return;
         break;
     case 0x12:
     case 0x13:
     case 0x14:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 0);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 0) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 1);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 1) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 2);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 2) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 3);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 3) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 4);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 4) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 5);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
-          return;
-          if (windowSearchID(0xA7) != 0)
-          {
-            arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 0) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x2A:
         menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
         break;
     case 0x2B:
         menuCBPokemonName(arg0, _CB.unkB0D8, 0, 1);
         break;
     case 0x38:
         menuCBPokemonMaruWaku_ErrorSet(arg1, 0);
-          return;
         break;
     case 0x24:
         menuCBPokemonItem_ErrorSet(arg1, 0);
         break;
     case 0x7:
         menuCBPokemon_ErrorDispSet(arg1, 1);
-          return;
+        break;
+    case 0x2DD:
+        winSpriteSetDisp(arg1, 0);
         break;
     case 0x6:
         menuCBPokemonEntryDispPokemonFace(arg0, arg1, _CB.unkB0D8, 1);
-          return;
         break;
     case 0x15:
     case 0x16:
     case 0x17:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 1);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 1) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 2);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 2) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 3);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 3) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 4);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 4) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 5);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
-          return;
-          if (windowSearchID(0xA7) != 0)
-          {
-            arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 1) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x2C:
         menuCBPokemonLevel(arg0, _CB.unkB0D8, 1, 1);
-          return;
         break;
     case 0x2D:
         menuCBPokemonName(arg0, _CB.unkB0D8, 1, 1);
-          return;
         break;
     case 0xCB:
         menuCBPokemonMaruWaku_ErrorSet(arg1, 1);
-          return;
         break;
     case 0x26:
         menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
         break;
     case 0x9:
         menuCBPokemon_ErrorDispSet(arg1, 2);
-          return;
+        break;
+    case 0x2DE:
+        winSpriteSetDisp(arg1, 0);
         break;
     case 0x8:
         menuCBPokemonEntryDispPokemonFace(arg0, arg1, _CB.unkB0D8, 2);
-          return;
         break;
     case 0x18:
     case 0x19:
     case 0x1A:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 2);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 2) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 3);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 3) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 4);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 4) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 5);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
-          return;
-          if (windowSearchID(0xA7) != 0)
-          {
-            arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 2) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x2E:
         menuCBPokemonLevel(arg0, _CB.unkB0D8, 2, 1);
-          return;
         break;
     case 0x2F:
         menuCBPokemonName(arg0, _CB.unkB0D8, 2, 1);
-          return;
         break;
     case 0xCC:
         menuCBPokemonMaruWaku_ErrorSet(arg1, 2);
-          return;
         break;
     case 0x27:
         menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
         break;
     case 0xB:
         menuCBPokemon_ErrorDispSet(arg1, 3);
-          return;
+        break;
+    case 0x2DF:
+        winSpriteSetDisp(arg1, 0);
         break;
     case 0xA:
         menuCBPokemonEntryDispPokemonFace(arg0, arg1, _CB.unkB0D8, 3);
-          return;
         break;
     case 0x1B:
     case 0x1C:
     case 0x1D:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 3);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 3) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 4);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 4) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 5);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
-          return;
-          if (windowSearchID(0xA7) != 0)
-          {
-            arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 3) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x30:
         menuCBPokemonLevel(arg0, _CB.unkB0D8, 3, 1);
-          return;
         break;
     case 0x31:
         menuCBPokemonName(arg0, _CB.unkB0D8, 3, 1);
-          return;
         break;
     case 0xCD:
         menuCBPokemonMaruWaku_ErrorSet(arg1, 3);
-          return;
         break;
     case 0x28:
         menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
         break;
     case 0xD:
         menuCBPokemon_ErrorDispSet(arg1, 4);
-          return;
+        break;
+    case 0x2E0:
+        winSpriteSetDisp(arg1, 0);
         break;
     case 0xC:
         menuCBPokemonEntryDispPokemonFace(arg0, arg1, _CB.unkB0D8, 4);
-          return;
         break;
     case 0x1E:
     case 0x1F:
     case 0x20:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 4);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 4) && (((u8) arg0->unkA4) == 0));
-          return;
-          menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 5);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
-          return;
-          if (windowSearchID(0xA7) != 0)
-          {
-            arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 4) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x33:
         menuCBPokemonLevel(arg0, _CB.unkB0D8, 4, 1);
-          return;
         break;
     case 0x34:
         menuCBPokemonName(arg0, _CB.unkB0D8, 4, 1);
-          return;
         break;
     case 0xCE:
         menuCBPokemonMaruWaku_ErrorSet(arg1, 4);
-          return;
         break;
     case 0x32:
         menuCBPokemonItem_ErrorSet(arg1, 4);
-          return;
         break;
     case 0xF:
         menuCBPokemon_ErrorDispSet(arg1, 5);
-          return;
+        break;
+    case 0x2E1:
+        winSpriteSetDisp(arg1, 0);
         break;
     case 0xE:
         menuCBPokemonEntryDispPokemonFace(arg0, arg1, _CB.unkB0D8, 5);
-          return;
         break;
     case 0x21:
     case 0x22:
     case 0x23:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 5);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
-          return;
-          if (windowSearchID(0xA7) != 0)
-          {
-            arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 5) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x35:
         menuCBPokemonLevel(arg0, _CB.unkB0D8, 5, 1);
-          return;
         break;
     case 0x36:
         menuCBPokemonName(arg0, _CB.unkB0D8, 5, 1);
-          return;
         break;
     case 0xCF:
         menuCBPokemonMaruWaku_ErrorSet(arg1, 5);
-          return;
         break;
     case 0x29:
         menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
         break;
     case 0x11:
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkB008 == 6);
-          menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 6) && (((u8) arg0->unkA4) == 0));
+        menuCB_Cursol_Disp_AlphaSet(arg0, arg1, (((s32) _CB.unkB008) == 6) && (((u8) arg0->unkA4) == 0));
         break;
     case 0x25:
-        if (windowSearchID(0xA7) != 0)
-          {
+        if (windowSearchID(0xA7) != 0) {
             arg1->unk4C = 0;
-            return;
-          }
-          fn_80080390(arg0, arg1, 0x43C2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 2);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 5);
-          return;
-          menuCBPokemonLevel(arg0, _CB.unkB0D8, 0, 1);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 3);
-          return;
-          menuCBPokemonItem_ErrorSet(arg1, 0);
+            break;
+        }
+        fn_80080390(arg0, arg1, 0x43C2);
         break;
     case 0x10:
         menuCB_SpriteDispCheckONorOFF(arg1, windowSearchID(0xA7) == 0);
-          return;
         break;
     case 0x37:
         arg1->unk4C = 0x43C1;
-          return;
         break;
-    default:
-        return;
     }
 }
 
@@ -5956,8 +5746,8 @@ void _menuCB_tunaide01_disp_sub__FP14tagSPRITE_WORKScUc(MenuDBSprite *arg0, s8 a
     winSpriteSetDisp(arg0, 0);
 }
 
-void _menuCB_tunaide01_disp_sub_color2__FP14tagSPRITE_WORKb(MenuDBSprite *arg0, u8 arg1) {
-    if (((s32) _CB.unkB10C != 1) && (arg1 == 0)) {
+void _menuCB_tunaide01_disp_sub_color2__FP14tagSPRITE_WORKb(MenuDBSprite *arg0, s32 arg1) {
+    if (((s32) _CB.unkB10C != 1) && ((u8) arg1 == 0)) {
         arg0->unk66 = 0x7F;
         arg0->unk65 = 0x7F;
         arg0->unk64 = 0x7F;
@@ -6619,9 +6409,8 @@ void menuCB_tunaidePokemonSelect1_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
     temp_r0 = arg1->unk6;
     switch (temp_r0) {                              /* irregular */
     case 0x4B7:
-        temp_r3 = &pGCB->entries[pGCB->selected];
-        if ((s16) temp_r3->unk4 == 0) {
-            msgctrlSetValue(0x2F, temp_r3->unk2);
+        if ((s16) pGCB->entries[pGCB->selected].unk4 == 0) {
+            msgctrlSetValue(0x2F, pGCB->entries[pGCB->selected].unk2);
             var_r7 = 0x443B;
         } else {
             var_r7 = 0x43B3;
@@ -6637,14 +6426,17 @@ void menuCB_tunaidePokemonSelect1_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         menuCBPokemonEntryDisp(arg1);
         if ((s16) pGCB->entries[pGCB->selected].unk4 == 0) {
             winSpriteSetDisp(arg1, 0);
-            return;
         }
         return;
     case 0x4B6:
         arg1->unk4C = 0x43FC;
         menuCBPokemonEntryDisp(arg1);
         return;
-    default:
+    case 0x3F4:
+    case 0x3F5:
+    case 0x3F6:
+    case 0x3F8:
+    case 0x3F9:
         menuCBPokemonEntryDisp(arg1);
         return;
     case 0x3F7:
@@ -6977,7 +6769,7 @@ void menuCB_GBAConnect_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         }
         if ((s32) gbaConectGBA_Connect_WORK.unk0 == 2) {
             if (pauseIsPause() == 0) {
-                gbaConectGBA_Connect_WORK.unk44 = (u8) (gbaConectGBA_Connect_WORK.unk44 + 1);
+                gbaConectGBA_Connect_WORK.unk44 += 1;
             }
             arg1->unk50 = gbaConectGBA_Connect_WORK.unk34 + tool_gba_x_anime[(s8) gbaConectGBA_Connect_WORK.unk44 & 3];
             arg1->unk52 = gbaConectGBA_Connect_WORK.unk3C;
@@ -7006,7 +6798,7 @@ void menuCB_GBAConnect_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         }
         if ((s32) gbaConectGBA_Connect_WORK.unk4 == 2) {
             if (pauseIsPause() == 0) {
-                gbaConectGBA_Connect_WORK.unk45 = (u8) (gbaConectGBA_Connect_WORK.unk45 + 1);
+                gbaConectGBA_Connect_WORK.unk45 += 1;
             }
             arg1->unk50 = gbaConectGBA_Connect_WORK.unk36 + tool_gba_x_anime[(s8) gbaConectGBA_Connect_WORK.unk45 & 3];
             arg1->unk52 = gbaConectGBA_Connect_WORK.unk3E;
@@ -7033,7 +6825,7 @@ void menuCB_GBAConnect_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         }
         if ((s32) gbaConectGBA_Connect_WORK.unk8 == 2) {
             if (pauseIsPause() == 0) {
-                gbaConectGBA_Connect_WORK.unk46 = (u8) (gbaConectGBA_Connect_WORK.unk46 + 1);
+                gbaConectGBA_Connect_WORK.unk46 += 1;
             }
             arg1->unk50 = gbaConectGBA_Connect_WORK.unk38 + tool_gba_x_anime[(s8) gbaConectGBA_Connect_WORK.unk46 & 3];
             arg1->unk52 = gbaConectGBA_Connect_WORK.unk40;
@@ -7063,7 +6855,7 @@ void menuCB_GBAConnect_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         }
         if ((s32) gbaConectGBA_Connect_WORK.unkC == 2) {
             if (pauseIsPause() == 0) {
-                gbaConectGBA_Connect_WORK.unk47 = (u8) (gbaConectGBA_Connect_WORK.unk47 + 1);
+                gbaConectGBA_Connect_WORK.unk47 += 1;
             }
             arg1->unk50 = gbaConectGBA_Connect_WORK.unk3A + tool_gba_x_anime[(s8) gbaConectGBA_Connect_WORK.unk47 & 3];
             arg1->unk52 = gbaConectGBA_Connect_WORK.unk42;
@@ -7468,19 +7260,12 @@ void menuCB_Tunaide02_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
 void menuTool_tunaide02_Button(MenuDBWindow *arg0) {
     u8 portBits[4] = {1, 2, 4, 8};
     u16 keys[4];
-    u16 *var_r29;
-    s32 var_r28;
-    u16 temp_r0;
 
     if ((s32) _CB.unk8 == 2) {
-        var_r29 = keys;
-        var_r28 = 0;
-        do {
-            temp_r0 = windowGetPortKeyInfo(portBits[toolentryTaisenGetControlerType(var_r28) - 1])->unk4;
-            *var_r29 = temp_r0;
-            var_r28 += 1;
-            var_r29 += 1;
-        } while (var_r28 < 4);
+        s32 i;
+        for (i = 0; i < 4; i++) {
+            keys[i] = windowGetPortKeyInfo(portBits[toolentryTaisenGetControlerType(i) - 1])->unk4;
+        }
         if ((s32) _CB.unkB0D4 == 0xF) {
             tunaide02_last_kakunin_flag = 1;
             if ((s32) (keys[0] & 0x20) != 0) {
@@ -7601,6 +7386,7 @@ void menuCB_Tunaide01_3_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
             return;
         }
         winSpriteSetDisp(arg1, 0);
+        if (_CB.unkB114 != 0)
         switch ((s32) _CB.unkB114) {                /* switch 2; irregular */
         case 1:                                     /* switch 2 */
             field_anime.unk0 = 0;
@@ -7670,8 +7456,6 @@ void menuCB_Tunaide01_3_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
             field_anime.unk2 = (s16) (0xA7 - field_anime.unk6);
             field_anime.unk1E = (s16) (0xA7 - field_anime.unk6);
             return;
-        case 0:                                     /* switch 2 */
-            return;
         }
         break;
     case 0x2D9:                                     /* switch 1 */
@@ -7698,7 +7482,9 @@ void menuCB_Tunaide01_3_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
         }
         menuCB_SpriteDispCheckONorOFF(arg1, _CB.unkAFFC != 0);
         return;
-    default:                                        /* switch 1 */
+    case 0x3ED:
+    case 0x3EE:
+    case 0x3EF:
         if ((s32) _CB.unkB114 != 0) {
             winSpriteSetDisp(arg1, 0);
             return;

@@ -2,13 +2,13 @@
 #define NULL ((void*)0)
 s16 g_ps_token;
 u16 numPeakPSAppSRT,numPeakGenerators,numPeakParticles,numActivePSAppSRT,numActiveGenerators,numActiveParticles;
-void* ptclref[64];
-void* psFormGroupArray[64];
-PSTex** psTexGroupArray[64];
-PSCmd** psCmdListArray[64];
-s32 psNumTexGroup[64];
-s32 psNumCmdList[64];
 PSJObj* psPointJObj[8];
+s32 psNumCmdList[64];
+s32 psNumTexGroup[64];
+PSCmd** psCmdListArray[64];
+PSTex** psTexGroupArray[64];
+void* psFormGroupArray[64];
+void* ptclref[64];
 void psSetToken(s16 arg0) {
     g_ps_token = arg0;
 }
@@ -452,13 +452,302 @@ PSParticle* psGenerateParticleID0(PSParticle* parent,s32 link,s32 bank,s32 id,s3
     flags = tex != NULL ? tex->paletteFlags : 0;
     return psGenerateParticle0(parent,link,bank,(s32)tex,0,cmd->kind,cmd->texGroup,cmd->commands,0,0,0,cmd->velocity.x,cmd->velocity.y,cmd->velocity.z,cmd->size,cmd->gravity,cmd->life,cmd->friction,flags,NULL,interpret);
 }
+void psRemoveParticle(void) {
+    PSParticle *next;
+    PSParticle *prev;
+    PSParticle *node;
+    int i;
+    PSParticle *cur;
+
+    for (i = 0; i < 16; i++) {
+        cur = _psListGetFirst(i);
+        while (cur != NULL) {
+            next = cur->next;
+            prev = NULL;
+            node = _psListGetFirst(cur->link);
+            while (node != NULL) {
+                if (node == cur) {
+                    if (cur->generator != NULL) {
+                        cur->generator->children -= 1;
+                    }
+                    if (cur->appsrt != NULL) {
+                        psRemoveParticleAppSRT(cur);
+                    }
+                    if (node->kind & 0x8000) {
+                        s32 idx = (node->kind >> 10) & 0x1C;
+                        PSJObj *jobj = *(PSJObj **) ((u8 *) psPointJObj + idx);
+                        if (jobj != NULL) {
+                            HSD_JObjUnref(jobj);
+                            *(PSJObj **) ((u8 *) psPointJObj + idx) = NULL;
+                        }
+                    }
+                    _psListDelete(node, prev);
+                    break;
+                }
+                prev = node;
+                node = node->next;
+            }
+            cur = next;
+        }
+    }
+    psKillAllGenerator();
+    _psListClear();
+    for (i = 0; i < 64; i++) {
+        psNumCmdList[i] = 0;
+        psNumTexGroup[i] = 0;
+        psCmdListArray[i] = NULL;
+        psTexGroupArray[i] = NULL;
+        psFormGroupArray[i] = NULL;
+        ptclref[i] = NULL;
+    }
+    for (i = 0; i < 8; i++) {
+        if (psPointJObj[i] != NULL) {
+            HSD_JObjUnref(psPointJObj[i]);
+            psPointJObj[i] = NULL;
+        }
+    }
+}
+
 void psInitParticle(s32 count) {
-    s32 i;
+    int i;
     _psLinkInit(count);
     numActiveParticles = 0; numPeakParticles = 0;
     for (i = 0; i < 64; i++) {
-        ptclref[i] = NULL; psFormGroupArray[i] = NULL; psTexGroupArray[i] = NULL;
-        psCmdListArray[i] = NULL; psNumTexGroup[i] = 0; psNumCmdList[i] = 0;
+        psNumCmdList[i] = 0; psNumTexGroup[i] = 0; psCmdListArray[i] = NULL;
+        psTexGroupArray[i] = NULL; psFormGroupArray[i] = NULL; ptclref[i] = NULL;
     }
     for (i = 0; i < 8; i++) psPointJObj[i] = NULL;
+}
+
+void psInitDataBankLocate(s32 *cmdBank, s32 *texBank, s32 *formBank);
+
+void psInitDataBank(s32 bank, s32 *cmdBank, s32 *texBank, void *ref, s32 *formBank) {
+    u16 version;
+
+    if (bank >= 64) {
+        return;
+    }
+    psInitDataBankLocate(cmdBank, texBank, formBank);
+    if (formBank != NULL && *formBank != *texBank) {
+        OSPanic("particle.c", 98, "illigal form data (strange number of group)\n");
+    }
+    ptclref[bank] = ref;
+    psNumTexGroup[bank] = *texBank;
+    psTexGroupArray[bank] = (PSTex **) (texBank + 1);
+    if (formBank != NULL) {
+        psFormGroupArray[bank] = formBank + 1;
+    } else {
+        psFormGroupArray[bank] = NULL;
+    }
+    version = *(u16 *) cmdBank;
+    switch (version) {
+    case 0:
+        psNumCmdList[bank] = cmdBank[1];
+        psCmdListArray[bank] = (PSCmd **) (cmdBank + 2);
+        break;
+    case 0x40:
+    case 0x41:
+    case 0x42:
+    case 0x43: {
+        s32 count = cmdBank[1];
+        psNumCmdList[bank] = cmdBank[2] + count;
+        psCmdListArray[bank] = (PSCmd **) (cmdBank + 3 - count);
+        break;
+    }
+    default:
+        OSPanic("particle.c", 128, "psInitDataBanks: unknown version\n");
+    }
+}
+
+void psInitDataBankLocate(s32 *cmdBank, s32 *texBank, s32 *formBank) {
+    s32 num;
+    s32 *ptr;
+    s32 *group;
+    s32 j;
+    s32 i;
+    s32 num2;
+    s32 *groups;
+    s32 *base;
+    s32 version;
+
+    version = *(u16 *) cmdBank;
+    switch (version) {
+    case 0:
+        num2 = cmdBank[1];
+        base = cmdBank + 2;
+        num = 0;
+        for (i = 0; i < num2; i++) {
+            cmdBank[i + 2] += (s32) cmdBank;
+        }
+        break;
+    case 0x40:
+    case 0x41:
+    case 0x42:
+    case 0x43:
+        num = cmdBank[1];
+        num2 = cmdBank[2] + num;
+        base = cmdBank + 3 - num;
+        ptr = cmdBank;
+        j = 0;
+        while (j < cmdBank[2]) {
+            if (ptr[3] != 0) {
+                ptr[3] += (s32) cmdBank;
+            }
+            ptr++;
+            j++;
+        }
+        break;
+    }
+
+    ptr = base + num;
+    for (i = num; i < num2; i++) {
+        s32 *cmd = (s32 *) ptr[0];
+        if (cmd != NULL) {
+            cmd[2] = cmd[2] & 0xF1FFFFFF;
+            cmd = (s32 *) ptr[0];
+            cmd[2] = cmd[2] | 0x08000000;
+        }
+        ptr++;
+    }
+
+    {
+        s32 num_groups = texBank[0];
+        s32 k;
+
+        group = groups = texBank + 1;
+        for (k = 1; k <= num_groups; k++) {
+            if (group[0] != 0) {
+                group[0] += (s32) texBank;
+            }
+            group++;
+        }
+
+        group = groups;
+        for (k = 0; k < num_groups; group++, k++) {
+            PSTex *tg = (PSTex *) group[0];
+            if (tg == NULL) {
+                continue;
+            }
+            {
+                s32 ti;
+                for (ti = 0; (u32) ti < ((PSTex *) group[0])->count; ti++) {
+                    if (((PSTex *) group[0])->textures[ti] != NULL) {
+                        ((PSTex *) group[0])->textures[ti] = (void *) ((u32) ((PSTex *) group[0])->textures[ti] + (u32) texBank);
+                    }
+                }
+                tg = (PSTex *) group[0];
+            }
+            {
+                u32 fmt = tg->format;
+                if (fmt != 8 && (fmt - 9) > 1) {
+                    continue;
+                }
+            }
+            if (tg->paletteFlags & 1) {
+                i = tg->count;
+                if (tg->textures[i] != NULL) {
+                    tg->textures[i] = (void *) ((u32) tg->textures[i] + (u32) texBank);
+                }
+            } else if (tg->palettes != 0) {
+                i = tg->count;
+                for (; (u32) i < ((PSTex *) group[0])->count + ((PSTex *) group[0])->palettes; i++) {
+                    PSTex *tg2 = (PSTex *) group[0];
+                    void **entry = &tg2->textures[i];
+                    if (*entry != NULL) {
+                        *entry = (void *) ((u32) *entry + (u32) texBank);
+                    }
+                }
+            } else {
+                i = tg->count;
+                for (; (u32) i < ((PSTex *) group[0])->count * 2; i++) {
+                    PSTex *tg2 = (PSTex *) group[0];
+                    void **entry = &tg2->textures[i];
+                    if (*entry != NULL) {
+                        *entry = (void *) ((u32) *entry + (u32) texBank);
+                    }
+                }
+            }
+        }
+
+        if (formBank == NULL) {
+            return;
+        }
+        for (i = 1; i <= num_groups; i++) {
+            if (formBank[i] != 0) {
+                s32 fi;
+                u32 *fg;
+                formBank[i] += (s32) formBank;
+                fg = (u32 *) formBank[i];
+                for (fi = 0; (u32) fi < fg[0]; fi++) {
+                    if (fg[1 + fi] != 0) {
+                        fg[1 + fi] += (u32) formBank;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void psSetPointJObjNodup(PSObject *arg0, s32 arg1) {
+    PSJObj **p;
+    s32 i;
+
+    if (arg1 < 0 || arg1 > 8) {
+        return;
+    }
+    for (i = 0; i < 8; i++) {
+        if (psPointJObj[i] == (PSJObj *) arg0) {
+            HSD_JObjUnref(psPointJObj[i]);
+            psPointJObj[i] = NULL;
+        }
+    }
+    if (arg1 != 0) {
+        PSJObj *old;
+        p = psPointJObj;
+        p += arg1;
+        old = *--p;
+        if (old != NULL) {
+            HSD_JObjUnref(old);
+        }
+        *p = (PSJObj *) arg0;
+        if (arg0 != NULL) {
+            arg0->references++;
+            if (arg0->references == 0xFFFF) {
+                __assert("object.h", 0x5D, "HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF");
+            }
+        }
+    }
+}
+
+void psSetPointJObj(s32 arg0, PSObject *arg1) {
+    if (arg0 < 0 || arg0 > 8) {
+        return;
+    }
+    if (arg0 != 0) {
+        PSJObj *old;
+        PSJObj **p;
+        p = psPointJObj;
+        p += arg0;
+        old = *--p;
+        if (old != (PSJObj *) arg1) {
+            if (old != NULL) {
+                HSD_JObjUnref(old);
+            }
+            *p = (PSJObj *) arg1;
+            if (arg1 != NULL) {
+                arg1->references++;
+                if (arg1->references == 0xFFFF) {
+                    __assert("object.h", 0x5D, "HSD_OBJ(o)->ref_count != HSD_OBJ_NOREF");
+                }
+            }
+        }
+    } else {
+        s32 i;
+        for (i = 0; i < 8; i++) {
+            if (psPointJObj[i] == (PSJObj *) arg1) {
+                HSD_JObjUnref(psPointJObj[i]);
+                psPointJObj[i] = NULL;
+            }
+        }
+    }
 }

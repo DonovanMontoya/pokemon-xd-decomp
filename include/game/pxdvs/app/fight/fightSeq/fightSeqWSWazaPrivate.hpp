@@ -5,7 +5,7 @@
 struct WSFightAction { u8 data[0x38]; };
 
 extern "C" {
-extern s8 ActionSeqNo;
+extern u8 ActionSeqNo;
 extern s32 ServerStatusFlag;
 extern void* fight_seq_now_fight_action_ptr;
 extern u8 fight_seq_server_work3_temp;
@@ -13,6 +13,23 @@ extern u8 fight_action_data_turn[];
 extern u8 WAZA_KiaiPunch[];
 extern u8 WAZA_PokeReshuffle[];
 
+extern s32 fight_waza_critical_data_number;
+u8 fightWaza_GetCritical(void*);
+void fightWaza_SetCritical(void*, u8);
+u8 fightWaza_GetDamageValue(void*);
+s32 fightSeqWazaDamageCalcHikaePokemon(void*, void*, void*, u16, u16, u16);
+void* fightPokemon_GetPokemonBuffPtr(void*);
+u16 pokemon_GetPokemonDataId(void*);
+u8 pokemon_GetTokuseiFlag(void*);
+u8 pokemonDB_GetTokuseiDataId(u16, u8);
+u8 fightFloor_GetFightKindDoCriticalAttackFlag(s32);
+u8 fightWazaCriticalDataBiosGetBunbo(void*);
+void* fightWazaCriticalDataBiosGetPtr(u16);
+extern void (*WazaSequenceTbl[])(void);
+void SCA_EndCheck(void);
+void SCA_End(void);
+void fightSeqTurnCheck(void);
+void fightSeq_JumpWazaSeq(u8*);
 void fightOutPokemonInitOneSelfTurn(void*);
 void fightOutPokemonInitOneTurn(void*);
 void fightSeqGetExpCheck(void);

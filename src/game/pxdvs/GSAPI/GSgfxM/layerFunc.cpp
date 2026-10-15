@@ -1,345 +1,72 @@
 #include "layer_private.h"
 
 extern "C" {
-void tunitFunc__10GSgfxLayerFUc14GSgfxTunitFunc(u8 *arg0, u8 arg1, u32 arg2) {
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r0_4;
-    s32 temp_r0_5;
-    s32 temp_r4;
-    s32 temp_r4_2;
-    s32 temp_r4_3;
-    u8 *temp_r10;
-    u8 *temp_r10_2;
-    u8 *temp_r11;
-    u8 *temp_r11_2;
-    u8 *temp_r12;
-    u8 *temp_r12_2;
-    u8 *temp_r29;
-    u8 *temp_r29_2;
-    u8 *temp_r30;
-    u8 *temp_r31;
-    u8 *temp_r7;
-    u8 *temp_r7_2;
-    u8 *temp_r8;
-    u8 *temp_r8_2;
-    u8 *temp_r9;
-    u8 *temp_r9_2;
-
-    switch (arg2) {
+inline void tunitSetColorOp(GraphicsLayerState* layer, u8 unit, s32 op, s32 bias, s32 scale, u8 clamp, s32 output) {
+    layer->colorOperations[unit].op = op; layer->colorOperations[unit].bias = bias; layer->colorOperations[unit].scale = scale; layer->colorOperations[unit].clamp = clamp != 0; layer->colorOperations[unit].output = output; u32 bit = 1 << unit;
+    layer->colorOperationDirty |= bit; layer->dirty |= 8; layer->savedColorOperationDirty |= bit; layer->savedDirty |= 8;
+}
+inline void tunitSetAlphaOp(GraphicsLayerState* layer, u8 unit, s32 op, s32 bias, s32 scale, u8 clamp, s32 output) {
+    layer->alphaOperations[unit].op = op; layer->alphaOperations[unit].bias = bias; layer->alphaOperations[unit].scale = scale; layer->alphaOperations[unit].clamp = clamp != 0; layer->alphaOperations[unit].output = output; u32 bit = 1 << unit;
+    layer->alphaOperationDirty |= bit; layer->dirty |= 8; layer->savedAlphaOperationDirty |= bit; layer->savedDirty |= 8;
+}
+inline void tunitSetColorArg(GraphicsLayerState* layer, u8 unit, s32 a, s32 b, s32 c, s32 d) {
+    layer->colorArguments[unit][0] = a; layer->colorArguments[unit][1] = b; layer->colorArguments[unit][2] = c; layer->colorArguments[unit][3] = d; u32 bit = 1 << unit;
+    layer->colorArgumentDirty |= bit; layer->dirty |= 8; layer->savedColorArgumentDirty |= bit; layer->savedDirty |= 8;
+}
+inline void tunitSetAlphaArg(GraphicsLayerState* layer, u8 unit, s32 a, s32 b, s32 c, s32 d) {
+    layer->alphaArguments[unit][0] = a; layer->alphaArguments[unit][1] = b; layer->alphaArguments[unit][2] = c; layer->alphaArguments[unit][3] = d; u32 bit = 1 << unit;
+    layer->alphaArgumentDirty |= bit; layer->dirty |= 8; layer->savedAlphaArgumentDirty |= bit; layer->savedDirty |= 8;
+}
+void tunitFunc__10GSgfxLayerFUc14GSgfxTunitFunc(GraphicsLayerState* layer, u8 unit, u32 function) {
+    switch (function) {
     case 0:
-        temp_r0 = 1 << arg1;
-        temp_r29 = arg0 + (arg1 * 0x14);
-        temp_r9 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r29, 0x1170) = 0;
-        layerField<s32>(temp_r29, 0x1174) = 0;
-        layerField<s32>(temp_r29, 0x1178) = 0;
-        layerField<s32>(temp_r29, 0x117C) = 1;
-        layerField<s32>(temp_r29, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r0);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r0);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r9, 0xF70) = 0xF;
-        layerField<s32>(temp_r9, 0xF74) = 0xA;
-        layerField<s32>(temp_r9, 0xF78) = 8;
-        layerField<s32>(temp_r9, 0xF7C) = 0xF;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r0);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r0);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r29, 0x12B0) = 0;
-        layerField<s32>(temp_r29, 0x12B4) = 0;
-        layerField<s32>(temp_r29, 0x12B8) = 0;
-        layerField<s32>(temp_r29, 0x12BC) = 1;
-        layerField<s32>(temp_r29, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r0);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r0);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r9, 0x1070) = 7;
-        layerField<s32>(temp_r9, 0x1074) = 5;
-        layerField<s32>(temp_r9, 0x1078) = 4;
-        layerField<s32>(temp_r9, 0x107C) = 7;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r0);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r0);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 15, 10, 8, 15);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 7, 5, 4, 7);
         return;
     case 1:
-        temp_r0_2 = 1 << arg1;
-        temp_r29_2 = arg0 + (arg1 * 0x14);
-        temp_r9_2 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r29_2, 0x1170) = 0;
-        layerField<s32>(temp_r29_2, 0x1174) = 0;
-        layerField<s32>(temp_r29_2, 0x1178) = 0;
-        layerField<s32>(temp_r29_2, 0x117C) = 1;
-        layerField<s32>(temp_r29_2, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r0_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r0_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r9_2, 0xF70) = 0xA;
-        layerField<s32>(temp_r9_2, 0xF74) = 8;
-        layerField<s32>(temp_r9_2, 0xF78) = 9;
-        layerField<s32>(temp_r9_2, 0xF7C) = 0xF;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r0_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r0_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r29_2, 0x12B0) = 0;
-        layerField<s32>(temp_r29_2, 0x12B4) = 0;
-        layerField<s32>(temp_r29_2, 0x12B8) = 0;
-        layerField<s32>(temp_r29_2, 0x12BC) = 1;
-        layerField<s32>(temp_r29_2, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r0_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r0_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r9_2, 0x1070) = 7;
-        layerField<s32>(temp_r9_2, 0x1074) = 7;
-        layerField<s32>(temp_r9_2, 0x1078) = 7;
-        layerField<s32>(temp_r9_2, 0x107C) = 5;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r0_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r0_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 10, 8, 9, 15);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 7, 7, 7, 5);
         return;
     case 2:
-        temp_r0_3 = 1 << arg1;
-        temp_r31 = arg0 + (arg1 * 0x14);
-        temp_r10 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r31, 0x1170) = 0;
-        layerField<s32>(temp_r31, 0x1174) = 0;
-        layerField<s32>(temp_r31, 0x1178) = 0;
-        layerField<s32>(temp_r31, 0x117C) = 1;
-        layerField<s32>(temp_r31, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r0_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r0_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r10, 0xF70) = 0xA;
-        layerField<s32>(temp_r10, 0xF74) = 0xC;
-        layerField<s32>(temp_r10, 0xF78) = 8;
-        layerField<s32>(temp_r10, 0xF7C) = 0xF;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r0_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r0_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r31, 0x12B0) = 0;
-        layerField<s32>(temp_r31, 0x12B4) = 0;
-        layerField<s32>(temp_r31, 0x12B8) = 0;
-        layerField<s32>(temp_r31, 0x12BC) = 1;
-        layerField<s32>(temp_r31, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r0_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r0_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r10, 0x1070) = 7;
-        layerField<s32>(temp_r10, 0x1074) = 5;
-        layerField<s32>(temp_r10, 0x1078) = 4;
-        layerField<s32>(temp_r10, 0x107C) = 7;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r0_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r0_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 10, 12, 8, 15);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 7, 5, 4, 7);
         return;
     case 3:
-        temp_r0_4 = 1 << arg1;
-        temp_r11 = arg0 + (arg1 * 0x14);
-        temp_r7 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r11, 0x1170) = 0;
-        layerField<s32>(temp_r11, 0x1174) = 0;
-        layerField<s32>(temp_r11, 0x1178) = 0;
-        layerField<s32>(temp_r11, 0x117C) = 1;
-        layerField<s32>(temp_r11, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r0_4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r0_4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r7, 0xF70) = 8;
-        layerField<s32>(temp_r7, 0xF74) = 0xF;
-        layerField<s32>(temp_r7, 0xF78) = 0xF;
-        layerField<s32>(temp_r7, 0xF7C) = 0xF;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r0_4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r0_4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r11, 0x12B0) = 0;
-        layerField<s32>(temp_r11, 0x12B4) = 0;
-        layerField<s32>(temp_r11, 0x12B8) = 0;
-        layerField<s32>(temp_r11, 0x12BC) = 1;
-        layerField<s32>(temp_r11, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r0_4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r0_4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r7, 0x1070) = 4;
-        layerField<s32>(temp_r7, 0x1074) = 7;
-        layerField<s32>(temp_r7, 0x1078) = 7;
-        layerField<s32>(temp_r7, 0x107C) = 7;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r0_4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r0_4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 8, 15, 15, 15);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 4, 7, 7, 7);
         return;
     case 4:
-        temp_r0_5 = 1 << arg1;
-        temp_r11_2 = arg0 + (arg1 * 0x14);
-        temp_r7_2 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r11_2, 0x1170) = 0;
-        layerField<s32>(temp_r11_2, 0x1174) = 0;
-        layerField<s32>(temp_r11_2, 0x1178) = 0;
-        layerField<s32>(temp_r11_2, 0x117C) = 1;
-        layerField<s32>(temp_r11_2, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r0_5);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r0_5);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r7_2, 0xF70) = 0xA;
-        layerField<s32>(temp_r7_2, 0xF74) = 0xF;
-        layerField<s32>(temp_r7_2, 0xF78) = 0xF;
-        layerField<s32>(temp_r7_2, 0xF7C) = 0xF;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r0_5);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r0_5);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r11_2, 0x12B0) = 0;
-        layerField<s32>(temp_r11_2, 0x12B4) = 0;
-        layerField<s32>(temp_r11_2, 0x12B8) = 0;
-        layerField<s32>(temp_r11_2, 0x12BC) = 1;
-        layerField<s32>(temp_r11_2, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r0_5);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r0_5);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r7_2, 0x1070) = 5;
-        layerField<s32>(temp_r7_2, 0x1074) = 7;
-        layerField<s32>(temp_r7_2, 0x1078) = 7;
-        layerField<s32>(temp_r7_2, 0x107C) = 7;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r0_5);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r0_5);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 10, 15, 15, 15);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 5, 7, 7, 7);
         return;
     case 5:
-        temp_r4 = 1 << arg1;
-        temp_r12 = arg0 + (arg1 * 0x14);
-        temp_r8 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r12, 0x1170) = 0;
-        layerField<s32>(temp_r12, 0x1174) = 0;
-        layerField<s32>(temp_r12, 0x1178) = 0;
-        layerField<s32>(temp_r12, 0x117C) = 1;
-        layerField<s32>(temp_r12, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r8, 0xF70) = 8;
-        layerField<s32>(temp_r8, 0xF74) = 0xF;
-        layerField<s32>(temp_r8, 0xF78) = 0xF;
-        layerField<s32>(temp_r8, 0xF7C) = 0;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r12, 0x12B0) = 0;
-        layerField<s32>(temp_r12, 0x12B4) = 0;
-        layerField<s32>(temp_r12, 0x12B8) = 0;
-        layerField<s32>(temp_r12, 0x12BC) = 1;
-        layerField<s32>(temp_r12, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r8, 0x1070) = 4;
-        layerField<s32>(temp_r8, 0x1074) = 7;
-        layerField<s32>(temp_r8, 0x1078) = 7;
-        layerField<s32>(temp_r8, 0x107C) = 0;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r4);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r4);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 8, 15, 15, 0);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 4, 7, 7, 0);
         return;
     case 6:
-        temp_r4_2 = 1 << arg1;
-        temp_r12_2 = arg0 + (arg1 * 0x14);
-        temp_r8_2 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r12_2, 0x1170) = 0;
-        layerField<s32>(temp_r12_2, 0x1174) = 0;
-        layerField<s32>(temp_r12_2, 0x1178) = 0;
-        layerField<s32>(temp_r12_2, 0x117C) = 1;
-        layerField<s32>(temp_r12_2, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r4_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r4_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r8_2, 0xF70) = 0xA;
-        layerField<s32>(temp_r8_2, 0xF74) = 0xF;
-        layerField<s32>(temp_r8_2, 0xF78) = 0xF;
-        layerField<s32>(temp_r8_2, 0xF7C) = 0;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r4_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r4_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r12_2, 0x12B0) = 0;
-        layerField<s32>(temp_r12_2, 0x12B4) = 0;
-        layerField<s32>(temp_r12_2, 0x12B8) = 0;
-        layerField<s32>(temp_r12_2, 0x12BC) = 1;
-        layerField<s32>(temp_r12_2, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r4_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r4_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r8_2, 0x1070) = 5;
-        layerField<s32>(temp_r8_2, 0x1074) = 7;
-        layerField<s32>(temp_r8_2, 0x1078) = 7;
-        layerField<s32>(temp_r8_2, 0x107C) = 0;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r4_2);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r4_2);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 10, 15, 15, 0);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 5, 7, 7, 0);
         return;
     case 7:
-        temp_r4_3 = 1 << arg1;
-        temp_r30 = arg0 + (arg1 * 0x14);
-        temp_r10_2 = arg0 + ((arg1 * 0x10) & 0xFF0);
-        layerField<s32>(temp_r30, 0x1170) = 0;
-        layerField<s32>(temp_r30, 0x1174) = 0;
-        layerField<s32>(temp_r30, 0x1178) = 0;
-        layerField<s32>(temp_r30, 0x117C) = 1;
-        layerField<s32>(temp_r30, 0x1180) = 0;
-        layerField<s32>(arg0, 0x16DC) = (s32) (layerField<s32>(arg0, 0x16DC) | temp_r4_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1794) = (s32) (layerField<s32>(arg0, 0x1794) | temp_r4_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r10_2, 0xF70) = 0xF;
-        layerField<s32>(temp_r10_2, 0xF74) = 0xA;
-        layerField<s32>(temp_r10_2, 0xF78) = 8;
-        layerField<s32>(temp_r10_2, 0xF7C) = 0;
-        layerField<s32>(arg0, 0x16D4) = (s32) (layerField<s32>(arg0, 0x16D4) | temp_r4_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x178C) = (s32) (layerField<s32>(arg0, 0x178C) | temp_r4_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r30, 0x12B0) = 0;
-        layerField<s32>(temp_r30, 0x12B4) = 0;
-        layerField<s32>(temp_r30, 0x12B8) = 0;
-        layerField<s32>(temp_r30, 0x12BC) = 1;
-        layerField<s32>(temp_r30, 0x12C0) = 0;
-        layerField<s32>(arg0, 0x16E0) = (s32) (layerField<s32>(arg0, 0x16E0) | temp_r4_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1798) = (s32) (layerField<s32>(arg0, 0x1798) | temp_r4_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        layerField<s32>(temp_r10_2, 0x1070) = 7;
-        layerField<s32>(temp_r10_2, 0x1074) = 5;
-        layerField<s32>(temp_r10_2, 0x1078) = 4;
-        layerField<s32>(temp_r10_2, 0x107C) = 0;
-        layerField<s32>(arg0, 0x16D8) = (s32) (layerField<s32>(arg0, 0x16D8) | temp_r4_3);
-        layerField<s32>(arg0, 0x16A8) = (s32) (layerField<s32>(arg0, 0x16A8) | 8);
-        layerField<s32>(arg0, 0x1790) = (s32) (layerField<s32>(arg0, 0x1790) | temp_r4_3);
-        layerField<s32>(arg0, 0x1760) = (s32) (layerField<s32>(arg0, 0x1760) | 8);
-        /* fallthrough */
+        tunitSetColorOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetColorArg(layer, unit, 15, 10, 8, 0);
+        tunitSetAlphaOp(layer, unit, 0, 0, 0, 1, 0);
+        tunitSetAlphaArg(layer, unit, 7, 5, 4, 0);
+        return;
     default:
         return;
     }
@@ -361,55 +88,52 @@ void tokenMark__10GSgfxLayerFv(void* layer) {
 void tunitIndTexMtx__10GSgfxLayerF16GSgfxIndTexMtxIDPA3_fSc(GraphicsLayerState* layer, s32 id, float (*matrix)[3], s8 exponent) {
     SetupFifo__10GSgfxLayerFv(layer); GSgfx_GCWriteIndTexMtx(id,matrix,exponent);
     s32 saved = layer->blendIndex; u8 other = saved == 0;
-    if (layerField<u32>(&layer->blendRecords[other],0) != 0) {
+    if (layer->blendRecords[other].fifo != 0) {
         selectLayerPass(layer,other); SetupFifo__10GSgfxLayerFv(layer);
         GSgfx_GCWriteIndTexMtx(id,matrix,exponent);
         selectLayerPass(layer,saved); SetupFifo__10GSgfxLayerFv(layer);
     }
 }
+struct LayerTexGenView { u8 pad[0xc74]; LayerTexGen gens[8]; };
 void tgenFunc__10GSgfxLayerFUc13GSgfxTgenFunc12GSgfxTgenSrcP5GSmtxbP5GSmtx(GraphicsLayerState* layer,u8 unit,s32 function,s32 source,float (*matrix)[4],bool normalize,float (*post)[4]) {
-    LayerTexGen& gen = layerField<LayerTexGen>(layer,0xc74+unit*0x18);
-    u8 load=0; gen.function=function; gen.source=source; gen.normalize=normalize; gen.reserved=0;
-    if (!matrix) gen.matrix=0x3c; else { load=1; gen.matrix=unit*3+0x1e; }
-    if (!post) gen.postMatrix=0x7d; else { load=1; gen.postMatrix=unit*3+0x40; }
+    LayerTexGenView* view=(LayerTexGenView*)layer; u8 load=0; view->gens[unit].function=function; view->gens[unit].source=source; view->gens[unit].normalize=normalize; view->gens[unit].reserved=0;
+    if (!matrix) view->gens[unit].matrix=0x3c; else { load=1; view->gens[unit].matrix=unit*3+0x1e; }
+    if (!post) view->gens[unit].postMatrix=0x7d; else { load=1; view->gens[unit].postMatrix=unit*3+0x40; }
     if (load==1) {
         SetupFifo__10GSgfxLayerFv(layer);
-        if (matrix) GXLoadTexMtxImm(matrix,gen.matrix,function==1 ? GX_MTX2x4 : GX_MTX3x4);
+        if (matrix) { if (function==1) GXLoadTexMtxImm(matrix,view->gens[unit].matrix,GX_MTX2x4); else GXLoadTexMtxImm(matrix,view->gens[unit].matrix,GX_MTX3x4); }
         // The original intentionally passes matrix for the post-matrix load too.
-        if (post) GXLoadTexMtxImm(matrix,gen.postMatrix,GX_MTX3x4);
+        if (post) GXLoadTexMtxImm(matrix,view->gens[unit].postMatrix,GX_MTX3x4);
         s32 saved=layer->blendIndex; u8 other=saved==0;
-        if (layerField<u32>(&layer->blendRecords[other],0)!=0) {
+        if (layer->blendRecords[other].fifo!=0) {
             selectLayerPass(layer,other); SetupFifo__10GSgfxLayerFv(layer);
-            if (matrix) GXLoadTexMtxImm(matrix,gen.matrix,function==1 ? GX_MTX2x4 : GX_MTX3x4);
-            if (post) GXLoadTexMtxImm(matrix,gen.postMatrix,GX_MTX3x4);
+            if (matrix) { if (function==1) GXLoadTexMtxImm(matrix,view->gens[unit].matrix,GX_MTX2x4); else GXLoadTexMtxImm(matrix,view->gens[unit].matrix,GX_MTX3x4); }
+            if (post) GXLoadTexMtxImm(matrix,view->gens[unit].postMatrix,GX_MTX3x4);
             selectLayerPass(layer,saved); SetupFifo__10GSgfxLayerFv(layer);
         }
     }
-    s32 mask=1<<unit;
-    layerField<u32>(layer,0x16b0)|=mask; layer->dirty|=1;
-    layerField<u32>(layer,0x1768)|=mask; layer->savedDirty|=1;
+    layerField<u32>(layer,0x16b0)|=1<<unit; layer->dirty|=1;
+    layerField<u32>(layer,0x1768)|=1<<unit; layer->savedDirty|=1;
 }
+struct LayerChannelView { u8 pad[0xdbc]; LayerChannel channels[8]; };
 void cunitChannelGen__10GSgfxLayerFUc15GSgfxCunitAlpha13GSgfxCunitSrc13GSgfxCunitSrcUlPP10GSgfxLight14GSgfxLightType16GSgfxDiffuseFunc(GraphicsLayerState* layer,u8 unit,s32 alpha,s32 ambient,s32 material,u32 count,void** lights,s32 attenuation,s32 diffuse) {
-    s32 alphaUnit=unit+2; u8 enabled=0;
+    u32 idx=unit; s32 alphaUnit=unit+2; u8 enabled=0;
     if (lights && count) enabled=1;
     if (!enabled) { attenuation=2; diffuse=0; } else if (!attenuation) diffuse=0;
     if (alpha==0 || alpha==2) {
-        LayerChannel& channel=layerField<LayerChannel>(layer,0xdbc+unit*0x38);
-        channel.enabled=enabled; channel.ambient=ambient; channel.material=material;
-        channel.mask=0; channel.diffuse=diffuse; channel.attenuation=attenuation;
-        if (enabled) for (u32 i=0;i<8;i++) channel.lights[i]=i<count ? lights[i] : 0;
-        else memset(channel.lights,0,0x20);
-        s32 mask=1<<unit; layerField<u32>(layer,0x16c0)|=mask; layerField<u32>(layer,0x1778)|=mask;
+        ((LayerChannelView*)layer)->channels[idx].enabled=enabled; ((LayerChannelView*)layer)->channels[idx].ambient=ambient; ((LayerChannelView*)layer)->channels[idx].material=material;
+        ((LayerChannelView*)layer)->channels[idx].mask=0; ((LayerChannelView*)layer)->channels[idx].diffuse=diffuse; ((LayerChannelView*)layer)->channels[idx].attenuation=attenuation;
+        if (enabled) for (u32 i=0;i<8;i++) { if (i<count) ((LayerChannelView*)layer)->channels[idx].lights[i]=lights[i]; else ((LayerChannelView*)layer)->channels[idx].lights[i]=0; }
+        else memset(((LayerChannelView*)layer)->channels[idx].lights,0,0x20);
+        layerField<u32>(layer,0x16c0)|=1<<idx; layerField<u32>(layer,0x1778)|=1<<idx;
     }
     if (alpha==1 || alpha==2) {
-        LayerChannel& channel=layerField<LayerChannel>(layer,0xdbc+alphaUnit*0x38);
-        channel.enabled=enabled; channel.ambient=ambient; channel.material=material;
-        channel.mask=0; channel.diffuse=diffuse; channel.attenuation=attenuation;
+        ((LayerChannelView*)layer)->channels[alphaUnit].enabled=enabled; ((LayerChannelView*)layer)->channels[alphaUnit].ambient=ambient; ((LayerChannelView*)layer)->channels[alphaUnit].material=material;
+        ((LayerChannelView*)layer)->channels[alphaUnit].mask=0; ((LayerChannelView*)layer)->channels[alphaUnit].diffuse=diffuse; ((LayerChannelView*)layer)->channels[alphaUnit].attenuation=attenuation;
         // Both branches write the light list for the color unit in the original.
-        LayerChannel& color=layerField<LayerChannel>(layer,0xdbc+unit*0x38);
-        if (enabled) for (u32 i=0;i<8;i++) color.lights[i]=i<count ? lights[i] : 0;
-        else memset(color.lights,0,0x20);
-        s32 mask=1<<alphaUnit; layerField<u32>(layer,0x16c0)|=mask; layerField<u32>(layer,0x1778)|=mask;
+        if (enabled) for (u32 i=0;i<8;i++) { if (i<count) ((LayerChannelView*)layer)->channels[idx].lights[i]=lights[i]; else ((LayerChannelView*)layer)->channels[idx].lights[i]=0; }
+        else memset(((LayerChannelView*)layer)->channels[idx].lights,0,0x20);
+        layerField<u32>(layer,0x16c0)|=1<<alphaUnit; layerField<u32>(layer,0x1778)|=1<<alphaUnit;
     }
     layer->dirty|=4; layer->savedDirty|=4;
 }
@@ -458,7 +182,7 @@ void dlDraw__10GSgfxLayerFP7GSgfxDL(void* layer,LayerDisplayList* list) {
     LayerVertexFormat* saved=layerField<LayerVertexFormat*>(layer,0x199c);
     layerField<LayerVertexFormat*>(layer,0x199c)=list->format;
     FlushState__10GSgfxLayerFv(layer);
-    u32 size=list->size; void* data=list->data;
+    void* data; u32 size; size=list->size; data=list->data;
     *(volatile u8*)0xcc008000=0x40;
     *(void* volatile*)0xcc008000=data;
     *(volatile u32*)0xcc008000=size;

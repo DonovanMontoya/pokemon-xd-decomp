@@ -239,7 +239,7 @@ void fightSeq_JumpWazaSeq(u8 *);
 void fightSeq_NextWazaSeq(u32);
 u8 fightSideCheckValid(FightSide *);
 u32 fightSideGetFightPokemonNokoriHp(FightSide *, u8);
-u16 fightSideGetJoutaiUserFightTargetId(FightSide *,u16);
+u32 fightSideGetJoutaiUserFightTargetId(FightSide *,u16);
 u16 fightSideGetNokoriFightPokemonNum(FightSide *, u8, u8);
 FIGHT_TRAINER * fightSideGetValidFightTrainerPtr(FightSide *,u16);
 u8 fightSideIsJoutaiDataId(FightSide *, u16);
@@ -928,6 +928,7 @@ void WS_COND_CHG_WORK_SET(void) {
     u8 temp_r3;
     s32 var_r31;
     s32 temp_r0;
+    u32 off;
 
     var_r31 = 0;
     fightSeq_GetWazaSeq();
@@ -947,7 +948,8 @@ void WS_COND_CHG_WORK_SET(void) {
         var_r31 = 0x2E;
         break;
     }
-    UserWork[0x160A4] = (s8) (var_r31 + ((temp_r3 & 0xF) - 1));
+    off = (temp_r3 & 0xF) - 1;
+    UserWork[0x160A4] = (s8) (var_r31 + off);
     UserWork[0x160A5] = 0;
     fightSeq_NextWazaSeq(1U);
 }
@@ -1252,9 +1254,10 @@ u32 _fightSeqFightEffectStatusUpDown__FUcUc(u32 arg0, u8 arg1, u8 arg2) {
     }
     if (arg1 == 6) {
         if (var_r5 == 1) {
-            return 0x2CU;
+            var_r3 = 0x2C;
+        } else {
+            var_r3 = 0x3C;
         }
-        return 0x3CU;
     }
     return var_r3;
 }
@@ -2249,10 +2252,12 @@ loop_57:
 void WS_CHECK_TYPE(void) {
     u8 *temp_r3;
     u8 *temp_r30;
+    FightOutPokemon *pokemon;
 
     temp_r3 = fightSeq_GetWazaSeq();
+    pokemon = fightTargetGetPtrAsNowFightType(*(u8 *)(temp_r3 + 0x1), NULL);
     temp_r30 = *(u8 * *)(temp_r3 + 0x3);
-    if (fightOutPokemonIsZokuseiDataId(fightTargetGetPtrAsNowFightType(*(u8 *)(temp_r3 + 0x1), NULL), (u16) *(u8 *)(temp_r3 + 0x2)) == 1) {
+    if (fightOutPokemonIsZokuseiDataId(pokemon, (u16) *(u8 *)(temp_r3 + 0x2)) == 1) {
         fightSeq_JumpWazaSeq(temp_r30);
         return;
     }
@@ -2262,10 +2267,16 @@ void WS_CHECK_TYPE(void) {
 void WS_WAZAKOUKA_CHECK(void) {
     u8 *temp_r3;
     u8 *temp_r30;
+    FightOutPokemon *pokemon;
+    u8 result;
+    u8 flag;
 
     temp_r3 = fightSeq_GetWazaSeq();
+    pokemon = fightTargetGetPtrAsNowFightType(*(u8 *)(temp_r3 + 0x1), NULL);
     temp_r30 = *(u8 * *)(temp_r3 + 0x7);
-    if ((u8) *(u8 *)(temp_r3 + 0x6) == fightOutPokemonIsJoutaiDataId(fightTargetGetPtrAsNowFightType(*(u8 *)(temp_r3 + 0x1), NULL), (u16) *(u32 *)(temp_r3 + 0x2))) {
+    result = fightOutPokemonIsJoutaiDataId(pokemon, (u16) *(u32 *)(temp_r3 + 0x2));
+    flag = *(u8 *)(temp_r3 + 0x6);
+    if (flag == result) {
         fightSeq_JumpWazaSeq(temp_r30);
         return;
     }
@@ -2343,12 +2354,14 @@ void WS_SPEABI_CHECK(void) {
     u16 temp_r31;
     u8 *temp_r30;
     FightOutPokemon *temp_r3_2;
+    u8 *seq2;
 
     temp_r3 = fightSeq_GetWazaSeq();
     temp_r3_2 = fightTargetGetPtrAsNowFightType(*(u8 *)(temp_r3 + 0x1), NULL);
     temp_r31 = fightOutPokemonGetTokuseiDataId(temp_r3_2);
+    seq2 = fightSeq_GetWazaSeq();
     temp_r30 = *(u8 * *)(temp_r3 + 0x3);
-    if (((s32) temp_r31 == (s32) *(u8 *)(fightSeq_GetWazaSeq() + 0x2)) && (fightFloorIsNowEncountOpeningVirtualBattle(0) == 0)) {
+    if (((s32) temp_r31 == (s32) *(u8 *)(seq2 + 0x2)) && (fightFloorIsNowEncountOpeningVirtualBattle(0) == 0)) {
         fightFloor_SetTokuseiPokemonPtr(NULL, temp_r3_2);
         fightSeq_JumpWazaSeq(temp_r30);
         return;
@@ -3301,12 +3314,13 @@ void WS_CRITICAL_MESSAGE(void) {
 }
 
 void WS_HP_DEC_WAIT(void) {
-    FightOutPokemon *temp_r3;
     s32 temp_r31;
+    FightOutPokemon *temp_r3;
+    u8 fightType;
 
-    temp_r31 = (u8)fightFloor_GetFightType(NULL);
+    fightType = fightFloor_GetFightType(NULL);
     temp_r3 = fightTargetGetPtrAsNowFightType(*(u8 *)(fightSeq_GetWazaSeq() + 0x1), NULL);
-    temp_r31 = fightMenuGetFightOutPokemonPtrToStatusMenuId(temp_r3, (u8)temp_r31, 1);
+    temp_r31 = fightMenuGetFightOutPokemonPtrToStatusMenuId(temp_r3, fightType, 1);
     if (menuIsCheck() == 1) {
         menuFightStatusWaitAnimeHP(temp_r31, 1);
     }
@@ -4626,19 +4640,21 @@ void fightSeqWsBadgeCheckYokodori__FP15FightOutPokemon(FightOutPokemon *arg0) {
 
 s32 _fightSeqWsBadgecheckSubYokodori__FPvUsPv(FightOutPokemon *arg0, u16 arg1, void *arg2) {
     u8 temp_r31;
+    FightOutPokemon *pokemon = arg0;
     FightOutPokemon *temp_r29;
+    BasisYokodoriWork *work = (BasisYokodoriWork *)arg2;
 
-    temp_r29 = ((BasisYokodoriWork *)arg2)->attacker;
+    temp_r29 = work->attacker;
     temp_r31 = wazaDB_GetYokodori(fightOutPokemon_GetUseWazaDataId(temp_r29));
-    if (fightOutPokemonCheckFightOut(arg0) == 0) {
+    if (fightOutPokemonCheckFightOut(pokemon) == 0) {
         return 1;
     }
-    if ((fightOutPokemonIsJoutaiDataId(arg0, 0x33U) == 1) && (temp_r31 == 1)) {
-        fightSeqPressurePpdecCheck(temp_r29, arg0, 0x121U);
-        fightOutPokemonInitJoutaiDataId(arg0, 0x33U);
-        fightFloor_SetAppointPokemonPtr(NULL, arg0);
+    if ((fightOutPokemonIsJoutaiDataId(pokemon, 0x33U) == 1) && (temp_r31 == 1)) {
+        fightSeqPressurePpdecCheck(temp_r29, pokemon, 0x121U);
+        fightOutPokemonInitJoutaiDataId(pokemon, 0x33U);
+        fightFloor_SetAppointPokemonPtr(NULL, pokemon);
         fightSeq_CallWazaSeq(WAZA_Yokodori);
-        ((BasisYokodoriWork *)arg2)->result = arg0;
+        work->result = pokemon;
     }
     return 1;
 }
@@ -4748,7 +4764,7 @@ block_30:
 }
 
 FightOutPokemon *fightSeqGetEnemyFightSideKonoyubitomareFightOutPokemonPtr(FightOutPokemon *arg0) {
-    u16 temp_r3;
+    u32 temp_r3;
     FightOutPokemon *temp_r31;
     FightTarget *var_r30;
     FightTarget *temp_r3_2;
@@ -4759,7 +4775,7 @@ FightOutPokemon *fightSeqGetEnemyFightSideKonoyubitomareFightOutPokemonPtr(Fight
     var_r30 = NULL;
     if (fightSideIsJoutaiDataId((FightSide *) temp_r31, 0x4DU) == 1) {
         temp_r3 = fightSideGetJoutaiUserFightTargetId((FightSide *) temp_r31, 0x4DU);
-        if (temp_r3 != 0) {
+        if ((u16) temp_r3 != 0) {
             temp_r3_2 = fightTargetGetRelativeHostSideFightTargetIdToTragetPtr((u32) temp_r3, (u16) temp_r29);
             if ((temp_r3_2 != NULL) && (fightOutPokemonCheckFightOut((FightOutPokemon *) temp_r3_2) == 1)) {
                 var_r30 = temp_r3_2;

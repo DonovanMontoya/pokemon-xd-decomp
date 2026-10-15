@@ -5,7 +5,7 @@
 #include <game/pxdvs/GSAPI/GSgfxM/matrixStack.hpp>
 struct TevOperation { s32 op, bias, scale; bool clamp; u8 pad[3]; s32 output; };
 struct TextureRecord { u8 reserved[7]; u8 dirty; };
-struct BlendRecord { u8 reserved[0xbc]; };
+struct BlendRecord { u32 fifo; u8 reserved[0xb8]; };
 struct GraphicsLayerState {
     u8 reserved0[0xd34];
     u8 lineWidth;
@@ -28,7 +28,8 @@ struct GraphicsLayerState {
     u8 alphaUpdate;
     u8 depthBeforeTexture;
     u8 reserved1659[0x3];
-    s32 depthEnable;
+    u8 depthEnable;
+    u8 reserved165d[0x3];
     s32 depthCompare;
     s32 alphaCompare0;
     s32 alphaCombine;

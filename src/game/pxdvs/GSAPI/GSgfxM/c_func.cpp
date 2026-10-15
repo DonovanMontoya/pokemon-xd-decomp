@@ -76,32 +76,28 @@ extern "C" void GSgfxCullMode(s32 mode) {
 extern "C" void GSgfxSelectTexture(u8 unit, TextureRecord* texture) {
     GraphicsLayerState* layer = (GraphicsLayerState*)gsgfxState->layer;
     if (layer->textures[unit] != texture || layer->savedTextures[unit] != texture || texture->dirty) {
-        layer->textures[unit] = texture; u32 bit = 1 << unit; layer->textureDirty |= bit;
-        layer->savedTextures[unit] = texture; layer->savedTextureDirty |= bit;
+        layer->textures[unit] = texture; layer->textureDirty |= 1 << unit;
+        layer->savedTextures[unit] = texture; layer->savedTextureDirty |= 1 << unit;
     }
 }
 extern "C" void GSgfxSetTUnitUserColorOp(u8 unit, s32 op, s32 bias, s32 scale, u8 clamp, s32 output) {
     GraphicsLayerState* layer = (GraphicsLayerState*)gsgfxState->layer;
-    TevOperation* value = &layer->colorOperations[unit];
-    value->op = op; u32 bit = 1 << unit; value->bias = bias; value->scale = scale; value->clamp = clamp != 0; value->output = output;
+    layer->colorOperations[unit].op = op; layer->colorOperations[unit].bias = bias; layer->colorOperations[unit].scale = scale; layer->colorOperations[unit].clamp = clamp != 0; layer->colorOperations[unit].output = output; u32 bit = 1 << unit;
     layer->colorOperationDirty |= bit; layer->dirty |= 8; layer->savedColorOperationDirty |= bit; layer->savedDirty |= 8;
 }
 extern "C" void GSgfxSetTUnitUserColorArg(u8 unit, s32 a, s32 b, s32 c, s32 d) {
     GraphicsLayerState* layer = (GraphicsLayerState*)gsgfxState->layer;
-    u32 bit = 1 << unit; s32* values = layer->colorArguments[unit];
-    values[0] = a; values[1] = b; values[2] = c; values[3] = d;
+    layer->colorArguments[unit][0] = a; layer->colorArguments[unit][1] = b; layer->colorArguments[unit][2] = c; layer->colorArguments[unit][3] = d; u32 bit = 1 << unit;
     layer->colorArgumentDirty |= bit; layer->dirty |= 8; layer->savedColorArgumentDirty |= bit; layer->savedDirty |= 8;
 }
 extern "C" void GSgfxSetTUnitUserAlphaOp(u8 unit, s32 op, s32 bias, s32 scale, u8 clamp, s32 output) {
     GraphicsLayerState* layer = (GraphicsLayerState*)gsgfxState->layer;
-    TevOperation* value = &layer->alphaOperations[unit];
-    value->op = op; u32 bit = 1 << unit; value->bias = bias; value->scale = scale; value->clamp = clamp != 0; value->output = output;
+    layer->alphaOperations[unit].op = op; layer->alphaOperations[unit].bias = bias; layer->alphaOperations[unit].scale = scale; layer->alphaOperations[unit].clamp = clamp != 0; layer->alphaOperations[unit].output = output; u32 bit = 1 << unit;
     layer->alphaOperationDirty |= bit; layer->dirty |= 8; layer->savedAlphaOperationDirty |= bit; layer->savedDirty |= 8;
 }
 extern "C" void GSgfxSetTUnitUserAlphaArg(u8 unit, s32 a, s32 b, s32 c, s32 d) {
     GraphicsLayerState* layer = (GraphicsLayerState*)gsgfxState->layer;
-    u32 bit = 1 << unit; s32* values = layer->alphaArguments[unit];
-    values[0] = a; values[1] = b; values[2] = c; values[3] = d;
+    layer->alphaArguments[unit][0] = a; layer->alphaArguments[unit][1] = b; layer->alphaArguments[unit][2] = c; layer->alphaArguments[unit][3] = d; u32 bit = 1 << unit;
     layer->alphaArgumentDirty |= bit; layer->dirty |= 8; layer->savedAlphaArgumentDirty |= bit; layer->savedDirty |= 8;
 }
 extern "C" void GSgfxSetupRenderAndSelect(void* format) { setRenderStateAndSelect__10GSgfxLayerFP7GSgfxVF(gsgfxState->layer, format); }

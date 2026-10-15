@@ -98,8 +98,8 @@ void SetLayerType__10GSgfxLayerF14GSgfxLayerType(void *arg0, s32 arg1) {
     u16 temp_r3_7;
     void* temp_r3_3;
     void* temp_r3_6;
-    u8 var_r30;
     u8 var_r31;
+    u8 var_r30;
     u8 var_r3;
     u8 var_r4;
 
@@ -135,18 +135,14 @@ void SetLayerType__10GSgfxLayerF14GSgfxLayerType(void *arg0, s32 arg1) {
             break;
         }
         if ((var_r3 != 0) && (var_r4 == 0)) {
-            temp_r3 = fbTexRefCount__10GSgfxLayer - 1;
-            fbTexRefCount__10GSgfxLayer = temp_r3;
-            if (temp_r3 == 0) {
+            if (--fbTexRefCount__10GSgfxLayer == 0) {
                 GStextureFree(fbTexPtr__10GSgfxLayer);
                 fbTexPtr__10GSgfxLayer = 0;
             }
             goto block_22;
         }
         if ((var_r3 == 0) && (var_r4 != 0)) {
-            temp_r3_2 = fbTexRefCount__10GSgfxLayer + 1;
-            fbTexRefCount__10GSgfxLayer = temp_r3_2;
-            if (temp_r3_2 == 1) {
+            if (++fbTexRefCount__10GSgfxLayer == 1) {
                 temp_r3_3 = GStextureCreate(0, 0, 0x45, 0, 0);
                 fbTexPtr__10GSgfxLayer = temp_r3_3;
                 if (temp_r3_3 == 0) {
@@ -158,20 +154,16 @@ void SetLayerType__10GSgfxLayerF14GSgfxLayerType(void *arg0, s32 arg1) {
         }
 block_22:
         if ((var_r31 != 0) && (var_r30 == 0)) {
-            temp_r3_4 = distTexRefCount__10GSgfxLayer - 1;
-            distTexRefCount__10GSgfxLayer = temp_r3_4;
-            if (temp_r3_4 == 0) {
+            if (--distTexRefCount__10GSgfxLayer == 0) {
                 GStextureFree(distTexPtr__10GSgfxLayer);
                 distTexPtr__10GSgfxLayer = 0;
             }
             goto block_32;
         }
-        if ((var_r31 == 0) && (var_r30 != 0) && (temp_r3_5 = distTexRefCount__10GSgfxLayer + 1, distTexRefCount__10GSgfxLayer = temp_r3_5, ((temp_r3_5 == 1) != 0)) && (temp_r3_6 = GStextureCreate(0, 0, 0xA3, 0, 0), distTexPtr__10GSgfxLayer = temp_r3_6, ((temp_r3_6 == 0) != 0))) {
+        if ((var_r31 == 0) && (var_r30 != 0) && (++distTexRefCount__10GSgfxLayer == 1) && (temp_r3_6 = GStextureCreate(0, 0, 0xA3, 0, 0), distTexPtr__10GSgfxLayer = temp_r3_6, ((temp_r3_6 == 0) != 0))) {
             layerField<u32>(arg0, 0x2C) = 0;
             distTexRefCount__10GSgfxLayer = 0;
-            temp_r3_7 = fbTexRefCount__10GSgfxLayer - 1;
-            fbTexRefCount__10GSgfxLayer = temp_r3_7;
-            if (temp_r3_7 == 0) {
+            if (--fbTexRefCount__10GSgfxLayer == 0) {
                 GStextureFree(fbTexPtr__10GSgfxLayer);
                 fbTexPtr__10GSgfxLayer = 0;
             }
@@ -258,7 +250,7 @@ void SetTextureCopy__10GSgfxLayerFP9GStexturebPUc(void* layer,void* texture,bool
         }
         layerField<void*>(layer,0x19a4)=0;
     } else {
-        if ((u32)texture==0xfefdfefe) {
+        if ((u32)texture==0xfefefefe) {
             if (++fbTexRefCount__10GSgfxLayer==1) {
                 fbTexPtr__10GSgfxLayer=GStextureCreate(0,0,0x45,0,0);
                 if (!fbTexPtr__10GSgfxLayer) { fbTexRefCount__10GSgfxLayer=0; return; }
@@ -504,13 +496,14 @@ void GSgfxLayerBuildRenderList__Fv() {
 }
 LayerNode* GSgfxLayerPrerender__Fv() {
     // No value is assigned for an empty list in the original implementation.
+    LayerNode* p;
     LayerNode* last;
     GSgfxRenderModuleDoRenderFast__Fv();
-    for (LayerNode* p=_layerBottom;p;p=p->next) {
+    for (p=_layerBottom;p;p=p->next) {
         if (layerField<u8>(p,0x19b3)) layerField<u32>(p,4)|=1;
         else layerField<u32>(p,4)&=~1;
     }
-    for (LayerNode* p=_layerBottom;p;p=p->next) { Prerender__10GSgfxLayerFv(p); last=p; }
+    for (p=_layerBottom;p;p=p->next) { Prerender__10GSgfxLayerFv(p); last=p; }
     return last;
 }
 void CreateFifo__10GSgfxLayerF14GSgfxLayerPassUl(void* layer,s32 pass,u32 bytes) {

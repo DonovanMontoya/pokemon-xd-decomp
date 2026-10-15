@@ -98,7 +98,7 @@ u8 GSgfxVideoGetLockFrameActive() { return _videoState.lockActive; }
 s32 GSgfxVideoGetLockFrameRate() { return _videoState.lockRate; }
 void GSgfxVideoSetLockFrameActive(u8 active) { _videoState.lockActive=active; }
 void GSgfxVideoSetLockFrameRate(s32 rate) { if(_videoState.lockRate!=rate) { _videoState.lockRate=rate;_videoState.lockCount=_videoState.lockRate; } }
-void GSgfxVideoSetFilter(u8 *filter) { u8 *dest=_videoState.mode.filter;if(!filter) { memcpy(dest,_videoDefaultFilter,7);return; } memcpy(dest,filter,7); }
+void GSgfxVideoSetFilter(u8 *filter) { VideoState *state=&_videoState; if(!filter) { memcpy(state->mode.filter,_videoDefaultFilter,7);return; } memcpy(state->mode.filter,filter,7); }
 void GSgfxVideoGetClearColor(GXColor *color) { color->r=_videoState.color.r;color->g=_videoState.color.g;color->b=_videoState.color.b;color->a=_videoState.color.a; }
 void GSgfxVideoSetClearColor(GXColor *color) { _videoState.color.r=color->r;_videoState.color.g=color->g;_videoState.color.b=color->b;_videoState.color.a=color->a; }
 void (*GSgfxVideoSetVSyncCallback(void(*cb)(u32)))(u32) { void(*old)(u32)=_videoState.callback;_videoState.callback=cb;return old; }

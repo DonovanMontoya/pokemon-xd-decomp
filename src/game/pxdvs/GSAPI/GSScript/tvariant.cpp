@@ -58,16 +58,16 @@ void tigaVariant::name(tigaVariant* result, tigaVariant* other) { \
     s32 common; \
     bool sameType = other->type == type; \
     result->type = 1; result->value.integer = 0; \
-    common = other->type; s32 leftType = type; if (leftType > common) common = leftType; \
+    s32 otherType = other->type; s32 thisType = type; common = otherType; if (thisType > common) common = thisType; \
     switch (common) { \
     case 1: { \
-        s32 left; if (leftType == 1) left = value.integer; else if (leftType == 2) left = (s32)value.single; else left = getCnvInteger(); \
+        s32 left; if (type == 1) left = value.integer; else if (type == 2) left = (s32)value.single; else left = getCnvInteger(); \
         s32 right; if (other->type == 1) right = other->value.integer; else if (other->type == 2) right = (s32)other->value.single; else right = other->getCnvInteger(); \
         if (left operation right) result->value.integer = 1; \
         break; \
     } \
     case 2: { \
-        f32 left; if (leftType == 1) left = value.integer; else if (leftType == 2) left = value.single; else left = getCnvSingle(); \
+        f32 left; if (type == 1) left = value.integer; else if (type == 2) left = value.single; else left = getCnvSingle(); \
         f32 right; if (other->type == 1) right = other->value.integer; else if (other->type == 2) right = other->value.single; else right = other->getCnvSingle(); \
         if (left operation right) result->value.integer = 1; \
         break; \
