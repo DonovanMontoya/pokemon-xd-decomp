@@ -1,16 +1,8 @@
-# Pokémon XD: Gale of Darkness – TeamOrre Decompilation Project
-[![Build Status]][actions] [![Retail Code Progress]][retail progress] [![Retail Data Progress]][retail progress] [![Demo Code Progress]][demo progress] [![Demo Data Progress]][demo progress]
+# Pokémon XD: Gale of Darkness Decompilation
 
-[Build Status]: https://github.com/TeamOrre/xd-decomp/actions/workflows/build.yml/badge.svg
-[actions]: https://github.com/TeamOrre/xd-decomp/actions/workflows/build.yml
-[Retail Code Progress]: https://decomp.dev/TeamOrre/xd-decomp.svg?mode=shield&measure=code&label=Code%20(US)
-[Retail Data Progress]: https://decomp.dev/TeamOrre/xd-decomp.svg?mode=shield&measure=data&label=Data%20(US)
-[retail progress]: https://decomp.dev/TeamOrre/xd-decomp
-[Demo Code Progress]: https://decomp.dev/TeamOrre/xd-decomp/NXXJ01.svg?mode=shield&measure=code&label=Code%20(Demo)
-[Demo Data Progress]: https://decomp.dev/TeamOrre/xd-decomp/NXXJ01.svg?mode=shield&measure=data&label=Data%20(Demo)
-[demo progress]: https://decomp.dev/TeamOrre/xd-decomp/NXXJ01
+This is a matching decompilation of **Pokémon XD: Gale of Darkness** for the Nintendo GameCube.
 
-This repository is the home of the **Pokémon XD** decompilation effort under **TeamOrre**.
+It started as a fork of [TeamOrre/xd-decomp](https://github.com/TeamOrre/xd-decomp) and is now maintained as a separate project. Thanks to everyone who worked on the original.
 
 ## Supported Versions
 
@@ -76,7 +68,7 @@ Linux
 - Clone the repository:
 
   ```sh
-  git clone --recurse-submodules https://github.com/TeamOrre/xd-decomp.git
+  git clone --recurse-submodules https://github.com/DonovanMontoya/pokemon-xd-decomp.git
   ```
 
 - Copy your game's disc image to `orig/GXXE01`.
