@@ -214,6 +214,19 @@ s32 _peopleBlockMoveScript__FP13tagPeopleWork(tagPeopleWork* work) {
     floorBlockScriptThread(work->moveScriptThread);
     return 1;
 }
+void _peopleAdjustPositionSub__FP13tagPeopleWorkP5GSvecP5GSvec(tagPeopleWork*, GSvec*, GSvec*);
+u32 GSinputButtonsPressed(u32);
+void* GSresGetResource(u32, u32);
+u32 _peopleAdjustPosition__FP13tagPeopleWorkP5GSvecP5GSvec(tagPeopleWork* work, GSvec* position, GSvec* previous) {
+    u8* debug = (u8*)GSresGetResource(0, 2);
+    if (debug && debug[1] && (GSinputButtonsPressed(1) & 0x200)) {
+        peopleBiosSetPos(work, position);
+        return 1;
+    }
+    _peopleAdjustPositionSub__FP13tagPeopleWorkP5GSvecP5GSvec(work, position, previous);
+    peopleBiosSetPos(work, position);
+    return work->unknown17E ? 0 : 1;
+}
 void peopleAllBlockMoveScript() {
     for (s32 index = 0; index < peopleBiosGetMaxNum(); ++index) {
         tagPeopleWork* work = peopleBiosGetWorkPtr(index);
@@ -379,6 +392,21 @@ s32 peopleSetAnimBlend(u32 group, u32 resource, s32 first, s32 second, u32 frame
     GSmodelGetFrameCount(model, &count, 0);
     GSmodelSetBlendAnimFrameForce(model, count - 1.5f, 0.0f);
     return 1;
+}
+s32 peopleWaitSyncMotionBlend(u32 group, u32 resource, u8 wait) {
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work) return 0;
+    GSmodel* model = peopleBiosGetModelPtr(work);
+    if (!model) return 0;
+    for (;;) {
+        if (1.0f == work->motionBlend) return 0;
+        if (wait) {
+            if (*(s32*)((u8*)model + 0x74) == 1) return 0;
+            GSthreadSwitch();
+        } else {
+            return 1;
+        }
+    }
 }
 s32 peopleWaitSyncMotion(u32 group, u32 resource, u8 wait) {
     tagPeopleWork* work = peopleGet(group, resource);
@@ -650,6 +678,104 @@ void peopleMoveNeckTarget(u32 group, u32 resource, u32 targetGroup, u32 targetRe
     }
 }
 void peopleMoveNeckTargetHero(u32 group, u32 resource, f32 rate) { peopleMoveNeckTarget(group, resource, 0, 100, rate); }
+f64 sin(f64);
+f64 cos(f64);
+void peopleMoveNeckAngleWorld(u32 group, u32 resource, f32 yaw, f32 pitch, f32 rate) {
+    PeopleNeckInfo info;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        if (_getNeck__FP13tagPeopleWorkP14PeopleNeckInfo(work, &info)) {
+            GSvec* rotation = peopleBiosGetRotPtr(work);
+            yaw = 0.017453292f * yaw;
+            pitch = 0.017453292f * pitch;
+            f32 diff = adjustPIPI__Ff(yaw - rotation->param2);
+            if (diff < info.left) diff = info.left;
+            if (diff > info.right) diff = info.right;
+            yaw = adjust2PI__Ff(diff + rotation->param2);
+            f32 x = 1000000.0f * (f32)sin(yaw) + info.position.param1;
+            f32 z = 1000000.0f * (f32)cos(yaw) + info.position.param3;
+            f32 y = info.position.param2 - 1000000.0f * (f32)sin(pitch);
+            work->neckTargetPosition.param1 = x;
+            work->neckTargetPosition.param2 = y;
+            work->neckTargetPosition.param3 = z;
+            work->neckEnabled = 3;
+            f32 first = _peopleGetNearAngle__Ff(pitch - info.rotation.param1);
+            f32 second = _peopleGetNearAngle__Ff(yaw - info.rotation.param2);
+            if (first * first + second * second > 0.0f) {
+            }
+            work->neckUpdating = 1;
+            work->neckUnknownC3 = 0;
+            work->neckInstant = 0;
+            if (rate > 0.0f) {
+                f32 step = 0.07853982f * rate;
+                work->neckMaxStep = step;
+                work->neckMinStep = step / 2.0f;
+            } else {
+                work->neckMaxStep = 3.1415927f;
+                work->neckMinStep = 3.1415927f;
+            }
+            _peopleUpdateNeck__FP13tagPeopleWorkf(work, 75.0f);
+        }
+    }
+}
+void peopleMoveNeckAngle(u32 group, u32 resource, f32 yaw, f32 pitch, f32 rate) {
+    PeopleNeckInfo info;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        if (_getNeck__FP13tagPeopleWorkP14PeopleNeckInfo(work, &info)) {
+            yaw = 0.017453292f * yaw;
+            pitch = 0.017453292f * pitch;
+            f32 x = 1000000.0f * (f32)sin(yaw) + info.position.param1;
+            f32 z = 1000000.0f * (f32)cos(yaw) + info.position.param3;
+            f32 y = info.position.param2 - 1000000.0f * (f32)sin(pitch);
+            work->neckTargetPosition.param1 = x;
+            work->neckTargetPosition.param2 = y;
+            work->neckTargetPosition.param3 = z;
+            work->neckEnabled = 3;
+            f32 first = _peopleGetNearAngle__Ff(pitch);
+            f32 second = _peopleGetNearAngle__Ff(yaw);
+            if (first * first + second * second > 0.0f) {
+            }
+            work->neckUpdating = 1;
+            work->neckUnknownC3 = 0;
+            work->neckInstant = 0;
+            if (rate > 0.0f) {
+                f32 step = 0.07853982f * rate;
+                work->neckMaxStep = step;
+                work->neckMinStep = step / 2.0f;
+            } else {
+                work->neckMaxStep = 3.1415927f;
+                work->neckMinStep = 3.1415927f;
+            }
+            _peopleUpdateNeck__FP13tagPeopleWorkf(work, 75.0f);
+        }
+    }
+}
+void fn_8029CD20(u32 group, u32 resource, u32 targetGroup, u32 targetResource, f32 rate) {
+    PeopleNeckInfo info;
+    tagPeopleWork* work = peopleGet(group, resource);
+    tagPeopleWork* target = peopleGet(targetGroup, targetResource);
+    if (work == 0 || target == 0) return;
+    {
+        if (_getNeck__FP13tagPeopleWorkP14PeopleNeckInfo(target, &info)) {
+            work->neckTargetPosition.param1 = info.position.param1;
+            work->neckTargetPosition.param2 = info.position.param2;
+            work->neckTargetPosition.param3 = info.position.param3;
+            work->neckEnabled = 2;
+            work->neckUpdating = 1;
+            work->neckUnknownC3 = 0;
+            work->neckInstant = 0;
+            if (rate > 0.0f) {
+                f32 step = 0.07853982f * rate;
+                work->neckMaxStep = step;
+                work->neckMinStep = step / 2.0f;
+            } else {
+                work->neckMaxStep = 3.1415927f;
+                work->neckMinStep = 3.1415927f;
+            }
+        }
+    }
+}
 void peopleMoveNeckTargetXYZ(u32 group, u32 resource, s32 x, s32 y, s32 z, f32 rate) {
     tagPeopleWork* work = peopleGet(group, resource);
     if (work) {
@@ -786,6 +912,267 @@ void peopleRotateToAngle(u32 group, u32 resource, f32 angle, f32 rate) {
         work->rotationRate = rate;
     }
 }
+f32 HSD_Randf();
+void _peopleMoveTypeRandomRot__FP13tagPeopleWork(tagPeopleWork* work) {
+    switch (work->walkPhase) {
+    case 0:
+        if (work->motionFrame > 0.0f) {
+            work->motionFrame = work->motionFrame - _getLastFrameSec__Fv();
+            if (work->motionFrame < 0.0f) work->motionFrame = 0.0f;
+            break;
+        }
+        work->walkPhase = 1;
+    case 1: {
+        f32 offset = 2.0f * HSD_Randf() - 1.0f;
+        f32 angle = (f32)fmod(6.2831855f + (1.5707964f * offset + (3.1415927f + work->targetRotation)), 6.2831854820251465);
+        f32 rate = 1.0f;
+        if (work->moveSpeed > 0.1f + work->unknown20) rate = 2.0f;
+        peopleRotateToAngle(work->group, work->resource, angle, rate);
+        work->walkPhase = 2;
+    }
+    case 2:
+        work->motionFrame = work->randomRange * (2.0f * HSD_Randf() - 1.0f) + work->randomCentre;
+        work->walkPhase = 0;
+        break;
+    }
+}
+u8 gimmickBoxIsBox(tagPeopleWork*);
+f32 GSmodelGetAnimFrame(GSmodel*);
+void _peopleUpdateNoBlendAnimation__FP13tagPeopleWorkf(tagPeopleWork* work, f32 delta) {
+    s32 firstIndex, secondIndex;
+    f32 firstFrames, secondFrames;
+    GSmodel* model = peopleBiosGetModelPtr(work);
+    if (model) {
+        GSmodelGetAnimIndex(model, &firstIndex, &secondIndex);
+        GSmodelGetFrameCount(model, &firstFrames, &secondFrames);
+        if (!gimmickBoxIsBox(work)) {
+            if (firstIndex == work->motions.walkStart || firstIndex == work->motions.runStart) return;
+        }
+        f32 frame = GSmodelGetAnimFrame(model);
+        f32 firstRatio = firstFrames > 0.0f ? frame / firstFrames : 0.0f;
+        f32 secondRatio = secondFrames > 0.0f ? frame / secondFrames : 0.0f;
+        if (work->unknown160 < 0.00001f && work->unknown160 > -0.00001f) {
+            if (firstIndex == work->motions.idle && secondIndex == -1) return;
+            setAnimIndex__13tagPeopleWorkFi(work, work->motions.idle);
+            f32 newFirst, newSecond;
+            GSmodelGetFrameCount(model, &newFirst, &newSecond);
+            f32 ratio = secondIndex == -1 ? secondRatio : firstRatio;
+            setAnimFrame__13tagPeopleWorkFf(work, newFirst * ratio);
+            setAnimType__13tagPeopleWorkF15GSmodelAnimType(work, 1);
+            setAnimRate__13tagPeopleWorkFfb(work, 0.5f, 1);
+        } else {
+            _peopleSetMoveAnimation(work);
+        }
+    }
+}
+u8 isAlwayBlendChara__13tagPeopleWorkCFv(tagPeopleWork*);
+void GSmodelStartAnimation(GSmodel*);
+s32 peopleStartWalkRandom(u32 group, u32 resource, f32 range) {
+    s32 firstIndex, secondIndex;
+    f32 firstFrames, secondFrames;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work) return 0;
+    work->walkActive = 4;
+    work->walkPhase = 0;
+    peopleSetFlagOn(group, resource, 8);
+    peopleBiosGetPos(work, &work->originPosition);
+    *(f32*)work->unknown8C = range;
+    work->motionFrame = 0.0f;
+    work->randomCentre = 5.0f;
+    work->randomRange = 3.0f;
+    work->unknown28 = work->unknown20;
+    if (isAlwayBlendChara__13tagPeopleWorkCFv(work)) {
+        GSmodel* model = work->model;
+        GSmodelGetAnimIndex(model, &firstIndex, &secondIndex);
+        GSmodelGetFrameCount(model, &firstFrames, &secondFrames);
+        f32 frame = GSmodelGetAnimFrame(model);
+        f32 firstRatio = firstFrames > 0.0f ? frame / firstFrames : 0.0f;
+        f32 secondRatio = secondFrames > 0.0f ? frame / secondFrames : 0.0f;
+        if (!(firstIndex == work->motions.idle && secondIndex == -1)) {
+            setAnimIndex__13tagPeopleWorkFi(work, work->motions.idle);
+            f32 newFirst, newSecond;
+            GSmodelGetFrameCount(model, &newFirst, &newSecond);
+            f32 ratio = secondIndex == -1 ? secondRatio : firstRatio;
+            setAnimFrame__13tagPeopleWorkFf(work, newFirst * ratio);
+            setAnimType__13tagPeopleWorkF15GSmodelAnimType(work, 1);
+            setAnimRate__13tagPeopleWorkFfb(work, 0.5f, 1);
+            GSmodelStartAnimation(work->model);
+        }
+    }
+    return 1;
+}
+s32 peopleViewerDisplayRandWalk(tagPeopleWork*);
+s32 _peopleMoveSub__FP13tagPeopleWork(tagPeopleWork*);
+void _peopleSetMoveAnimation(tagPeopleWork*);
+f32 _distanceXZ__FP5GSvecP5GSvec(GSvec*, GSvec*);
+extern f32 END_NEED_DISTANCE;
+f64 atan2(f64, f64);
+u8 GSmodelHasAnimationEnded(GSmodel*);
+void _peopleMoveTypeRandomWalk__FP13tagPeopleWork(tagPeopleWork* work) {
+    f32 rate = 1.0f;
+    switch (work->walkPhase) {
+    case 0:
+        peopleViewerDisplayRandWalk(work);
+        if (work->motionFrame > 0.0f) {
+            work->motionFrame = work->motionFrame - _getLastFrameSec__Fv();
+            if (!(work->motionFrame <= 0.0f)) break;
+            work->motionFrame = 0.0f;
+        }
+        if (!GSmodelHasAnimationEnded(work->model)) break;
+        work->walkPhase = 1;
+    case 1: {
+        peopleBiosGetPos(work, &work->walkStartPosition);
+        peopleBiosGetPos(work, &work->walkTarget);
+        for (s32 i = 0; i < 10; i++) {
+            f32 angle = 6.2831855f * HSD_Randf();
+            work->walkTarget.param1 = (*(f32*)work->unknown8C) * (f32)sin(angle) + work->originPosition.param1;
+            work->walkTarget.param3 = (*(f32*)work->unknown8C) * (f32)cos(angle) + work->originPosition.param3;
+            work->walkTarget.param2 = GScolsys2HumanGetWalkHeight(&work->walkTarget);
+            if (_distanceXZ__FP5GSvecP5GSvec(&work->walkTarget, &work->walkStartPosition) > 6.0f * END_NEED_DISTANCE) break;
+        }
+        f32 angle = (f32)atan2(work->walkTarget.param1 - peopleBiosGetPosPtr(work)->param1, work->walkTarget.param3 - peopleBiosGetPosPtr(work)->param3);
+        if (work->moveSpeed > 0.1f + work->unknown20) rate = 2.0f;
+        peopleRotateToAngle(work->group, work->resource, angle, rate);
+        _peopleSetMoveAnimation(work);
+        work->walkPhase = 2;
+    }
+    case 2:
+        if (_peopleMoveSub__FP13tagPeopleWork(work) != 0) {
+            if (work->unknown17E & 1) {
+                if (work->moveSpeed > 0.1f + work->unknown20) rate = 2.0f;
+                peopleRotateToAngle(work->group, work->resource, 3.1415927f + work->targetRotation, rate);
+            }
+            work->motionFrame = work->randomRange * (2.0f * HSD_Randf() - 1.0f) + work->randomCentre;
+            work->walkPhase = 0;
+        }
+        break;
+    }
+}
+static u8 m_bMoveByHero;
+u8 gimmickBoxIsGimmickMoving();
+void GSmodelDisableAnimBlend(GSmodel*);
+void _peopleUpdateBlendAnimation__FP13tagPeopleWorkf(tagPeopleWork*, f32);
+void _peopleUpdateNoBlendAnimation__FP13tagPeopleWorkf(tagPeopleWork*, f32);
+extern void* g_pMana;
+void peopleUpdateAnimation(tagPeopleWork* work, u8 moveByHero) {
+    m_bMoveByHero = moveByHero ? 0 : 1;
+    if (work->walkActive != 6 && !work->waitAnimation) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
+        if (info && !((info->flags >> 1) & 1) && !work->manualAnimation && !gimmickBoxIsGimmickMoving()) {
+            f32 speed = work->unknown28;
+            if ((void*)work != g_pMana && (peopleBiosCheckFlag(work, 8) || work->resource == 0x64)) {
+                f32 distance = PSVECDistance(peopleBiosGetPosPtr(work), &work->walkTarget);
+                peopleViewerGetPlaySpeedRate(work);
+                if (!isAlwayBlendChara__13tagPeopleWorkCFv(work)) {
+                    f32 limit = work->running ? 2.0f * END_NEED_DISTANCE : END_NEED_DISTANCE;
+                    if (distance < limit && (!(distance < 0.00001f) || !(distance > -0.00001f))) {
+                        if (!work->animationBlend) {
+                            GSmodelEnableAnimBlend(work->model);
+                            work->animationBlend = 1;
+                        }
+                    } else if (work->unknown13E[1] && work->animationBlend) {
+                        s32 index;
+                        GSmodelGetAnimIndex(work->model, &index, 0);
+                        GSmodelDisableAnimBlend(work->model);
+                        setAnimIndex__13tagPeopleWorkFi(work, index);
+                        work->animationBlend = 0;
+                    }
+                }
+            }
+            if (work->attachIndex >= 0) speed = 0.0f;
+            if (speed > work->unknown24) speed = work->unknown24;
+            if (speed < 0.0f) speed = 0.0f;
+            if (work->animationBlend) _peopleUpdateBlendAnimation__FP13tagPeopleWorkf(work, speed);
+            else _peopleUpdateNoBlendAnimation__FP13tagPeopleWorkf(work, speed);
+        }
+    }
+}
+u8 GSgfxVideoGetVsyncRate();
+s32 peopleMoveAlongAngle(u32, u32, f32, f32);
+void _peopleMoveTypeList__FP13tagPeopleWorkb(tagPeopleWork* work, u8 loop) {
+    f32 angle;
+    f32 speed;
+    f32 rotationSpeed = 2.0f;
+    f32 direction;
+    u8 started = 0;
+    u8 arrived;
+    GSvec* point;
+    if (work->running) speed = work->unknown24;
+    else speed = work->unknown20;
+    switch (work->walkPhase) {
+    case 0:
+    case 1:
+        if (work->walkPoints == 0) break;
+        started = 1;
+        point = &work->walkPoints[work->walkPointIndex];
+        work->walkTarget.param1 = point->param1;
+        work->walkTarget.param2 = point->param2;
+        work->walkTarget.param3 = point->param3;
+        work->walkPhase = 2;
+    case 2:
+        arrived = 0;
+        if ((work->walkPointIndex >= work->walkPointCount - 1 && work->walkActive == 2) || work->unknown7C[0] != 0) {
+            f32 step;
+            f32 distance;
+            f32 rate;
+            distance = PSVECDistance(peopleBiosGetPosPtr(work), &work->walkTarget);
+            rate = (f32)GSgfxVideoGetVsyncRate();
+            step = speed * (30.0f * (f32)timeGetLastFrameTime() / rate);
+            if (distance < peopleViewerGetPlaySpeedRate(work) * step) arrived = 1;
+        } else if (PSVECDistance(peopleBiosGetPosPtr(work), &work->walkTarget) < 5.0f) {
+            arrived = 1;
+        }
+        if (arrived) {
+            work->walkPointIndex++;
+            if (work->walkPointIndex >= work->walkPointCount) {
+                if (loop) {
+                    work->walkPointIndex = 0;
+                } else {
+                    peopleSetPos(work->group, work->resource, &work->walkTarget);
+                    work->walkActive = 0;
+                    break;
+                }
+            }
+            point = &work->walkPoints[work->walkPointIndex];
+            work->walkTarget.param1 = point->param1;
+            work->walkTarget.param2 = point->param2;
+            work->walkTarget.param3 = point->param3;
+        }
+        {
+            f32 dz = work->walkTarget.param3 - peopleBiosGetPosPtr(work)->param3;
+            angle = (f32)atan2(work->walkTarget.param1 - peopleBiosGetPosPtr(work)->param1, dz);
+        }
+        if (work->unknown7C[0] != 0 || work->walkPointCount <= 2 || started) {
+            direction = angle;
+            if (started) peopleBiosGetRotPtr(work)->param2 = angle;
+        } else {
+            if (work->walkPointIndex != 0) {
+                static f32 max_rot_speed = 5.0f;
+                f32 first = PSVECDistance(peopleBiosGetPosPtr(work), &work->walkPoints[work->walkPointIndex]);
+                f32 second = PSVECDistance(&work->walkPoints[work->walkPointIndex - 1], &work->walkPoints[work->walkPointIndex]);
+                if (first < second) {
+                    f32 factor = peopleGetBlendFactor(first, 0.0f, second);
+                    f32 value = 2.0f * factor + max_rot_speed * (1.0f - factor);
+                    if (!(2.0f >= value)) rotationSpeed = value;
+                }
+                first = PSVECDistance(&work->walkPoints[work->walkPointIndex - 1], peopleBiosGetPosPtr(work));
+                second = PSVECDistance(&work->walkPoints[work->walkPointIndex - 1], &work->walkPoints[work->walkPointIndex]);
+                if (first < second) {
+                    f32 factor = peopleGetBlendFactor(first, 0.0f, second);
+                    f32 value = 2.0f * factor + max_rot_speed * (1.0f - factor);
+                    if (!(rotationSpeed >= value)) rotationSpeed = value;
+                }
+            }
+            GSvec rotation;
+            peopleBiosGetRot(work, &rotation);
+            direction = adjustPIPI__Ff(rotation.param2);
+            if ((f32)fabs(57.29578f * adjustPIPI__Ff(direction - angle)) > 90.0f) direction = angle;
+        }
+        peopleRotateToAngle(work->group, work->resource, angle, rotationSpeed);
+        peopleMoveAlongAngle(work->group, work->resource, speed, direction);
+        break;
+    }
+}
 void peopleRotateStop(u32 group, u32 resource) {
     tagPeopleWork* work = peopleGet(group, resource);
     if (work) {
@@ -880,6 +1267,45 @@ void PSVECAdd(GSvec*, GSvec*, GSvec*);
 f32 peopleInfoBiosGetColBallSize(PeopleInfo*);
 u8 GScolsys2HitNpcCollision(GSvec*, GSvec*, GSvec*, f32);
 s32 _peopleMoveSub__FP13tagPeopleWork(tagPeopleWork*);
+s32 peopleMoveForward(u32, u32, f32);
+f32 _distanceXZ__FP5GSvecP5GSvec(GSvec*, GSvec*);
+u8 isHero__13tagPeopleWorkCFv(tagPeopleWork*);
+u8 isAnimBlend__13tagPeopleWorkCFv(tagPeopleWork*);
+s32 _peopleMoveSub__FP13tagPeopleWork(tagPeopleWork* work) {
+    GSvec difference;
+    f32 speed;
+    PSVECSubtract(&work->walkTarget, peopleBiosGetPosPtr(work), &difference);
+    difference.param2 = 0.0f;
+    if (!(PSVECMag(&difference) < 0.00001f) || !(PSVECMag(&difference) > -0.00001f)) {
+        work->targetRotation = (f32)atan2(difference.param1, difference.param3);
+    }
+    switch (work->followerMotion) {
+    case 1:
+    case 2:
+    case 4:
+        speed = 0.53333336f;
+        break;
+    case 3:
+        speed = work->unknown2C;
+        break;
+    default:
+        if (work->running == 0) speed = work->unknown20;
+        else speed = work->unknown24;
+        break;
+    }
+    if (!(u8)peopleMoveForward(work->group, work->resource, speed)) return 2;
+    f32 distance = _distanceXZ__FP5GSvecP5GSvec(&work->walkTarget, peopleBiosGetPosPtr(work));
+    if (distance < 0.00001f && distance > -0.00001f) {
+        if (isHero__13tagPeopleWorkCFv(work)) {
+            peopleBiosSetFlagOff(work, 8);
+        } else if (peopleBiosCheckFlag(work, 8) && !isAlwayBlendChara__13tagPeopleWorkCFv(work) && isAnimBlend__13tagPeopleWorkCFv(work) && work->unknown13E[1] == 0) {
+            return 0;
+        }
+        work->unknown160 = 0.0f;
+        return 1;
+    }
+    return 0;
+}
 u8 _peopleBreakWithWalkList__FP13tagPeopleWork(tagPeopleWork* work) {
     u8 mode = work->walkActive;
     if (mode == 3) return 0;
@@ -891,6 +1317,63 @@ void _peopleMoveTypeLinear__FP13tagPeopleWork(tagPeopleWork* work) {
         if (_peopleBreakWithWalkList__FP13tagPeopleWork(work)) work->walkActive = 0;
         work->followerMotion = 0;
     }
+}
+struct PeopleCollisionParams {
+    u32 group;
+    u32 resource;
+    f32 radius;
+    f32 height;
+};
+struct PeopleQuat {
+    f32 x, y, z, w;
+};
+extern GSvec yAxisVector;
+u32 peopleInfoBiosGetColType(PeopleInfo*);
+f32 gimmickBoxGetBoxHeight();
+s32 GScolsys2HumanAddCurrentFloor(s32*, PeopleCollisionParams*);
+void C_QUATRotAxisRad(PeopleQuat*, GSvec*, f32);
+void GSvecTransformQuat(GSvec*, PeopleQuat*, GSvec*);
+void peopleAddCollision(u32 group, u32 resource) {
+    s32 handle;
+    PeopleCollisionParams params;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
+        if (info) {
+            if (work->collisionHandle < 0) {
+                switch ((u8)peopleInfoBiosGetColType(info)) {
+                case 1:
+                    params.group = group;
+                    params.resource = resource;
+                    params.radius = peopleInfoBiosGetColBallSize(info);
+                    params.height = 12.0f;
+                    if (GScolsys2HumanAddCurrentFloor(&handle, &params) == 0) work->collisionHandle = handle;
+                    else work->collisionHandle = -1;
+                    break;
+                case 2:
+                    params.group = group;
+                    params.resource = resource;
+                    params.radius = peopleInfoBiosGetColBallSize(info);
+                    params.height = gimmickBoxGetBoxHeight();
+                    if (GScolsys2HumanAddCurrentFloor(&handle, &params) == 0) work->collisionHandle = handle;
+                    else work->collisionHandle = -1;
+                    break;
+                }
+            }
+        }
+    }
+}
+s32 peopleInsideCheck(GSvec* from, GSvec* to, GSvec* out, f32 size) {
+    GSvec centre, local;
+    PeopleQuat rotation;
+    PSVECAdd(from, to, &centre);
+    PSVECScale(&centre, &centre, 0.5f);
+    C_QUATRotAxisRad(&rotation, &yAxisVector, peopleVecCalcRotY(from, to, 0.0f));
+    PSVECSubtract(out, &centre, out);
+    GSvecTransformQuat(&local, &rotation, out);
+    f32 distance = PSVECDistance(&centre, to);
+    if (size >= (f32)fabs(local.param1) && distance >= (f32)fabs(local.param3)) return 1;
+    return 0;
 }
 u8 peopleCheckTresure(u32 group, u32 resource) {
     tagPeopleWork* work = peopleGet(group, resource);
@@ -1222,6 +1705,43 @@ void _peopleMarkAnimEndCallback__FP8_GSmodelP18_GSmodelAnimCBData(GSmodel* model
     GSmodelSetVisibility(model, 0);
     peopleSetFlagOn(ids[0], ids[1], 0x40000);
 }
+u32 floorGetCurrentGroupID();
+void GSmodelClearShadowFlags(GSmodel*, u32);
+u32 scriptModelOpen(u32);
+void GSmodelSetAnimEndedCallback(GSmodel*, void (*)(GSmodel*, _GSmodelAnimCBData*), void*);
+void scriptModelSetMotion(u32, u32, u32, u32);
+void GSsndPlayNow(u32);
+void GSmodelSetRenderLayer(GSmodel*, s32, s32*);
+void peopleDispMark(u32 group, u32 resource) {
+    u32 floorGroup;
+    u32 mark;
+    s8 neck = 0;
+    floorGroup = floorGetCurrentGroupID();
+    mark = scriptModelOpen(0x0EBB0400);
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
+        if (info) neck = peopleInfoBiosGetNeckIndex(info);
+    }
+    m_b_bikkuri = 1;
+    if (neck >= 0) peopleAttach(floorGroup, mark, group, resource, neck);
+    else peopleAttach(floorGroup, mark, group, resource, 0);
+    m_b_bikkuri = 0;
+    work = peopleGet(floorGroup, mark);
+    if (work) peopleBiosSetFlagOn(work, 0x2000);
+    GSmodel* model = (GSmodel*)GSresGetResource(floorGroup, mark);
+    if (model) {
+        s32 layer[1] = {4};
+        GSmodelSetRenderLayer(model, 1, layer);
+        GSmodelClearShadowFlags(model, 1);
+    }
+    static u32 markRes[2];
+    markRes[0] = floorGroup;
+    markRes[1] = mark;
+    GSmodelSetAnimEndedCallback(model, _peopleMarkAnimEndCallback__FP8_GSmodelP18_GSmodelAnimCBData, markRes);
+    scriptModelSetMotion(mark, 0, 0, 0);
+    GSsndPlayNow(0x16);
+}
 void _peopleExecAnimEndCallBack__FP13tagPeopleWork(tagPeopleWork* work) {
     s32 first, second;
     _GSmodelAnimCBData data;
@@ -1296,6 +1816,69 @@ void GSmodelClearShadowFlags(GSmodel*, u32);
 void GSmodelSetShadowFlags(GSmodel*, u32);
 void _peopleUpdateShadows__FP13tagPeopleWork(tagPeopleWork*);
 void _peoplePostUpdateShadows__Fv();
+
+u8 GScolsys2WalkGetLayer(GSvec*, u8*, u8*);
+s32 floorDataBiosGetShadowReciveNum(void*);
+u32 floorDataBiosGetShadowReciveID(void*);
+u8 heroIsPlayerPeople(u32, u32);
+u32 floorGetCurrentGroupID();
+void* floorDataBiosGetCurrentPtr();
+void gimmickBoxSetKenShadowOnBoxIfOnBoxFloor(tagPeopleWork*, void**, s32*);
+void GSmodelSetShadowSurface(GSmodel*, s32, void**);
+u8 GSmodelGetVisibility(GSmodel*);
+void GSlightSetTarget(void*, GSvec*);
+void GSlightSetPosition(void*, GSvec*);
+void _peopleUpdateShadows__FP13tagPeopleWork(tagPeopleWork* work) {
+    void* floorData = floorDataBiosGetCurrentPtr();
+    if (floorData) {
+        u32 group = floorGetCurrentGroupID();
+        void* resources[2];
+        GSvec position;
+        s32 mode;
+        u8 layer[2];
+        peopleBiosGetPos(work, &position);
+        if (!GScolsys2WalkGetLayer(&position, &layer[1], &layer[0])) {
+            layer[1] = 0;
+            layer[0] = 0;
+        }
+        s32 count = floorDataBiosGetShadowReciveNum(floorData);
+        if (layer[1] >= count || layer[0] >= count) return;
+        mode = 1;
+        resources[0] = GSresGetResource(group, floorDataBiosGetShadowReciveID(floorData));
+        if (layer[1] != layer[0]) {
+            mode = 2;
+            resources[1] = GSresGetResource(group, floorDataBiosGetShadowReciveID(floorData));
+        }
+        gimmickBoxSetKenShadowOnBoxIfOnBoxFloor(work, resources, &mode);
+        GSmodelSetShadowSurface(work->model, mode, resources);
+    }
+}
+void _peoplePostUpdateShadows__Fv() {
+    if (peopleBiosGetMaxNum() == 0) return;
+    for (s32 i = 0; i < 2; i++) {
+        GSvec target;
+        target.param1 = 0.0f;
+        target.param2 = 0.0f;
+        target.param3 = 0.0f;
+        for (s32 index = 0; index < peopleBiosGetMaxNum(); index++) {
+            tagPeopleWork* work = peopleBiosGetWorkPtr(index);
+            if (work->used) {
+                GSmodel* model = peopleBiosGetModelPtr(work);
+                if (model && work->visible && GSmodelGetVisibility(model) && (i == (heroIsPlayerPeople(work->group, work->resource) != 1))) {
+                    GSvec* position = peopleBiosGetPosPtr(work);
+                    target.param1 = position->param1;
+                    target.param2 = position->param2;
+                    target.param3 = position->param3;
+                    break;
+                }
+            }
+        }
+        target.param2 = 0.0f;
+        GSlightSetTarget(shadowLight[i], &target);
+        target.param2 = 2500.0f;
+        GSlightSetPosition(shadowLight[i], &target);
+    }
+}
 
 void _registerNeck__FP13tagPeopleWork(tagPeopleWork* work) {
     if (work->object != 0) {
@@ -1430,7 +2013,8 @@ void peopleFallAppear(u32 group, u32 resource, f32 height) {
         soundOpenPlay(0x5A2, 0, 0x7F);
         peopleSetMotionType(work, 7);
         for (;;) {
-            previous = count++;
+            previous = count;
+            count++;
             position.param2 = position.param2 - ((f32)count * (0.4f * (f32)count) / 2.0f - (f32)previous * (0.4f * (f32)previous) / 2.0f);
             peopleSetPos(group, resource, &position);
             if (position.param2 <= 0.0f) {
@@ -1624,10 +2208,10 @@ u8 peopleSetInfo(tagPeopleWork* work, u32 group, u32 resource, u32 object) {
     s32 firstIndex, secondIndex;
     f32 firstFrames, secondFrames;
     f32 frames;
-    u32 lightId;
     PeopleCharacterInfo* character;
-    void* light;
     s32 shadow;
+    void* light;
+    u32 lightId;
     work->group = group;
     work->resource = resource;
     work->object = object;

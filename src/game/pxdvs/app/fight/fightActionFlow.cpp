@@ -462,10 +462,10 @@ extern "C" s32 fightActionFlowKaisiPost(void *actor) {
 }
 
 extern "C" s32 fightActionFlowAllFightTrainerSelectFightAction(void) {
+    u32 num;
     u16 saved;
     u8 operate;
     void *sp;
-    u32 num;
     u8 type;
     u32 j;
     u32 side;
@@ -559,8 +559,8 @@ u16 _fight_kaisi_pre_trainer_intr_wzx_data_id;
 
 extern "C" void fightActionFlowKaisiPreSubLoad(void) {
     u16 w3;
-    u32 trainerId;
     void *seqB;
+    u32 trainerId;
     u32 w2;
     void *t0;
     u32 w1;

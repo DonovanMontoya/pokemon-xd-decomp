@@ -186,11 +186,11 @@ public:
     void SetStatus(u8);
     void ResetStatus(u8);
     void DoModelAnimation(int);
-    void ModelMotionStart();
+    u8 ModelMotionStart();
     void CopyState(ModelSequence*);
     void DestroyParticles(bool, bool);
     void UpdateLookAt();
-    int DoAnimation(int, enumSectionMotionType, bool);
+    void DoAnimation(int, enumSectionMotionType, bool);
 };
 
 extern NullSequence* g_Sequences;

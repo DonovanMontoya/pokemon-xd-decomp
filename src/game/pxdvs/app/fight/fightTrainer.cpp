@@ -1463,6 +1463,97 @@ u8 _fightTrainerCreateDeckPokemon(Hero* hero, u16 dataId, u16 darkId, u16 ball, 
     return heroCatchPokemon(hero, pokemon, 0, ball, 0) >= 0;
 }
 
+struct WildEntry { u8 minLevel; u8 maxLevel; u16 id; u32 pad[2]; };
+struct WildList { u32* count; WildEntry* entries; };
+struct WildArea { s32 flags[6]; WildList** list; };
+extern "C" {
+extern WildArea* esabadata;
+extern u32* esabadata_number;
+u16 HSD_Rand(void);
+void pokemonCreate(Pokemon*, u16, u8, s32);
+s32 gamedataGetStatus(s32, s32);
+u16 esabaGetPokemonID(u32);
+u32 esabaGetPokemonRnd(u32);
+u16 fightFloor_GetFightFloorDataId(s32);
+void heroBiosSetRnd(Hero*, u32);
+void setRnd__7PokemonFUl(Pokemon*, u32);
+void setItemDataId__7PokemonFUs(Pokemon*, u16);
+u16 pokemonDB_GetItemDataId(u16, u8);
+}
+typedef void (*PokemonCreate5)(Pokemon*, u16, u8, s32, u8);
+
+static inline WildList* _wildGetList(u32 area) {
+    if (area >= *esabadata_number) return nullptr;
+    return *esabadata[area].list;
+}
+
+static inline WildEntry* _wildGetEntry(u32 area, u8 index) {
+    WildList* list = _wildGetList(area);
+    if (list != nullptr) return &list->entries[index];
+    return nullptr;
+}
+
+void _fightTrainerCreateDeckWildPoke(u16 trainerId, Hero* hero) {
+    u8 found;
+    u8 roll = static_cast<u16>(HSD_Rand()) % 100;
+    u16 pokeId;
+    u16 floorId = pokeId = fightFloor_GetFightFloorDataId(0);
+    u32 area;
+    Pokemon pokemon;
+    heroBiosSetRnd(hero, heroGetStatus(nullptr, 2, 0));
+    switch (floorId) {
+    case 0x39: area = 0; break;
+    case 0x3A: area = 1; break;
+    case 0x3B: area = 2; break;
+    }
+    pokeId = esabaGetPokemonID(area);
+    u32 rnd = esabaGetPokemonRnd(area);
+    if (pokeId == 0) {
+        switch (floorId) {
+        case 0x39: pokeId = 0x1B; break;
+        case 0x3A: pokeId = 0xBB; break;
+        case 0x3B: pokeId = 0x4A; break;
+        }
+    }
+    for (u8 i = 0; i < 3; i++) {
+        WildEntry* e = _wildGetEntry(area, i);
+        u16 id = 0;
+        if (e != nullptr) id = e->id;
+        if (pokeId == id) {
+            found = i;
+            break;
+        }
+    }
+    WildEntry* e = _wildGetEntry(area, found);
+    u8 maxLevel = 0;
+    if (e != nullptr) maxLevel = e->maxLevel;
+    e = _wildGetEntry(area, found);
+    u8 minLevel = 0;
+    if (e != nullptr) minLevel = e->minLevel;
+    u16 rand2 = HSD_Rand();
+    s32 dataId = fightTrainerDB_GetTemotiPokemonId(trainerId, 0);
+    DeckTrainer::getDeckTrainerObj(trainerId)->getDarkPokemonDataID(0);
+    reinterpret_cast<PokemonCreate5>(pokemonCreate)(&pokemon, pokeId, minLevel + rand2 % (maxLevel - minLevel + 1), gamedataGetStatus(0, 1), minLevel);
+    if (rnd != 0) {
+        setRnd__7PokemonFUl(&pokemon, rnd);
+        pokemonResetBasisStatus(&pokemon);
+    }
+    u16 item0 = pokemonDB_GetItemDataId(pokeId, 0);
+    u16 item1 = pokemonDB_GetItemDataId(pokeId, 1);
+    if (item0 == item1) {
+        setItemDataId__7PokemonFUs(&pokemon, item0);
+    } else if (roll >= 45) {
+        if (roll < 95) {
+            setItemDataId__7PokemonFUs(&pokemon, item0);
+        } else {
+            setItemDataId__7PokemonFUs(&pokemon, item1);
+        }
+    }
+    deckCreate(dataId, pokeId, &pokemon);
+    pokemon_SetFightTrainerPokemonDataId(&pokemon, dataId);
+    heroCatchPokemon(hero, &pokemon, 0, 0, 0);
+}
+
 void _fightTrainer_SortUnderTakerDarkPoke(u8* list, u8 count) {
     u32 escapeJ;
     u8 tmp;
@@ -1653,7 +1744,6 @@ s8 underTakerDeckRand = -1;
 void _fightTrainerCreateDeckUnderTakerInColosseum(u16 trainerId, Hero* hero, u16 encounterId) {
     u8 list[0x80];
     Pokemon pokemon;
-    u8 count;
     u32 deck;
     u16 deckId;
     u8 i;
@@ -1681,7 +1771,7 @@ void _fightTrainerCreateDeckUnderTakerInColosseum(u16 trainerId, Hero* hero, u16
     }
     fightFreeResourceID(0x842, 0x184C3400);
     fightReadResourceID(0x842, 0x18503400);
-    count = _fightTrainer_GetListUnderTakerDarkPoke(list);
+    u8 count = _fightTrainer_GetListUnderTakerDarkPoke(list);
     if (count != 0) {
         _fightTrainer_SortUnderTakerDarkPoke(list, count);
         _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, 1, encounterId);

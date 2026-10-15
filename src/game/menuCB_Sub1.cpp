@@ -148,7 +148,7 @@ void menuCBPokemonEntryGCControlDisp(MenuSubWindow *arg0, s32 arg1);
 void menuCBGCDelPokemon(void);
 void menuCBGCEntryPokemon(void);
 void menuCB_Trainer_Error_Disp(MenuSubWindow *arg0, MenuSubSprite *arg1, s32 arg2, s32 arg3);
-void menuCB_Pokemon_ErrorDisp(MenuSubWindow *arg0, s8 arg1);
+void menuCB_Pokemon_ErrorDisp(MenuSubWindow *arg0, s32 arg1);
 void toolbattle_drawHeroID(MenuSubWindow *arg0, s32 arg1);
 
 void fn_8007E5AC(MenuSubWindow *arg0, MenuSubSprite *arg1);
@@ -2687,58 +2687,49 @@ void menuCBPokemonEntryBallDisp(MenuSubSprite *arg0, s32 arg1, u32 arg2) {
 }
 
 void menuCB_GCEntry_OkPushErrorCheck(void) {
-    u32 var_r30;
-    u32 var_r30_2;
-    u32 var_r30_3;
     u8 *temp_r31;
+    u32 c;
+    u32 i;
+    u32 a;
 
-    var_r30 = 0;
-    do {
-        toolBattleRuleErrorFlagClear(0, var_r30);
-        var_r30 += 1;
-    } while (var_r30 < 6U);
+    for (a = 0; a < 6U; a++) {
+        toolBattleRuleErrorFlagClear(0, a);
+    }
     temp_r31 = (u8 *)&_CB + 0xA65C;
     menuCBRule_ErrorFlagSet(temp_r31, 0);
-    var_r30_2 = 0;
-loop_3:
-    if (menuCB_Trainer_Error_Check(var_r30_2, 8) != 0) {
-        _CB.unkB1DC = 0x43A9;
-        _CB.unkB0FC = 2;
-        return;
-    }
-    if (menuCB_Trainer_Error_Check(var_r30_2, 9) != 0) {
-        _CB.unkB1E0 = (s32) (var_r30_2 + 1);
-        _CB.unkB1DC = 0x4410;
-        _CB.unkB0FC = 2;
-        return;
-    }
-    if (menuCB_Trainer_Error_Check(var_r30_2, 0xA) != 0) {
-        _CB.unkB1DC = 0x43AB;
-        _CB.unkB0FC = 2;
-        return;
-    }
-    if (menuCB_Trainer_Error_Check(var_r30_2, 0xB) != 0) {
-        _CB.unkB1DC = 0x43AC;
-        _CB.unkB0FC = 2;
-        return;
-    }
-    var_r30_2 += 1;
-    if (var_r30_2 >= 6U) {
-        var_r30_3 = 0;
-        do {
-            toolBattleRuleErrorFlagClear(0, var_r30_3);
-            var_r30_3 += 1;
-        } while (var_r30_3 < 6U);
-        menuCBRule_ErrorFlagSetOkPushTiming(temp_r31);
-        if (menuCB_Trainer_Error_Check(0U, -1) != 0) {
+    for (i = 0; i < 6U; i++) {
+        if (menuCB_Trainer_Error_Check(i, 8) != 0) {
+            _CB.unkB1DC = 0x43A9;
             _CB.unkB0FC = 2;
-            if ((u32) (((u8) ((MenuSubState *)((u8 *)(u8 *)&_CB + (_CB.unkB0D8 * 0x18)))->unk9C85 >> 2U) & 1) != 0) {
-                _CB.unkB1DC = 0x43AE;
-            }
+            return;
         }
-        return;
+        if (menuCB_Trainer_Error_Check(i, 9) != 0) {
+            _CB.unkB1E0 = (s32) (i + 1);
+            _CB.unkB1DC = 0x4410;
+            _CB.unkB0FC = 2;
+            return;
+        }
+        if (menuCB_Trainer_Error_Check(i, 0xA) != 0) {
+            _CB.unkB1DC = 0x43AB;
+            _CB.unkB0FC = 2;
+            return;
+        }
+        if (menuCB_Trainer_Error_Check(i, 0xB) != 0) {
+            _CB.unkB1DC = 0x43AC;
+            _CB.unkB0FC = 2;
+            return;
+        }
     }
-    goto loop_3;
+    for (c = 0; c < 6U; c++) {
+        toolBattleRuleErrorFlagClear(0, c);
+    }
+    menuCBRule_ErrorFlagSetOkPushTiming(temp_r31);
+    if (menuCB_Trainer_Error_Check(0U, -1) != 0) {
+        _CB.unkB0FC = 2;
+        if ((u32) (((u8) ((MenuSubState *)((u8 *)(u8 *)&_CB + (_CB.unkB0D8 * 0x18)))->unk9C85 >> 2U) & 1) != 0) {
+            _CB.unkB1DC = 0x43AE;
+        }
+    }
 }
 
 void menuCB_WaitGCControler1(void) {
@@ -3012,11 +3003,11 @@ void menuCB_Trainer_Error_Disp(MenuSubWindow *arg0, MenuSubSprite *arg1, s32 arg
     }
 }
 
-void menuCB_Pokemon_ErrorDisp(MenuSubWindow *arg0, s8 arg1) {
-    u8 *temp_r29;
+void menuCB_Pokemon_ErrorDisp(MenuSubWindow *arg0, s32 arg1) {
     u8 *temp_r31;
+    u8 *temp_r29;
 
-    _CB.unkB0D8 = (s32) arg1;
+    _CB.unkB0D8 = (s32) (s8) arg1;
     menuCBPokemonEntryPokemonFaceFree();
     menuCBBattleStartSetStatus(0);
     temp_r29 = (u8 *)&_CB + 0x9CE4;
