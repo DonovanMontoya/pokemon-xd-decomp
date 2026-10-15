@@ -114,6 +114,24 @@ Linux
   ninja
   ```
 
+### Compilers
+
+The game was built with Metrowerks CodeWarrior, which can't be redistributed here. `configure.py` downloads the compilers zip (`compilers_<tag>.zip`, tag set by `compilers_tag`) from `files.decomp.dev` on the first build. If that host is unavailable, use one of these instead:
+
+- Point at a copy of the zip, as a local path or a URL, with `XD_COMPILERS_URL`:
+
+  ```sh
+  XD_COMPILERS_URL=/path/to/compilers_20250812.zip ninja
+  ```
+
+- Or extract the zip yourself and pass the directory to `configure.py`:
+
+  ```sh
+  python configure.py --compilers /path/to/compilers
+  ```
+
+The extracted directory must contain `GC/`, with the versions listed in `build/compilers/info.txt` after a normal download.
+
 ## Diffing
 
 Once the initial build succeeds, an `objdiff.json` should exist in the project root.
