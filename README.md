@@ -4,6 +4,12 @@ This is a matching decompilation of **Pokémon XD: Gale of Darkness** for the Ni
 
 It started as a fork of [TeamOrre/xd-decomp](https://github.com/TeamOrre/xd-decomp) and is now maintained as a separate project. Thanks to everyone who worked on the original.
 
+## Why a separate project?
+
+This is an **AI-assisted decompilation**. TeamOrre's [contributing guidelines](https://github.com/TeamOrre/xd-decomp/blob/main/CONTRIBUTING.md#ai-assistance-policy) ban AI-assisted contributions for now, so this work can't be merged upstream, and it continues here instead.
+
+AI assistance doesn't lower the bar for what counts as decompiled. A function only counts as matching when objdiff confirms it compiles to exactly the same bytes as the original, and every build is checked against the retail DOL's SHA1.
+
 ## Supported Versions
 
 Work in progress:

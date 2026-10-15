@@ -102,4 +102,4 @@ The files in the project should now be viewable.
 
 ## AI Assistance Policy
 
-Due to the early nature of this project, **AI assisted contributions are banned until further notice.** This policy will be revisited once coding standards are finalized and further decomp progress is made. Any attempt to circumvent this ban by passing off AI work as human work will result in an immediate ban.
+This project is AI-assisted, and AI-assisted contributions are welcome. They're held to the same standard as everything else: matching functions must match the original exactly, and the build must still reproduce the retail DOL.
