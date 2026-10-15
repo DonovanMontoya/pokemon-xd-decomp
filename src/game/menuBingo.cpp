@@ -1407,7 +1407,7 @@ s32 menuBingoMessageDraw(BingoWindow *arg0, BingoSprite *arg1) {
         switch (temp_r29) {                         /* switch 2 */
         case -4294911222:                           /* switch 2 */
             temp_r31 = winSpriteGetLayerID(arg0, arg1);
-            temp_r30 = (s16) GSmsgGetRect(0xDAD8U);
+            temp_r30 = (s16) (u8) GSmsgGetRect(0xDAD8U);
             temp_r29_2 = (s16) ((u32) (GSmsgGetRect(0xDAD8U) >> 0x10U) >> 2U);
             temp_r28 = getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4);
             msgctrlSetValue(0x37, GSmsgGetGSchar(0xDAD8U));
@@ -5688,7 +5688,7 @@ void menuBingoMain(void) {
     u8 choosing = 1;
     s32 start = 0;
     s32 result;
-    if (GSfloorGetCurrent() != 0x388) {
+    if ((u32)GSfloorGetCurrent() != 0x388) {
         selected = gBingo.unk134;
         menuOpenCustom(0xC8, 0, &selected, 2, 0, 0);
         while (windowGetKeyInfo()->unk4 != 0x20) GSthreadSwitch();
@@ -5701,7 +5701,7 @@ void menuBingoMain(void) {
     }
     selected = 0;
     while (choosing) {
-        u32 sheet;
+        s32 sheet;
         gBingo.unk138 = 0;
         gBingo.unk134 = 0;
         gBingo.unk12C = 0;
@@ -5717,13 +5717,12 @@ void menuBingoMain(void) {
         gBingo.unk140 = 0.0f;
         gBingo.unk128 = getClearLv__10bingo_biosFv(&gBingo);
         if (GSflagGet(0x4F2) >= 6) setSelect__10bingo_biosFUl(10);
-        for (sheet = 0; sheet < *bingo_data_number; ++sheet) {
-            u32 id = TopCurIdx__6cBingo[sheet];
-            if (isSelect__10bingo_biosFUl(&gBingo, sheet)) menuItemBiosSetSelectFlag(0xC3, id, 1);
-            else menuItemBiosSetSelectFlag(0xC3, id, 0);
-            if (id == 0x693 && isSelect__10bingo_biosFUl(&gBingo, 10)) {
+        for (sheet = 0; (u32)sheet < *bingo_data_number; ++sheet) {
+            if (isSelect__10bingo_biosFUl(&gBingo, sheet)) menuItemBiosSetSelectFlag(0xC3, TopCurIdx__6cBingo[sheet], 1);
+            else menuItemBiosSetSelectFlag(0xC3, TopCurIdx__6cBingo[sheet], 0);
+            if (TopCurIdx__6cBingo[sheet] == 0x693 && isSelect__10bingo_biosFUl(&gBingo, 10)) {
                 u8 level;
-                void *item = menuItemBiosGetPtr(0xC3, id);
+                void *item = menuItemBiosGetPtr(0xC3, TopCurIdx__6cBingo[sheet]);
                 if (isSelect__10bingo_biosFUl(&gBingo, 8)) level = 2;
                 else if (isSelect__10bingo_biosFUl(&gBingo, 5)) level = 1;
                 else level = 0;
@@ -5748,10 +5747,9 @@ void menuBingoMain(void) {
         }
         SetupSheet__6cBingoFUl(&gBingo, selected);
         fadeCheck(1);
-        for (;;) {
-            u32 frame = FlashSystemGetFrameFromLabel(0x1EC93000, "panel");
-            if (FlashSystemGetNowFrame(0x1EC93000) == frame) break;
-            GSthreadSwitch();
+        {
+            u32 frame;
+            while (frame = FlashSystemGetFrameFromLabel(0x1EC93000, "panel"), frame != FlashSystemGetNowFrame(0x1EC93000)) GSthreadSwitch();
         }
         menuClose(0xC3);
         menuCloseSync(0xC3, 1);
@@ -6891,26 +6889,16 @@ void dispPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg0, u
     void *temp_r23;
 
     winSpriteSetDisp(arg3, 0);
-    if ((s32) arg0->unk144 != 0xF) {
-        goto block_2;
+    if ((s32) arg0->unk144 == 0xF) {
+        dispShufflePanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(arg0, arg1, arg2, arg3);
+        return;
     }
-    dispShufflePanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(arg0, arg1, arg2, arg3);
-    return;
-block_2:
-    if ((u8) arg0->cells[arg1].unk2 == 0) {
-        goto block_4;
+    var_r0 = (arg0->cells[arg1].unk2 != 0) ? 1 : 0;
+    if (var_r0 != 0) {
+        dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(arg0, arg1, arg2, arg3);
+        goto block_45;
     }
-    var_r0 = 1;
-    goto block_5;
-block_4:
-    var_r0 = 0;
-block_5:
-    if (var_r0 == 0) {
-        goto block_7;
-    }
-    dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(arg0, arg1, arg2, arg3);
-    goto block_45;
-block_7:
+
     var_r27 = 0;
     temp_r29 = winSpriteGetLayerID(arg2, arg3);
     var_r28 = 0;

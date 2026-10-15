@@ -120,6 +120,74 @@ void GSboundGetMinMax(GSbound* bound, Vec* minimum, Vec* maximum, u8 scale, u8 r
     }
 }
 #pragma dont_inline reset
+static inline f32 absDot(Vec* first, Vec* second) {
+    f32 result;
+    if (PSVECDotProduct(first, second) > 0.0f) result = PSVECDotProduct(first, second);
+    else result = -PSVECDotProduct(first, second);
+    return result;
+}
+void GSboundGetShadowSize(Vec* result, GSbound* bound, Vec* from, Vec* to, Vec* direction) {
+    Vec minimum, maximum, right, up, extent;
+    Quaternion quaternion;
+    Vec normal, toFrom, firstCross, secondCross, sizeDifference;
+    Vec corners[4];
+    Mtx rotation;
+    Mtx scaleMatrix;
+    PSVECNormalize(direction, &normal);
+    right = normal;
+    PSVECSubtract(to, from, &toFrom);
+    extent = toFrom;
+    PSVECNormalize(&extent, &extent);
+    PSVECCrossProduct(&right, &extent, &firstCross);
+    up = firstCross;
+    PSVECNormalize(&up, &up);
+    PSVECCrossProduct(&extent, &up, &secondCross);
+    right = secondCross;
+    GSboundGetMinMax(bound, &minimum, &maximum, 1, 0, 0, 0);
+    switch (bound->transformType) {
+    case 1:
+        GSmodelGetRotation(bound->transform.model, (GSvec*)&extent);
+        boundEulerToQuat(&extent, &quaternion);
+        PSMTXQuat(rotation, &quaternion);
+        break;
+    case 2: {
+        PSMTXCopy(bound->transform.matrix, rotation);
+        rotation[0][3] = 0.0f; rotation[1][3] = 0.0f; rotation[2][3] = 0.0f;
+        MtxPtr source = bound->transform.matrix;
+        f32 x = PSVECMag((Vec*)source[0]);
+        f32 y = PSVECMag((Vec*)source[1]);
+        PSMTXScale(scaleMatrix, x, y, PSVECMag((Vec*)source[2]));
+        PSMTXInverse(scaleMatrix, scaleMatrix);
+        PSMTXConcat(scaleMatrix, rotation, rotation);
+        break;
+    }
+    case 3: PSMTXQuat(rotation, &bound->transform.transform->rotation); break;
+    default: PSMTXIdentity(rotation); break;
+    }
+    PSVECSubtract(&maximum, &minimum, &sizeDifference);
+    extent = sizeDifference;
+    if (extent.x < 0.0f) extent.x = -extent.x;
+    if (extent.y < 0.0f) extent.y = -extent.y;
+    if (extent.z < 0.0f) extent.z = -extent.z;
+    f32 a;
+    f32 maxA = 0.0f, maxB = 0.0f;
+    Vec* corner = corners;
+    corners[0] = extent;
+    corners[1] = extent; corners[1].y *= -1.0f;
+    corners[2] = extent; corners[2].x *= -1.0f;
+    corners[3] = extent; corners[3].x *= -1.0f; corners[3].y *= -1.0f;
+    for (s32 i = 0; i < 4; ++i, ++corner) {
+        f32 b;
+        PSMTXMultVec(rotation, corner, corner);
+        a = absDot(corner, &up);
+        b = absDot(corner, &right);
+        if (a > maxA) maxA = a;
+        if (b > maxB) maxB = b;
+    }
+    result->x = maxA;
+    result->y = 0.0f;
+    result->z = maxB;
+}
 void GSboundSetAnimFrame(GSbound* bound, f32 frame) {
     if (bound->flags & 8) {
         u16 count = bound->bounds.animated.animations[bound->bounds.animated.index]->frameCount;

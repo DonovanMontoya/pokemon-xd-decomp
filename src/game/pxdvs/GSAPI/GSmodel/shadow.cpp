@@ -55,7 +55,7 @@ void GSmodelFreeAllShadowTextures() {
 }
 void GSmodelSetShadowBoundExpansion(f32 value) { _modelShadowBoundExpansion = value; }
 void GSmodelSetShadowCutoffDist(f32 value) { _modelShadowCutoffDist = value * value; }
-void GSmodelSetShadowDebug(u8 enable) { HSD_ShadowSetDebug(enable); }
+void GSmodelSetShadowDebug(u8 enable) { HSD_ShadowSetDebug(enable & 0xff); }
 void GSmodelSetShadowTextureSize(s32 width, s32 height) {
     if (width & 1) ++width;
     if (height & 1) ++height;
@@ -96,13 +96,17 @@ void GSmodelSetShadowFlags(GSmodel* model, u32 flags) {
     if (flags & 1) model->flags |= 0x10000000;
     if (flags & 4) model->flags |= 0x40000000;
 }
+static inline bool _jointCanShadow(HSD_JObj* joint) {
+    return !(joint->flags & 0x4020);
+}
 static void _modelShadowSetShadowFlag__FP9_HSD_JObjPPvi(HSD_JObj* joint, void** context, s32) {
-    if (!(joint->flags & 0x4020)) {
-        for (HSD_DObj* object = joint->u.dobj; object; object = object->next) {
-            if (object->mobj) {
-                if (context != 0) object->mobj->rendermode |= 0x4000000;
-                else object->mobj->rendermode &= ~0x4000000;
-            }
+    bool on = context != 0;
+    u32 ok = !(joint->flags & 0x4020);
+    if (!ok) return;
+    for (HSD_DObj* object = joint->u.dobj; object; object = object->next) {
+        if (object->mobj) {
+            if (on) object->mobj->rendermode |= 0x4000000;
+            else object->mobj->rendermode &= ~0x4000000;
         }
     }
 }

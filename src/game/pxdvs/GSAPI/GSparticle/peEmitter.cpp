@@ -130,6 +130,148 @@ peEmitterContainer::~peEmitterContainer() {
     g_particle_debug_stats[5] -= 0x24;
 }
 
+struct _peParticle { u8 reserved00[0x54]; s32 texture; };
+struct _peParticleStrip { u8 reserved00[0x1c]; s32 texture; };
+struct _peDistortion { u8 reserved00[0x60]; s32 texture; };
+struct _peModel { u8 reserved00[0x4c]; s32 resource; };
+struct _peShape { u8 reserved00[0x74]; s32 resource; };
+struct peParticleContainer : peContainer { u8 reserved20[0x7c - 0x20]; peParticleContainer(peEmitterNode*, _peParticle*, u16); };
+struct peParticleStripContainer : peContainer { u8 reserved20[0x60 - 0x20]; peParticleStripContainer(peEmitterNode*, _peParticleStrip*, u16); };
+struct peDistortionContainer : peContainer { u8 reserved20[0x78 - 0x20]; peDistortionContainer(peEmitterNode*, _peDistortion*, u16); };
+struct peModelContainer : peContainer { u8 reserved20[0x24 - 0x20]; peModelContainer(peEmitterNode*, _peModel*, u16); };
+struct peShapeContainer : peContainer { u8 reserved20[0x24 - 0x20]; peShapeContainer(peEmitterNode*, _peShape*, u16); };
+inline peEmitterContainer::peEmitterContainer(peEmitterNode* owner, _peEmitter* definition, u16 maximum) : peContainer(owner, 0x104, maximum) {
+    emitter = definition;
+    peEmitterNode* node = freeNodes;
+    while (node) {
+        peEmitterNode* next = node->next;
+        node->Init(definition);
+        node = next;
+    }
+    g_particle_debug_stats[1] += 0x24;
+    g_particle_debug_stats[5] += 0x24;
+}
+void peEmitterNode::Init(_peEmitter* definition) {
+    peContainer* container;
+    peContainer* last;
+    void* data;
+    u16 maximum;
+    Resource* resource;
+    emitter = definition;
+    maximum = definition->flags2;
+    for (resource = definition->resources; resource; resource = resource->next) {
+        data = resource->data;
+        if (data) {
+            container = 0;
+            switch (resource->kind) {
+            case 0: {
+                _peEmitter* child = (_peEmitter*)data;
+                if (child->resources) container = new peEmitterContainer(this, (_peEmitter*)data, maximum);
+                break;
+            }
+            case 1:
+                if (((_peParticle*)data)->texture) container = new peParticleContainer(this, (_peParticle*)data, maximum);
+                break;
+            case 6:
+                if (((_peParticleStrip*)data)->texture) container = new peParticleStripContainer(this, (_peParticleStrip*)data, maximum);
+                break;
+            case 3:
+                if (((_peDistortion*)data)->texture) container = new peDistortionContainer(this, (_peDistortion*)data, maximum);
+                break;
+            case 2:
+                if (((_peModel*)data)->resource) container = new peModelContainer(this, (_peModel*)data, maximum);
+                break;
+            case 4:
+                if (((_peShape*)data)->resource) container = new peShapeContainer(this, (_peShape*)data, maximum);
+                break;
+            }
+            if (container) {
+                if (!containers) containers = container;
+                else {
+                    last = containers;
+                    while (last->next) last = last->next;
+                    last->next = container;
+                }
+            }
+        }
+    }
+}
+
+extern "C" {
+f32 HSD_Randf();
+s32 EulerToQuat(Vec*, Quaternion*);
+extern Vec unitScaleVector;
+void Start__6peNodeFP13peEmitterNodeP11_EmitParams(peEmitterNode*, peEmitterNode*, _EmitParams*);
+}
+void peEmitterNode::Start(peEmitterNode* parent, _peEmitter* definition, _EmitParams* params) {
+    Vec angles;
+    u32 definitionFlags = definition->flags;
+    Start__6peNodeFP13peEmitterNodeP11_EmitParams(this, parent, params);
+    if (!parent && (definitionFlags & 1)) life = definition->startTime + definition->endTime;
+    else life = definition->duration;
+    time = definition->duration;
+    lastLoop = 0.0f;
+    field34 = 0.0f;
+    field44 = 0.0f;
+    count = 0;
+    flags = 0x20;
+    localRotation.x = 0.0f;
+    localRotation.y = 0.0f;
+    localRotation.z = 0.0f;
+    localRotation.w = 1.0f;
+    orientation.x = 0.0f;
+    orientation.y = 0.0f;
+    orientation.z = 0.0f;
+    orientation.w = 1.0f;
+    previousWorld.position.x = 0.0f;
+    previousWorld.position.y = 0.0f;
+    previousWorld.position.z = 0.0f;
+    previousWorld.rotation.x = 0.0f;
+    previousWorld.rotation.y = 0.0f;
+    previousWorld.rotation.z = 0.0f;
+    previousWorld.rotation.w = 1.0f;
+    previousWorld.scale = unitScaleVector;
+    world.position.x = 0.0f;
+    world.position.y = 0.0f;
+    world.position.z = 0.0f;
+    world.rotation.x = 0.0f;
+    world.rotation.y = 0.0f;
+    world.rotation.z = 0.0f;
+    world.rotation.w = 1.0f;
+    world.scale = unitScaleVector;
+    if (!(definitionFlags & 2) && (!parent || (parent->emitter->flags & 0x400) != 0x400)) {
+        if ((definitionFlags & 0x80) != 0x80) EulerToQuat(&definition->euler, &localRotation);
+        if (definitionFlags & 0x700038) {
+            if (definitionFlags & 8) angles.x = 6.2831855f * HSD_Randf();
+            else angles.x = 0.0f;
+            if (definitionFlags & 0x10) angles.y = 6.2831855f * HSD_Randf();
+            else angles.y = 0.0f;
+            if (definitionFlags & 0x20) angles.z = 6.2831855f * HSD_Randf();
+            else angles.z = 0.0f;
+            if (definitionFlags & 0x100000) {
+                if (HSD_Randf() < 0.5f) { flags |= 1; angles.x = -angles.x; }
+            }
+            if (definitionFlags & 0x200000) {
+                if (HSD_Randf() < 0.5f) { flags |= 2; angles.y = -angles.y; }
+            }
+            if (definitionFlags & 0x400000) {
+                if (HSD_Randf() < 0.5f) { flags |= 4; angles.z = -angles.z; }
+            }
+            EulerToQuat(&angles, &orientation);
+        }
+    }
+    if ((definitionFlags & 0x80) != 0x80) {
+        randomOffset.x = definition->position.x + definition->positionRange.x * HSD_Randf();
+        randomOffset.y = definition->position.y + definition->positionRange.y * HSD_Randf();
+        randomOffset.z = definition->position.z + definition->positionRange.z * HSD_Randf();
+    }
+    spin.x = definition->spin.x;
+    spin.y = definition->spin.y;
+    spin.z = definition->spin.z;
+    peContainer* container = containers;
+    while (container) { container->Start(); container = container->next; }
+}
+
 extern "C" {
 extern Vec g_CameraPosition, g_CameraLookDir;
 void peNodeTransformsConcat(EmitterTransforms*,void*,EmitterTransforms*,u32);

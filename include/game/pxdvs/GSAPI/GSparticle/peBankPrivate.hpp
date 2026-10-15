@@ -4,7 +4,8 @@
 struct ParticleBankFile { u32 flags; u32 reserved04; _peEmitter* emitter; u8 references; };
 struct ParticleBankState {
     ParticleBankFile* file; peEmitterNode node; ParticleBankFile* data;
-    u8 reserved10c[0x28]; u32 flags, rendered; u16 token, maxParams; u8 bound[0x20]; void* camera; ParticleBankState* next;
+    f32 transform[10]; u32 flags, rendered; u16 token, maxParams; u8 bound[0x20]; void* camera; ParticleBankState* next;
+    ParticleBankState() { node.transformParent = 0; node.next = 0; node.previous = 0; node.emitter = 0; node.containers = 0; }
 };
 extern "C" {
 extern ParticleBankState* g_currentBank;

@@ -1027,7 +1027,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Sun.cpp"),
 
             # GSparticle
-            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/GSparticle.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/GSparticle.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peParticle.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSparticle/peNode.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peBank.cpp"),

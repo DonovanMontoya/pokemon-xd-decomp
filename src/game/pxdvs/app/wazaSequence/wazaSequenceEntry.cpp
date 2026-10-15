@@ -73,7 +73,7 @@ void GSmodelSetScale(u32, f32 *);
 bool GSmodelHasTexAnimationEnded(u32);
 void PSVECSubtract(f32 *, f32 *, f32 *);
 extern f32 unitScaleVector[3];
-void GSmodelSetAnimIndex(u32, s16);
+void GSmodelSetAnimIndex(u32, s32);
 void GSmodelSetAnimType(u32, s32);
 void GSmodelSetAnimRate(u32, f32);
 void GSmodelSetAnimFrame(u32, f32);
@@ -1570,8 +1570,8 @@ bool ModelEntry::Start() {
     if (fieldA & 0x20) {
         scale[0] = scale[1] = scale[2] = 1.0f;
     }
-    u32 seqModel = 0;
-    field4B = seqModel;
+    wazaFlags = 0;
+    field4B = wazaFlags;
     if (fieldA & 4) {
         if (fieldA & 8) {
             battleGridGetNormalisedScale(scale);
@@ -1583,7 +1583,7 @@ bool ModelEntry::Start() {
     } else {
         void *part;
         if (ms != 0) {
-            seqModel = ms->model;
+            wazaFlags = ms->model;
         }
         if (mode != 0) {
             if (field4A != 0) {
@@ -1593,37 +1593,37 @@ bool ModelEntry::Start() {
                 if (mode != 7 && mode != 3 && mode != 5 && mode != 6) {
                     GSmodelSetScale(model, scale);
                 }
-                if (seqModel != 0 && ms->field58 == 0 && part != 0) {
+                if (wazaFlags != 0 && ms->field58 == 0 && part != 0) {
                     if (flags & 0x10) {
-                        void *bound = GSmodelGetBound(seqModel);
+                        void *bound = GSmodelGetBound(wazaFlags);
                         GSboundGetWorldPosition(bound, tmp);
                         GSmodelSetPosition(model, tmp);
                         GSboundGetLocalPosition(bound, tmp);
                         tmp[0] = -tmp[0];
                         tmp[1] = -tmp[1];
                         tmp[2] = -tmp[2];
-                        GSmodelAddNull(seqModel, tmp, 0, 0);
+                        GSmodelAddNull(wazaFlags, tmp, 0, 0);
                     }
-                    GSmodelAttachToGSpart(seqModel, part, mode, 0, 1);
+                    GSmodelAttachToGSpart(wazaFlags, part, mode, 0, 1);
                     field4B = 1;
                     ms->field58 = 1;
                     GSpartFree(part);
                     switch (mode) {
                     case 1:
                     case 6:
-                        GSmodelSetRotation(seqModel, rot);
+                        GSmodelSetRotation(wazaFlags, rot);
                         break;
                     case 2:
                     case 5:
-                        GSmodelSetPosition(seqModel, pos);
+                        GSmodelSetPosition(wazaFlags, pos);
                         break;
                     case 3:
-                        GSmodelSetRotation(seqModel, rot);
-                        GSmodelSetPosition(seqModel, pos);
+                        GSmodelSetRotation(wazaFlags, rot);
+                        GSmodelSetPosition(wazaFlags, pos);
                         break;
                     case 0:
-                        GSmodelSetRotation(seqModel, rot);
-                        GSmodelSetPosition(seqModel, pos);
+                        GSmodelSetRotation(wazaFlags, rot);
+                        GSmodelSetPosition(wazaFlags, pos);
                         break;
                     case 4:
                     case 7:
@@ -1638,24 +1638,24 @@ bool ModelEntry::Start() {
                     if (linked->dataType != 2) goto noPart;
                     u32 linkedModel = ((ModelEntry *)linked)->model;
                     if (linked->startTime > startTime) {
-                        part = 0;
+                        ms = 0;
                         goto havePart;
                     }
                     if (linkedModel == 0) goto noPart;
-                    part = GSmodelGetPart(linkedModel, field12);
+                    ms = (ModelSequence *)GSmodelGetPart(linkedModel, field12);
                     goto havePart;
                 } else {
                     SequenceBase *s2 = waza->sequence;
                     s2 = s2->type == 1 ? s2 : 0;
                     if (s2 == 0) goto noPart;
-                    part = ((ModelSequence *)s2)->GetPart((enumNullJointName)field10);
+                    ms = (ModelSequence *)((ModelSequence *)s2)->GetPart((enumNullJointName)field10);
                     goto havePart;
                 }
             noPart:
-                part = 0;
+                ms = 0;
             havePart:
-                if (part != 0) {
-                    GSmodelAttachToGSpart(model, part, mode, (fieldA >> 1) & 1, 1);
+                if (ms != 0) {
+                    GSmodelAttachToGSpart(model, ms, mode, (fieldA >> 1) & 1, 1);
                     field4B = 1;
                     switch (mode) {
                     case 4:
@@ -1683,7 +1683,7 @@ bool ModelEntry::Start() {
                     case 7:
                         break;
                     }
-                    GSpartFree(part);
+                    GSpartFree(ms);
                 }
             }
         }
@@ -1720,11 +1720,11 @@ bool ModelEntry::Start() {
         }
     }
     if (flags & 0x20) {
-        if (wazaSequenceSysGetModelShadowLight() != 0 && wazaSequenceSysGetModelShadowCount() != 0) {
+        if (wazaSequenceSysGetModelShadowLight() != 0 && (u32)wazaSequenceSysGetModelShadowCount() != 0) {
             GSmodelSetShadowFlags(model, 1);
             GSmodelSetShadowLight(model, wazaSequenceSysGetModelShadowLight());
-            u32 *list = wazaSequenceSysGetModelShadowList();
-            GSmodelSetShadowSurface(model, wazaSequenceSysGetModelShadowCount(), list);
+            ms = (ModelSequence *)wazaSequenceSysGetModelShadowList();
+            GSmodelSetShadowSurface(model, wazaSequenceSysGetModelShadowCount(), (u32 *)ms);
         }
     }
     state = 1;

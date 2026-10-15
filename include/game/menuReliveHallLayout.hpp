@@ -46,6 +46,9 @@ public:
     u16 getPokemonID() const;
     void setStatus(darkPokemonStatus);
     void setSnatchIndex(u8);
+    s32 getStatus() const;
+    void setDarkPointDirect(long);
+    long getInitDarkPointDirect() const;
 };
 
 class CAnt {
@@ -89,10 +92,11 @@ public:
     Pokemon pokemon;
     CAnt ant;
     CAnt beforeAnt;
-    u8 unk14C;
+    bool unk14C;
     u8 reserved14D[3];
     u8 flag150;
-    u8 reserved151[3];
+    u8 flag151;
+    u8 reserved152[2];
     static PocketVec<short> defaultPositionTbl;
     void draw();
     bool isCatchPokemon();
@@ -301,7 +305,7 @@ public:
     u8 tutorialActive;
     u8 reserved243;
     CInfoWindow baseInfoWindow;
-    u8 reserved278[4];
+    u32 current;
     s32 state;
     u8 reserved280[0x10];
     u8 stateWork[0x40];

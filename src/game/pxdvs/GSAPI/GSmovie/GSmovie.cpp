@@ -170,7 +170,13 @@ extern "C" void GSmovieStreamPostFunc(u32 handle,u32 resource) {
 }
 struct GSgfxLayer;
 enum GSgfxLayerPass { MOVIE_PASS_DEFAULT };
-extern void _movieRender(GSgfxLayer*,GSgfxLayerPass);
+struct GStexture;
+struct GSgfxLayer { u8 reserved0[0x28]; s32 id; void textureCopy(GSgfxLayerPass,GStexture*,bool,u8*,bool,bool,bool); };
+static void _movieRender(GSgfxLayer*,GSgfxLayerPass);
+extern "C" {
+void THPGXSetRenderLayer(GSgfxLayer*); void THPGXYuv2RgbSetup(); void THPGXRestore();
+u16 THPGXYuv2RgbDraw(void*,void*,void*,s16,s16,s16,s16,s16,s16);
+}
 extern void _movieDaemon();
 extern "C" void GSgfxTokenWaitForClearAndReset(u16*);
 #pragma force_active on
@@ -253,3 +259,25 @@ static void _PlayControl(u32 count) {
     }
 }
 #pragma force_active reset
+
+static void _movieRender(GSgfxLayer* layer,GSgfxLayerPass pass) {
+    __GSmovieStreaming* movie;
+    MovieDecoder* decoder;
+    if(pass==MOVIE_PASS_DEFAULT) {
+        for(u32 i=0,offset=0;i<_maxStreaming;++i,offset+=0x20) {
+            movie=(__GSmovieStreaming*)((u8*)_movieStreaming+offset);
+            if(!movie->state || !movie->decoder->visible) continue;
+            if(movie->layer==0) { if(layer->id!=2) continue; }
+            else if(_movieLayerID!=layer->id) continue;
+            decoder=movie->decoder;
+            if(decoder->state && decoder->displayTexture) {
+                THPGXSetRenderLayer(layer);
+                THPGXYuv2RgbSetup();
+                THPTextureSet* t=decoder->displayTexture;
+                movie->token=THPGXYuv2RgbDraw(t->y,t->u,t->v,movie->x,movie->y,decoder->width,decoder->height,decoder->width,decoder->height);
+                THPGXRestore();
+            }
+            if(movie->layer) layer->textureCopy(pass,(GStexture*)movie->layer,false,0,true,true,true);
+        }
+    }
+}

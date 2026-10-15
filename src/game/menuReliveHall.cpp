@@ -1,4 +1,5 @@
 #include <game/menuReliveHallLayout.hpp>
+#include <game/maximum/GSAPI/baselib/math_support.h>
 
 inline void *operator new(unsigned long, void *p) {
     return p;
@@ -11,6 +12,7 @@ struct SF32 {
 enum GSgfxLayerID { GSgfxLayerID_Default = 0 };
 
 extern "C" {
+DarkPokemon *darkPokemonGetDarkPokemon(long);
 void winMsgOpen(s32, u32, s32, s32);
 void GSfsysReadWait(u32);
 void GSfsysFree(u32);
@@ -33,6 +35,7 @@ s8 GSinputGetLeftStickYData(s32, s32);
 s8 GSinputGetRightStickXData(s32, s32);
 s8 GSinputGetRightStickYData(s32, s32);
 double sin(double);
+double fabs(double);
 double cos(double);
 extern const GSgfxColAu8 GSgfxColAu8_Black;
 GSgfxColAu8 relivehallAisyou2ColorTbl[3] = {{40, 0, 255, 255}, {40, 170, 255, 255}, {200, 240, 255, 255}};
@@ -101,16 +104,26 @@ public:
     void pickupVisitor(Pokemon &);
 };
 
+class PCBOX {
+public:
+    static PCBOX *getPointer();
+    bool isPokemonFull();
+};
+
 class CReliveHall {
 public:
     static CReliveHall *getPointer();
     s32 getReliveGiveStageQuantity();
+    bool isReliveReadyDarkLugiaExist();
+    bool isReliveReadyPokemonExist();
     CReliveStage *getStage(long);
 };
 
 u8 getBitTable(u32 *, long);
 void setBitTable(u32 *, long, bool);
 long degreeRefresh360(long);
+
+bool lbl_804EA7F0;
 
 namespace {
 
@@ -132,9 +145,9 @@ struct SCircleDot {
 
 class SCircle {
 public:
-    s32 unk0;
+    f32 outer;
     s32 radius;
-    u8 reserved8[4];
+    f32 inner;
     SCircleDot dots[0x2800];
     s32 count;
     u8 positions[0x2800][4];
@@ -177,7 +190,8 @@ public:
     SPokemonView views[9];
     s32 cursorIndex;
     s32 *menuTable;
-    u8 reserved618[0x620 - 0x618];
+    s32 reserved618;
+    s32 reserved61C;
     CStick stick;
     SCircle circles[3];
     void *model0;
@@ -231,10 +245,10 @@ public:
     void drawVisitorHitEffect();
     void drawDancerHitEffect();
     int getQuantityMarkerDancerOnPlusDancerEmpty();
-    int animationProcessButtonInterrupt();
+    bool animationProcessButtonInterrupt();
     void animationStateUpdate();
     void main(CMenuGlobalState &);
-    void actionMenuMain();
+    int actionMenuMain();
     void actionStatus();
     void actionChange();
     void actionPut();
@@ -260,6 +274,13 @@ public:
     void moveStage(int);
     void resetViewAll();
     void cursorPositionDecideAtStageChange(int);
+    void stateDirChangeProc();
+    void aButtomAction();
+    void stateMainProc();
+    bool catchDark();
+    bool catchNotDark();
+    bool catchDarkB();
+    bool catchNotDarkB();
     Pokemon *getCurrentPokemonPointer();
     Pokemon *getStatusDisplayVisitorGetPointer();
     int dancerPositionQuantityWithCatch();
@@ -523,6 +544,65 @@ void CStick::update() {
         return;
     }
     frames = 0;
+}
+
+void SCircle::init(f32 outerRadius, int dotRadius, f32 innerRadius, GSgfxColAu8 color) {
+    memset(this, 0, sizeof(SCircle));
+    outer = outerRadius;
+    radius = dotRadius;
+    inner = innerRadius;
+    bitTable = (u32 *)GSmemAllocClr(0x7D00);
+    count = 0;
+    f32 angle = 0.0f;
+    int prevX = -1;
+    int prevY = -1;
+    int prevDeg = -1;
+    while (angle < 6.2831855f) {
+        int px = (int)(90.0f * (f32)sin(angle)) + 0x140;
+        int py = (int)(90.0f * -(f32)cos(angle)) + 0x118;
+        int deg = degreeRefresh360((long)(180.0f * angle / 3.1415927f));
+        if (deg != prevDeg) {
+            angleIndex[deg] = count;
+        }
+        if (px != prevX || py != prevY) {
+            drawPixelAll(px, py, deg);
+            prevX = px;
+            prevY = py;
+        }
+        prevDeg = deg;
+        angle += 0.008726646f;
+    }
+    angleIndex[360] = count;
+    for (int i = 0; i < count; i++) {
+        int dx = dots[i].x - 0x140;
+        dx = dx > 0 ? dx : -dx;
+        int dy = dots[i].y - 0x118;
+        dy = dy > 0 ? dy : -dy;
+        f32 dist = hsdSqrt((f32)(dx * dx + dy * dy));
+        f32 diff = (f32)fabs(dist - 90.0f);
+        if (diff <= inner) {
+            dots[i].alpha = 0xFF;
+        } else if (diff < outer) {
+            dots[i].alpha = (u8)(255.0f * (outer - diff) / (outer - inner));
+        } else {
+            dots[i].alpha = 0;
+        }
+    }
+    for (int i = 0; i < count; i++) {
+        *(s16 *)&positions[i][0] = dots[i].x;
+        *(s16 *)&positions[i][2] = dots[i].y;
+    }
+    for (int i = 0; i < count; i++) {
+        colors[i][0] = color.r;
+        colors[i][1] = color.g;
+        colors[i][2] = color.b;
+        colors[i][3] = color.a;
+    }
+    memset(sw, 0, 0x2800);
+    if (bitTable != 0) {
+        GSmemFree(bitTable);
+        bitTable = 0;
+    }
 }
 
 void SCircle::draw() {
@@ -951,6 +1031,104 @@ void CMenuReliveHall::resetViewAll() {
     makeCursorPositionTbl(cursorPositions);
 }
 
+inline bool CMenuReliveHall::catchDark() {
+    CMenuPokemonCursor *cc;
+    u8 result = 0;
+    if (cursor->isCatchPokemon()) {
+        cc = cursor;
+        Pokemon *p;
+        if (cc->pokemon.checkValid()) p = &cc->pokemon;
+        else p = 0;
+        if (p->isDarkPokemon()) result = 1;
+    }
+    return result;
+}
+
+inline bool CMenuReliveHall::catchNotDark() {
+    CMenuPokemonCursor *cc;
+    u8 result = 0;
+    if (cursor->isCatchPokemon()) {
+        cc = cursor;
+        Pokemon *p;
+        if (cc->pokemon.checkValid()) p = &cc->pokemon;
+        else p = 0;
+        if (!p->isDarkPokemon()) result = 1;
+    }
+    return result;
+}
+
+inline bool CMenuReliveHall::catchDarkB() {
+    u8 result = 0;
+    CMenuPokemonCursor *cc;
+    if (cursor->isCatchPokemon()) {
+        cc = cursor;
+        Pokemon *p;
+        if (cc->pokemon.checkValid()) p = &cc->pokemon;
+        else p = 0;
+        if (p->isDarkPokemon()) result = 1;
+    }
+    return result;
+}
+
+inline bool CMenuReliveHall::catchNotDarkB() {
+    u8 result = 0;
+    CMenuPokemonCursor *cc;
+    if (cursor->isCatchPokemon()) {
+        cc = cursor;
+        Pokemon *p;
+        if (cc->pokemon.checkValid()) p = &cc->pokemon;
+        else p = 0;
+        if (!p->isDarkPokemon()) result = 1;
+    }
+    return result;
+}
+
+void CMenuReliveHall::cursorPositionDecideAtStageChange(int old) {
+    int position;
+    int oldQuantity;
+    if (old == -1 && globalState->mode == 1) {
+        position = 7;
+    } else {
+        oldQuantity = -1;
+        if (old != -1) {
+            oldQuantity = CReliveHall::getPointer()->getStage(old)->getDancerQuantity();
+        }
+        int index = cursor->index;
+        position = index;
+        if (position == 6) {
+            if (stage->getVisitorPointer() == 0) {
+                if (!catchDark()) {
+                    position = -1;
+                }
+            }
+        } else {
+            if (isDancerSlot(position) && oldQuantity != stage->getDancerQuantity()) {
+                position = -1;
+            }
+        }
+        if (position == -1) {
+            if (catchNotDark() || stage->getVisitorPointer() == 0) {
+                if (catchDark()) {
+                six:
+                    position = 6;
+                } else if (catchDark() || stage->getDancerQuantity() == 0) {
+                    if (catchNotDark()) {
+                    zero:
+                        position = 0;
+                    } else {
+                        position = 7;
+                    }
+                } else {
+                    goto zero;
+                }
+            } else {
+                goto six;
+            }
+        }
+    }
+    cursor->setPositionIndex(position);
+}
+
 void CMenuReliveHall::actionPut() {
     f32 pos[4];
     f32 face[4];
@@ -1063,6 +1241,304 @@ void CMenuReliveHall::actionPickup() {
     editAfterDp0VisitorCheck();
 }
 
+void CMenuReliveHall::aButtomAction() {
+    memset(&menuTable, 0, 0xC);
+    reserved618 = -1;
+    reserved61C = -1;
+    switch (cursor->index) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5: {
+        if (catchNotDarkB()) {
+            int idx = cursor->index;
+            if (idx < stage->getDancerQuantity()) {
+                if (cursor->unk14C != 0) {
+                    actionChange();
+                } else {
+                    menuTable = actionMenuCatchDancerOnPokemon;
+                }
+            } else if (cursor->unk14C != 0) {
+                actionPut();
+            } else {
+                menuTable = actionMenuCatchDancerOnNone;
+            }
+        } else {
+            int idx = cursor->index;
+            if (idx < stage->getDancerQuantity()) {
+                if (cursor->unk14C != 0) {
+                    actionPickup();
+                } else {
+                    menuTable = actionMenuOnDancer;
+                }
+            }
+        }
+        break;
+    }
+    case 6: {
+        u8 dark = 0;
+        u8 multiple = stage->getDancerQuantity() >= 2;
+        if (catchDarkB()) {
+            dark = 1;
+        }
+        if (dark != 0) {
+            if (views[6].ant.unk0 != 0) {
+                if (cursor->unk14C != 0) {
+                    actionChange();
+                } else {
+                    s32 *t;
+                    if (multiple != 0) t = actionMenuCatchVisitorOnPokemon;
+                    else t = actionMenuCatchDancerOnPokemon;
+                    menuTable = t;
+                }
+            } else if (cursor->unk14C != 0) {
+                actionPut();
+            } else {
+                s32 *t;
+                if (multiple != 0) t = actionMenuCatchVisitorOnNone;
+                else t = actionMenuCatchDancerOnNone;
+                menuTable = t;
+            }
+        } else if (views[6].ant.unk0 != 0) {
+            if (cursor->unk14C != 0) {
+                actionPickup();
+            } else {
+                s32 *t;
+                if (multiple != 0) t = actionMenuOnVisitor;
+                else t = actionMenuOnDancer;
+                menuTable = t;
+            }
+        }
+        break;
+    }
+    case 7:
+        state = 6;
+        memset(stateWork, 0, 0x40);
+        break;
+    case 8:
+        state = 8;
+        memset(stateWork, 0, 0x40);
+        break;
+    default:
+        break;
+    }
+    if (menuTable != 0) {
+        state = 3;
+        memset(stateWork, 0, 0x40);
+    }
+}
+
+void CMenuReliveHall::stateMainProc() {
+    bool lugia;
+    u8 *work;
+    u8 done;
+    MetaKeyInfo *key;
+    DarkPokemon *dark;
+    bool anyKey;
+    u8 unhandled;
+    memset(&stick, 0, 0xC);
+    work = stateWork;
+    done = 0;
+    while (done == 0) {
+        key = getKeyInfo();
+        lugia = CReliveHall::getPointer()->isReliveReadyDarkLugiaExist();
+        anyKey = (key->trigger | key->repeat) != 0;
+        if (anyKey != 0 || stick.trigger != 0) {
+            if (animationProcessButtonInterrupt()) {
+                return;
+            }
+        }
+        if (stick.trigger != 0) {
+            cursorMoveDir((s32)(180.0f * stick.angle / 3.1415927f));
+        } else if (stick.on == 0 && anyKey != 0) {
+            unhandled = 0;
+            switch (key->repeat) {
+            case 1:
+                cursorMoveDir(0);
+                break;
+            case 8:
+                cursorMoveDir(90);
+                break;
+            case 2:
+                cursorMoveDir(180);
+                break;
+            case 4:
+                cursorMoveDir(270);
+                break;
+            case 9:
+                cursorMoveDir(45);
+                break;
+            case 10:
+                cursorMoveDir(135);
+                break;
+            case 6:
+                cursorMoveDir(225);
+                break;
+            case 5:
+                cursorMoveDir(315);
+                break;
+            case 0x200:
+                moveStage(-1);
+                break;
+            case 0x400:
+                moveStage(1);
+                break;
+            default:
+                unhandled = 1;
+                break;
+            }
+            if (unhandled != 0) {
+                switch (key->trigger) {
+                case 0x10:
+                    if (!cursor->isCatchPokemon()) {
+                        menuPtPlaySe(0x45A);
+                    }
+                    aButtomAction();
+                    done = 1;
+                    break;
+                case 0x20:
+                    if (!cursor->isCatchPokemon()) {
+                        menuPtPlaySe(0x45B);
+                    }
+                    state = 8;
+                    memset(work, 0, 0x40);
+                    done = 1;
+                    break;
+                case 0x40:
+                case 0x80:
+                    cursor->unk14C = !cursor->unk14C;
+                    break;
+                case 0x100:
+                    menuPtPlaySe(0x45A);
+                    state = 6;
+                    memset(work, 0, 0x40);
+                    break;
+                }
+            }
+        }
+        updateAll();
+        if (!lugia && CReliveHall::getPointer()->isReliveReadyDarkLugiaExist()) {
+            infoMessageDisplay(0xD152);
+        }
+        dark = darkPokemonGetDarkPokemon(0x49);
+        if (CReliveHall::getPointer()->isReliveReadyDarkLugiaExist()) {
+            dark->setDarkPointDirect(0);
+        } else if (dark->getStatus() == 4) {
+            dark->setDarkPointDirect(0);
+        } else {
+            dark->setDarkPointDirect(dark->getInitDarkPointDirect());
+        }
+        if (state != -1) {
+            break;
+        }
+    }
+}
+
+void CMenuReliveHall::loop() {
+    u8 *work = stateWork;
+    for (;;) {
+        ((CState *)&current)->update();
+        switch (current) {
+        case 1:
+            state = 2;
+            memset(work, 0, 0x40);
+            lbl_804EA7F0 = globalState->mode == 3;
+            break;
+        case 2:
+            stateMainProc();
+            break;
+        case 3: {
+            infoWindow.setMsgCtrlValue(0x32, (u32)getCurrentPokemonPointer()->getNicknamePtr());
+            infoWindow.open(0xD110, false);
+            int selected = actionMenuMain();
+            infoWindow.close();
+            bool lugia = CReliveHall::getPointer()->isReliveReadyDarkLugiaExist();
+            actionDecide(menuTable[selected + 1]);
+            if (!lugia && CReliveHall::getPointer()->isReliveReadyDarkLugiaExist()) {
+                infoMessageDisplay(0xD152);
+            }
+            DarkPokemon *dark = darkPokemonGetDarkPokemon(0x49);
+            if (CReliveHall::getPointer()->isReliveReadyDarkLugiaExist()) {
+                dark->setDarkPointDirect(0);
+            } else if (dark->getStatus() == 4) {
+                dark->setDarkPointDirect(0);
+            } else {
+                dark->setDarkPointDirect(dark->getInitDarkPointDirect());
+            }
+            break;
+        }
+        case 4:
+            actionStatus();
+            state = 2;
+            memset(work, 0, 0x40);
+            break;
+        case 5:
+            stateDirChangeProc();
+            state = 2;
+            memset(work, 0, 0x40);
+            break;
+        case 6:
+            alphaFadeOutAndWait();
+            {
+                CMenuGlobalState *gs = globalState;
+                gs->mode = gs->unk8;
+                gs->unk8 = 1;
+            }
+            return;
+        case 7:
+            menuPtPlaySe(0x13);
+            infoMessageDisplay(0xD11B);
+            state = 2;
+            memset(work, 0, 0x40);
+            break;
+        case 8:
+            if (globalState->cursor.flag151 != 0) {
+                state = 9;
+                memset(work, 0, 0x40);
+            } else if (cursor->isCatchPokemon()) {
+                state = 7;
+                memset(work, 0, 0x40);
+            } else {
+                u32 choices[2] = {0x426A, 0x426B};
+                infoWindow.open(globalState->mode == 3 ? 0xD15B : 0xD124, false);
+                int selected = actionMenu(choices, 2, 0x1FB, 0x8C);
+                infoWindow.close();
+                if (selected == 0) {
+                    state = 2;
+                    memset(work, 0, 0x40);
+                } else {
+                    state = 9;
+                    memset(work, 0, 0x40);
+                }
+            }
+            break;
+        case 9: {
+            int result = 0;
+            if (globalState->unk0 != 3 && CReliveHall::getPointer()->isReliveReadyPokemonExist()) {
+                int previous = globalState->unk0;
+                if (PCBOX::getPointer()->isPokemonFull()) {
+                    infoMessageDisplay3Line(0xD12F);
+                    if (previous == 2) {
+                        result = 4;
+                    }
+                } else {
+                    infoMessageDisplay3Line(0xD0FD);
+                }
+            }
+            {
+                CMenuGlobalState *gs = globalState;
+                gs->mode = gs->unk8;
+                gs->unk8 = result;
+                systemFadeOutSetAndWait(-1.0f);
+            }
+            return;
+        }
+        }
+    }
+}
+
 void CMenuReliveHall::actionDecide(u32 action) {
     switch (action) {
     case 0xD111:
@@ -1091,11 +1567,11 @@ void CMenuReliveHall::actionDecide(u32 action) {
     }
 }
 
-void CMenuReliveHall::actionMenuMain() {
+int CMenuReliveHall::actionMenuMain() {
     static s32 yTbl[7] = {0, 0, 0, 0x79, 0x64, 0, 0};
     s32 *table = menuTable;
     s32 count = table[0];
-    actionMenu((u32 *)(table + 1), count, 0x1D7, yTbl[count]);
+    return actionMenu((u32 *)(table + 1), count, 0x1D7, yTbl[count]);
 }
 
 f32 CMenuReliveHall::calcStarDir(int a, int b) {
@@ -1446,6 +1922,109 @@ void CMenuReliveHall::drawMainBG() {
     menuPtSpriteWorkSetSw(window, 0x8EE, 0, hasVisitor);
     menuPtSpriteWorkSetSw(window, 0x4D2, 0, hasVisitor);
     menuPtWindowWorkDraw(window);
+}
+
+#define HALL_ABS_DIR(a, b) (dirSubHalf(a, b) < 0.0f ? -dirSubHalf(a, b) : dirSubHalf(a, b))
+
+void CMenuReliveHall::stateDirChangeProc() {
+    int partner;
+    int original;
+    u8 done;
+    u8 active;
+    f32 angle;
+    f32 best;
+    int bestIndex;
+    CMenuReliveHall *view;
+    int i;
+    MetaKeyInfo *key;
+    memset(&stick, 0, 0xC);
+    cursor->unk0 = 0;
+    effectAlpha = 0;
+    windowSearchID(0x76);
+    partner = stage->partner;
+    original = partner;
+    memset(&stick, 0, 0xC);
+    infoWindow.setMsgCtrlValue(0x32, (u32)getCurrentPokemonPointer()->getNicknamePtr());
+    infoWindow.open(0xD117, false);
+    localWindowEntry(0x76, 0, _stateDirChangeProcHook);
+    done = 0;
+    do {
+        active = stick.on;
+        angle = stick.angle;
+        key = getKeyInfo();
+        switch (key->trigger) {
+        case 0x10:
+            menuPtPlaySe(0x45A);
+            done = 1;
+            break;
+        case 0x20:
+            stage->partner = original;
+            menuPtPlaySe(0x45B);
+            done = 1;
+            break;
+        }
+        if (done == 0) {
+            switch (key->repeat) {
+            case 1:
+                angle = 0.0f;
+                active = 1;
+                break;
+            case 8:
+                angle = 1.5707964f;
+                active = 1;
+                break;
+            case 2:
+                angle = 3.1415927f;
+                active = 1;
+                break;
+            case 4:
+                angle = 4.712389f;
+                active = 1;
+                break;
+            case 9:
+                angle = 0.7853982f;
+                active = 1;
+                break;
+            case 10:
+                angle = 2.3561945f;
+                active = 1;
+                break;
+            case 6:
+                angle = 3.9269907f;
+                active = 1;
+                break;
+            case 5:
+                active = 1;
+                angle = 5.497787f;
+                break;
+            }
+            if (active != 0) {
+                best = 3.1415927f;
+                view = this;
+                bestIndex = 0;
+                for (i = 0; i < stage->getDancerQuantity(); i++) {
+                    PocketVec<short> position = view->views[0].getPosition();
+                    f32 dir = xyxy2dir(position, circlePosition);
+                    f32 diff = HALL_ABS_DIR(dir, angle);
+                    if (best > diff) {
+                        best = diff;
+                        bestIndex = i;
+                    }
+                    view = (CMenuReliveHall *)((u8 *)view + 0x50);
+                }
+                if (partner != bestIndex) {
+                    menuPtPlaySe(0x459);
+                }
+                partner = bestIndex;
+                stage->partner = bestIndex;
+            }
+        }
+        updateAll();
+    } while (done == 0);
+    localWindowRemove(0x76);
+    infoWindow.close();
+    cursor->unk0 = 1;
+    effectAlpha = 0xFF;
 }
 
 void CMenuReliveHall::drawVisitorStarLight(long aisyou, SPokemonView *view) {
@@ -1828,13 +2407,13 @@ void CMenuReliveHall::drawStagePokemon() {
 }
 
 
-int CMenuReliveHall::animationProcessButtonInterrupt() {
+bool CMenuReliveHall::animationProcessButtonInterrupt() {
     if (animationState != 0) {
         animationFlag = 0;
         memset(animationWork, 0, 0x40);
         animationStateUpdate();
     }
-    return 0;
+    return false;
 }
 
 }

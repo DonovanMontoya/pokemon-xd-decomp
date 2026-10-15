@@ -7,7 +7,7 @@ struct THPAudioBuffer {s16 *buffer,*current; u32 samples; union { u32 flags; u8 
 struct MovieDecoder {
     u32 magic,version,maxBufferSize,maxAudioSamples; f32 frameRate; u32 frames,firstFrameSize,movieBytes,componentOffset,offsetTableOffset,firstFrameOffset,lastFrameOffset;
     u32 componentCount; u8 componentTypes[16]; u32 width,height,videoType,channels,sampleRate,audioSamples,tracks;
-    u8 reserved60[0x8064-0x60]; u32 streamOffset; u8 reserved8068[12]; void* videoWork;
+    u8 streamBuffer[0x8000]; s32 fetchState; u32 streamOffset; u32 fetchArg,fetchSize,fetchPos; void* videoWork;
     u8 state,nextState,loop,hasAudio; s32 videoError,audioError;
     u8 preload,startAudio,paused,visible;
     u8* preloadBuffer; u32 currentOffset,currentSize,currentFrame;
@@ -19,7 +19,7 @@ struct MovieDecoder {
     u32 leftStream,rightStream; s16* leftBuffer; s16* rightBuffer;
     u32 reserved822c; u64 marks[5]; u32 markRead; s32 markWrite; u32 reserved8260[4]; u64 samplesPlayed;
 };
-struct __GSmovieStreaming {s32 state; u32 layer,handle; s16 x,y; u8* workBuffer; u8 ready,reading,loop,track; u16 token; u16 reserved1a; MovieDecoder* decoder;};
+struct __GSmovieStreaming {s32 state; u32 layer,handle; u16 x,y; u8* workBuffer; u8 ready,reading,loop,track; u16 token; u16 reserved1a; MovieDecoder* decoder;};
 typedef char MovieDescriptorSize[sizeof(__GSmovieStreaming)==0x20?1:-1];
 extern "C" {
 void sndStreamFree(u32); u8 sndStreamActivate(u32); void sndStreamDeactivate(u32);

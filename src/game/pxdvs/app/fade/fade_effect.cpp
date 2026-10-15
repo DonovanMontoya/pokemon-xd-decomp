@@ -10,6 +10,7 @@ extern "C" void* memcpy(void*, const void*, unsigned long);
 
 typedef f32 FadeMtx[3][4];
 extern "C" {
+void PSMTXTrans(FadeMtx, f32, f32, f32);
 void PSMTXScale(FadeMtx, f32, f32, f32);
 void PSMTXRotRad(FadeMtx, char, f32);
 void PSMTXConcat(const FadeMtx, const FadeMtx, FadeMtx);
@@ -97,6 +98,7 @@ struct GSgfxLayer {
 
 extern "C" {
 void GSmemFree(void*);
+void fadeEffectDokuStop();
 s32 HSD_Rand();
 f32 HSD_Randf();
 void GSgfxVideoSetLockFrameRate(bool);
@@ -206,7 +208,8 @@ static s32 _fadeHexaRibbonNum;
 static GStexture* _fadeHexaTexture;
 static GSgfxVF* _fadeHexaNoiseVF;
 static f32 _fadeHexaDecayTime;
-static void* _fadeTearOffWork;
+struct FadeTearOff { s16 x, y; };
+static FadeTearOff _fadeTearOffWork;
 
 static void _fadeEffect_AdjustParms();
 static unsigned long _fadeEffectGetRandom(unsigned long);
@@ -248,6 +251,9 @@ static void _fadeDistortionStripQuit();
 static void _fadeDistortionStripInit(int columns, int rows);
 static void _fadeEffectFunction_trainer_second_FirstInit();
 static void _fadeDistortionQuit();
+static void _fadeDistortionDo(unsigned long range);
+static void _fadeDistortionDoAverage(unsigned long range);
+static void _fadeDistortionDoSecond(unsigned long range, bool inward);
 static void _fadeDistortionInit();
 static void _fadeEffectFourBallInit();
 static void _disp_four_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 angle, int alpha);
@@ -259,6 +265,8 @@ static void _fadeEffectSlideBallInit();
 static void _fadeEffectBoundBallInit();
 static void _disp_bound_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 angle, int alpha);
 static void _disp_dist_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 angle, int alpha);
+static void _disp_blur_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 angle, int alpha);
+static void _fadeTearOffDraw(GSgfxLayer* layer, u8 alpha, int shift);
 static void _fadeEffectFunction_trainer_FirstInit(GStexture* arg0);
 static bool fadeEffectHookFunction_fadein(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32, f32, void*);
 static bool fadeEffectHookFunction_fadeout_in(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque);
@@ -272,6 +280,8 @@ static void _fadeEffectFunction_ball_FirstInit();
 static void _fadeEffectFunction_UDLR_FirstInit(GStexture* arg0, u16 arg1);
 static void _fadeEffectSnapshotFadeFunction(GSgfxLayer* layer, GStexture* texture, GSvec* center, f32 scale, f32 angle, f32 progress, f32 opacity);
 static void _fadeEffectMaskFunction(GSgfxLayer* layer, f32 amount);
+static void _fadeEffectSnapshotRotate(GSgfxLayer* layer, GStexture* texture, GSvec* center, f32 scale, GSvec* pivot, f32 angle, f32 progress, f32 opacity);
+static void _fadeEffectSnapshotTex(GSgfxLayer* layer, GStexture* texture, GSvec* center, f32 u0, f32 v0, f32 u1, f32 v1, f32 scaleY, f32 angle, f32 progress, f32 opacity);
 static void _fadeEffectStartSprites(GSgfxLayer* arg0);
 static void _fadeEffectStartTexture(GSgfxLayer* arg0, GStexture* arg1);
 static unsigned long _fadeEffectGetRandom(unsigned long range);
@@ -683,6 +693,70 @@ static void _fadeEffectSlideBallInit() {
     } while (i < 12);
 }
 
+static void _disp_slide_ball(GSgfxLayer* layer, f32 x, f32 y, f32 x2, f32 angle, int alpha) {
+    FadeMtx transform, rotation;
+    GSvec point, output;
+    f32 bottom, left, top, right;
+    f32 half = 0.5f;
+    f32 zero = 0.0f;
+    f32 size = 26.0f;
+    f32 one = 1.0f;
+    top = y - size;
+    bottom = size + y;
+    left = x - size;
+    right = size + x;
+    GXPosition2f32(x, top);
+    GXColor4u8(255, 255, 255, (u8)(alpha / 5));
+    GXTexCoord2f32(half, zero);
+    GXPosition2f32(x, bottom);
+    GXColor4u8(255, 255, 255, (u8)(alpha / 5));
+    GXTexCoord2f32(half, one);
+    GXPosition2f32(x2, bottom);
+    GXColor4u8(255, 255, 255, 0);
+    GXTexCoord2f32(half, one);
+    GXPosition2f32(x2, top);
+    GXColor4u8(255, 255, 255, 0);
+    GXTexCoord2f32(half, zero);
+    point.param1 = -x;
+    point.param2 = -y;
+    point.param3 = 0.0f;
+    PSMTXTrans(transform, -x, -y, 0.0f);
+    PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
+    PSMTXConcat(rotation, transform, transform);
+    point.param1 = x;
+    point.param2 = y;
+    point.param3 = 0.0f;
+    PSMTXTransApply(transform, transform, x, y, 0.0f);
+    point.param1 = left;
+    point.param2 = top;
+    point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition2f32(output.param1, output.param2);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    GXTexCoord2f32(0.0f, 0.0f);
+    point.param1 = right;
+    point.param2 = top;
+    point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition2f32(output.param1, output.param2);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    GXTexCoord2f32(1.0f, 0.0f);
+    point.param1 = right;
+    point.param2 = bottom;
+    point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition2f32(output.param1, output.param2);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    GXTexCoord2f32(1.0f, 1.0f);
+    point.param1 = left;
+    point.param2 = bottom;
+    point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition2f32(output.param1, output.param2);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    GXTexCoord2f32(0.0f, 1.0f);
+}
+
 static void _fadeEffectBoundBallInit() {
     GSgfxVideoSetLockFrameRate(1);
     _fadeEffectWork.ballTexture = (GStexture*)GSresGetResourceAllGroup(0x0EBC1200);
@@ -788,6 +862,436 @@ static void _fadeEffectFunction_trainer_FirstInit(GStexture* arg0) {
 #define FL(T, off) (*(T*)((u8*)layer + (off)))
 #define FL_SET(a, b, v) \
     FL(s32, a) |= (v); FL(s32, 0x16A8) |= 8; FL(s32, b) |= (v); FL(s32, 0x1760) |= 8
+
+#define FADE_LAYER_SETUP \
+    f32 matrix[4][4]; \
+    u32* flags; \
+    FadeMatrixSlot* slot; \
+    GSmtx44Ortho(matrix, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f); \
+    layer->fieldD54 = 1; \
+    layer->fieldD58 = matrix[0][0]; \
+    layer->fieldD5C = matrix[0][3]; \
+    layer->fieldD60 = matrix[1][1]; \
+    layer->fieldD64 = matrix[1][3]; \
+    layer->fieldD68 = matrix[2][2]; \
+    layer->fieldD6C = matrix[2][3]; \
+    slot = layer->field19A0; \
+    memcpy(slot->state->matrix, mtxIdent, 0x30); \
+    flags = &slot->state->flags; \
+    *flags |= 1; \
+    layer->field1684 = 0.0f; \
+    layer->field1688 = 30000.0f; \
+    if ((u8) layer->field16A7 != 0) { \
+        if ((u8) layer->field16A6 != 0) { \
+            layer->field170C = (s32) (layer->field170C | 0x100); \
+            layer->field17C4 = (s32) (layer->field17C4 | 0x100); \
+        } \
+        layer->field170C = (s32) (layer->field170C | 0x40); \
+        layer->field16A8 = (s32) (layer->field16A8 | 0x40); \
+        layer->field17C4 = (s32) (layer->field17C4 | 0x40); \
+        layer->field1760 = (s32) (layer->field1760 | 0x40); \
+    } \
+    layer->field16AC = (s32) (layer->field16AC | 0x20); \
+    layer->field16A8 = (s32) (layer->field16A8 | 1); \
+    layer->field1764 = (s32) (layer->field1764 | 0x20); \
+    layer->field1760 = (s32) (layer->field1760 | 1); \
+    if ((s32) layer->field1994 != 1) { \
+        layer->field1994 = 1; \
+        layer->field1990 = (void*) ((FadeLayerConfigView*)layer)->configs[layer->field1994]; \
+    } \
+    layer->field1644 = 1; \
+    layer->field1648 = 4; \
+    layer->field164C = 5; \
+    layer->field1650 = 5; \
+    layer->field170C = (s32) (layer->field170C | 1); \
+    layer->field16A8 = (s32) (layer->field16A8 | 0x40); \
+    layer->field17C4 = (s32) (layer->field17C4 | 1); \
+    layer->field1760 = (s32) (layer->field1760 | 0x40); \
+    layer->field1656 = 1; \
+    layer->field1657 = 1; \
+    layer->field1658 = 0; \
+    layer->field170C = (s32) (layer->field170C | 4); \
+    layer->field16A8 = (s32) (layer->field16A8 | 0x40); \
+    layer->field17C4 = (s32) (layer->field17C4 | 4); \
+    layer->field1760 = (s32) (layer->field1760 | 0x40); \
+    layer->field165C = 0; \
+    layer->field1660 = 1; \
+    layer->field170C = (s32) (layer->field170C | 8); \
+    layer->field16A8 = (s32) (layer->field16A8 | 0x40); \
+    layer->field17C4 = (s32) (layer->field17C4 | 8); \
+    layer->field1760 = (s32) (layer->field1760 | 0x40); \
+    layer->field1664 = 7; \
+    layer->field1670 = 0; \
+    layer->field1668 = 0; \
+    layer->field166C = 7; \
+    layer->field1671 = 0; \
+    layer->field1672 = 1; \
+    layer->field170C = (s32) (layer->field170C | 0x10); \
+    layer->field16A8 = (s32) (layer->field16A8 | 0x40); \
+    layer->field17C4 = (s32) (layer->field17C4 | 0x10); \
+    layer->field1760 = (s32) (layer->field1760 | 0x40); \
+    layer->fieldD8C = 0; \
+    layer->field16B8 = (s32) (layer->field16B8 | 2); \
+    layer->field16A8 = (s32) (layer->field16A8 | 2); \
+    layer->field1770 = (s32) (layer->field1770 | 2); \
+    layer->field1760 = (s32) (layer->field1760 | 2);
+
+#define FADE_LAYER_BIND_TEXTURE(tex) \
+    if (((void *) layer->field1740 != (tex)) || ((void *) layer->field17F8 != (tex)) || ((u8) (tex)->dirty != 0)) { \
+        layer->field1740 = (tex); \
+        layer->field173C = (s32) (layer->field173C | 1); \
+        layer->field17F8 = (tex); \
+        layer->field17F4 = (s32) (layer->field17F4 | 1); \
+    }
+
+bool fadeEffectHookFunction_slide_ball(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GSgfxLayer* layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    if (!opaque) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeEffectSlideBallInit();
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) return active;
+    f32 progress = elapsed / duration;
+    if (timeGetLastFrameTime() != 0) _fadeEffectWork.frame++;
+    _fadeEffectMaskFunction(layer, progress);
+    GSvec center;
+    center.param1 = 320.0f; center.param2 = 240.0f; center.param3 = 0.0f;
+    _fadeEffectSnapshotFadeFunction(layer, (GStexture*)opaque, &center, 1.0f, 0.0f, progress, 0.0f);
+    int alpha = (int)(255.0f * (1.0f - progress));
+    FADE_LAYER_SETUP
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 4, 0, 0, 1, 5, 1, 1, 4));
+    FADE_LAYER_BIND_TEXTURE((GStexture*)opaque)
+    layer->field1998 = 0x80;
+    layer->beginSurface(0x30);
+    FADE_EFFECT_BOUND* ball = _fadeEffectBound;
+    FADE_EFFECT_BOUND* base = _fadeEffectBound;
+    s32 n = 12;
+    do {
+        f32 left, right, v0, v1;
+        if ((f32)ball->speed > 0.0f) {
+            left = ball->x;
+            if (left < -1.0f) left = -1.0f;
+            right = 641.0f;
+            v0 = 0.0f;
+            v1 = (641.0f - left) / 640.0f;
+        } else {
+            left = -1.0f;
+            right = ball->x;
+            if (right > 641.0f) right = 641.0f;
+            v1 = 1.0f;
+            v0 = (640.0f - right) / 640.0f;
+        }
+        f32 top = ball->y - 26;
+        f32 vt = top / 480.0f;
+        ++ball;
+        GXPosition2f32(left, top);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(v0, vt);
+        f32 bottom = 53.0f + top;
+        f32 vb = bottom / 480.0f;
+        GXPosition2f32(right, top);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(v1, vt);
+        GXPosition2f32(right, bottom);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(v1, vb);
+        GXPosition2f32(left, bottom);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(v0, vb);
+    } while (--n != 0);
+    layer->endSurface();
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 4, 0, 0, 1, 5, 1, 1, 4));
+    FADE_LAYER_BIND_TEXTURE(_fadeEffectWork.ballTexture)
+    layer->field1998 = 0x80;
+    layer->beginSurface(0x60);
+    s32 i = 0;
+    do {
+        f32 x2;
+        if (base->speed > 0) {
+            x2 = base->x - 320.0f;
+            if (x2 < 0.0f) x2 = 0.0f;
+        } else {
+            x2 = 320.0f + base->x;
+            if (x2 > 641.0f) x2 = 641.0f;
+        }
+        _disp_slide_ball(layer, base->x, base->y, x2, base->rotation, (u8)alpha);
+        if (timeGetLastFrameTime() != 0) {
+            base->x = base->x + base->speed;
+            base->rotation = (s16)((360.0f * base->x) / 166.50441f);
+            if (base->speed > 0) {
+                base->x = base->x + (base->x / 80);
+            } else {
+                s16 cx = base->x;
+                base->x = cx - ((640 - cx) / 80);
+            }
+        }
+        ++base; ++i;
+    } while (i < 12);
+    layer->endSurface();
+    return active;
+}
+
+bool fadeEffectHookFunction_bound_ball(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GSgfxLayer* layer;
+    GStexture* texture;
+    GSvec center;
+    GSvec ballCenter;
+    layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    texture = (GStexture*)opaque;
+    if (!texture) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeEffectBoundBallInit();
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) return active;
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) _fadeEffectWork.frame++;
+    _fadeEffectMaskFunction(layer, progress);
+    center.param1 = 320.0f; center.param2 = 240.0f; center.param3 = 0.0f;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, 0.0f, progress, 0.0f);
+    center.param1 = 320.0f + _fadeEffectWork.frame;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, 0.0f, progress, 0.5f);
+    center.param1 = 320.0f - _fadeEffectWork.frame;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, 0.0f, progress, 0.5f);
+    _fadeEffectStartTexture(layer, _fadeEffectWork.ballTexture);
+    FADE_EFFECT_BOUND* ball = _fadeEffectBound;
+    s32 i = 0;
+    do {
+        f32 rot = ball->rotation;
+        if (timeGetLastFrameTime() != 0) {
+            if (ball->speed > 0) rot += 18.0f;
+            else rot -= 18.0f;
+            if (rot <= 0.0f) rot += 360.0f;
+            else if (rot >= 360.0f) rot -= 360.0f;
+        }
+        ball->rotation = (s16)rot;
+        f32 px = ball->x;
+        if (timeGetLastFrameTime() != 0) {
+            px += ball->speed;
+            if (px < 32.0f) {
+                px = 32.0f;
+                ball->speed = -ball->speed;
+            } else if (px > 608.0f) {
+                px = 608.0f;
+                ball->speed = -ball->speed;
+            }
+        }
+        ball->x = (s16)px;
+        f32 py = ball->y;
+        if (timeGetLastFrameTime() != 0) {
+            py += ball->state;
+            if (py < 32.0f) {
+                py = 32.0f;
+                ball->state = -ball->state;
+            } else if (py > 448.0f) {
+                ball->state = -ball->state;
+                py = 448.0f;
+                if (ball->state < 0.5f) ball->state = -13;
+            } else if (ball->state >= 0) {
+                ball->state = ball->state + 0.5f;
+            } else {
+                ball->state = ball->state - 0.5f;
+            }
+        }
+        ball->y = (s16)py;
+        ballCenter.param3 = 0.0f;
+        ballCenter.param2 = ball->y;
+        ballCenter.param1 = ball->x;
+        _disp_bound_ball(layer, &ballCenter, 1.0f, rot, (s32)(255.0f * (1.0f - progress) * (1.0f - progressSecond)));
+        ++ball; ++i;
+    } while (i < 16);
+    _fadeEffectEnd(layer);
+    return active;
+}
+
+bool fadeEffectHookFunction_distortion(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GStexture* texture;
+    GSgfxLayer* layer;
+    layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    texture = (GStexture*)opaque;
+    if (!texture) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeDistortionInit();
+        _fadeEffectWork.state = ((HSD_Rand() << 16) | HSD_Rand()) & 1;
+        GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) {
+        _fadeDistortionQuit();
+        GSgfxEndBackFBCapture(texture);
+        return active;
+    }
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) {
+        _fadeDistortionDo((unsigned long)-((6.0f * progress) - (10.0f - (3.0f * progressSecond))));
+        GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
+    } else {
+        GSgfxEndBackFBCapture(texture);
+    }
+    FADE_LAYER_SETUP
+    layer->field1998 = 0x98;
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(1, 3, 0, 0, 1, 5, 1, 1, 4));
+    FADE_LAYER_BIND_TEXTURE(texture)
+    int columns = _fadeDistortionWork.columns;
+    int rows = _fadeDistortionWork.rows;
+    FadeGridPoint* points = _fadeDistortionWork.points;
+    FadeUV* uv = _fadeDistortionWork.uv;
+    if (!points || !uv) return false;
+    int count = columns * 2;
+    s32 alpha = (s32)(255.0f * -((progress * (progress * progress)) - 1.0f));
+    for (int x = 1; x < rows; ++x) {
+        layer->beginSurface(count);
+        for (int y = 0; y < columns; ++y) {
+            int index = x * columns + y;
+            GXPosition3s16(points[index].x, points[index].y, 0);
+            GXColor4u8(255, 255, 255, alpha);
+            GXTexCoord2f32(uv[index].u, uv[index].v);
+            index = (x - 1) * columns + y;
+            GXPosition3s16(points[index].x, points[index].y, 0);
+            GXColor4u8(255, 255, 255, alpha);
+            GXTexCoord2f32(uv[index].u, uv[index].v);
+        }
+        layer->endSurface();
+    }
+    return active;
+}
+
+
+struct FadeColor { u8 r, g, b, a; };
+
+bool fadeEffectHookFunction_Doku(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void*) {
+    FadeColor color = { 0x1F, 0x08, 0x08, 0xFF };
+    GSgfxLayer* layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    f32 progress = elapsedSecond / durationSecond;
+    GSvec blend, high, low;
+    f32 k;
+    if (progress <= 0.5f) {
+        k = 4.0f * progress;
+        low.param1 = 1.0f; low.param2 = 1.0f; low.param3 = 1.0f;
+        high.param1 = 0.0f; high.param2 = 0.0f; high.param3 = 0.0f;
+        if (k >= 1.0f) k = 1.0f;
+    } else {
+        k = 2.0f * (progress - 0.5f);
+        high.param1 = 1.0f; high.param2 = 1.0f; high.param3 = 1.0f;
+        low.param1 = 0.0f; low.param2 = 0.0f; low.param3 = 0.0f;
+        if (k >= 1.0f) k = 1.0f;
+    }
+    GSlerpGetLinearInterpolationVector(&blend, &high, &low, k);
+    f32 base = (u8)(s32)(255.0f * blend.param1);
+    s32 alpha = (s32)(base * (1.0f - (elapsed / duration)));
+    FADE_LAYER_SETUP
+    layer->field1998 = 0x98;
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(1, 4, 0, 0, 1, 5, 0, 0, 0));
+    layer->beginSurface(4);
+    GXPosition3f32(0.0f, 0.0f, 0.0f);
+    GXColor4u8(color.r, color.g, color.b, (u8)alpha);
+    GXPosition3f32(640.0f, 0.0f, 0.0f);
+    GXColor4u8(color.r, color.g, color.b, (u8)alpha);
+    GXPosition3f32(0.0f, 480.0f, 0.0f);
+    GXColor4u8(color.r, color.g, color.b, (u8)alpha);
+    GXPosition3f32(640.0f, 480.0f, 0.0f);
+    GXColor4u8(color.r, color.g, color.b, (u8)alpha);
+    layer->endSurface();
+    if (progress >= 1.0f) {
+        fadeEffectDokuStop();
+        return false;
+    }
+    return active;
+}
+
+
+static void _fadeTearOffDraw(GSgfxLayer* layer, u8 alpha, int shift) {
+    s16 w = _fadeTearOffWork.x;
+    u8 half = (u32)alpha >> 1;
+    s16 h = _fadeTearOffWork.y;
+    f32 u = (f32)w / 640.0f;
+    f32 v = (f32)h / 480.0f;
+    layer->beginSurface(4);
+    f32 zero = 0.0f;
+    f32 one = 1.0f;
+    GXPosition3s16(0, 0, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(zero, zero);
+    GXPosition3s16(640, 0, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(one, zero);
+    GXPosition3s16(0, 480, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(zero, one);
+    GXPosition3s16(640, 480, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(one, one);
+    layer->endSurface();
+    layer->beginSurface(3);
+    GXPosition3s16(w, 0, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(u, zero);
+    GXPosition3s16(w, h, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(one, zero);
+    GXPosition3s16(640, h, 0);
+    GXColor4u8(255, 255, 255, alpha);
+    GXTexCoord2f32(one, v);
+    layer->endSurface();
+    layer->beginSurface(3);
+    GXPosition3s16(w + shift, shift, 0);
+    GXColor4u8(255, 255, 255, half);
+    GXTexCoord2f32(u, zero);
+    GXPosition3s16(shift + 640, shift, 0);
+    GXColor4u8(255, 255, 255, half);
+    GXTexCoord2f32(one, zero);
+    GXPosition3s16(shift + 640, h + shift, 0);
+    GXColor4u8(255, 255, 255, half);
+    GXTexCoord2f32(one, v);
+    layer->endSurface();
+    int shift2 = shift * 2;
+    layer->beginSurface(3);
+    GXPosition3s16(w + shift2, shift2, 0);
+    GXColor4u8(255, 255, 255, half);
+    GXTexCoord2f32(u, zero);
+    GXPosition3s16(shift2 + 640, shift2, 0);
+    GXColor4u8(255, 255, 255, half);
+    GXTexCoord2f32(one, zero);
+    GXPosition3s16(shift2 + 640, h + shift2, 0);
+    GXColor4u8(255, 255, 255, half);
+    GXTexCoord2f32(one, v);
+    layer->endSurface();
+}
+
+bool fadeEffectHookFunction_tear_off(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32, f32, void* opaque) {
+    GSgfxLayer* layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    if (!opaque) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        GSgfxVideoSetLockFrameRate(1);
+        _fadeTearOffWork.x = 640;
+        _fadeTearOffWork.y = 0;
+        _fadeEffectWork.frame = 0;
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) return active;
+    if (timeGetLastFrameTime() != 0) _fadeEffectWork.frame++;
+    FADE_LAYER_SETUP
+    layer->field1998 = 0x98;
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(1, 3, 0, 0, 1, 5, 1, 1, 4));
+    FADE_LAYER_BIND_TEXTURE((GStexture*)opaque)
+    f32 progress = elapsed / duration;
+    s32 alpha = (s32)(255.0f * (1.0f - progress));
+    if (timeGetLastFrameTime() != 0) {
+        _fadeTearOffWork.x -= 10;
+        _fadeTearOffWork.y += 10;
+    }
+    _fadeTearOffDraw(layer, alpha, _fadeEffectWork.frame);
+    return active;
+}
+
 
 extern bool fadeEffectHookFunction_trainer(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32, f32, void* opaque) {
     GStexture* texture;
@@ -1648,6 +2152,109 @@ static void _fadeEffectSnapshotFadeFunction(GSgfxLayer* layer, GStexture* textur
     _fadeEffectEnd(layer);
 }
 
+static void _fadeEffectSnapshotTex(GSgfxLayer* layer, GStexture* texture, GSvec* center, f32 u0, f32 v0, f32 u1, f32 v1, f32 scaleY, f32 angle, f32 progress, f32 opacity) {
+    FadeMtx transform, texMtx, rotation;
+    GSvec point, output, blend;
+    _fadeEffectStartTexture(layer, texture);
+    point.param1 = 1.0f; point.param2 = 1.0f; point.param3 = 1.0f;
+    output.param1 = 0.0f; output.param2 = 0.0f; output.param3 = 0.0f;
+    GSlerpGetLinearInterpolationVector(&blend, &point, &output, opacity);
+    point.param1 = 1.0f; point.param2 = scaleY; point.param3 = 1.0f;
+    f32 baseAlpha = (s32)(255.0f * blend.param1);
+    s32 alpha = (s32)(baseAlpha * (1.0f - progress));
+    f64 dv = scaleY;
+    PSMTXScale(transform, 1.0f, dv, 1.0f);
+    PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
+    PSMTXTrans(texMtx, -0.5f, -0.5f, 0.0f);
+    PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
+    PSMTXConcat(rotation, texMtx, texMtx);
+    PSMTXTransApply(texMtx, texMtx, 0.5f, 0.5f, 0.0f);
+    layer->beginSurface(4);
+    point.param1 = -320.0f; point.param2 = -240.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition3f32(output.param1, output.param2, output.param3);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    point.param1 = u0; point.param2 = v0; point.param3 = 0.0f;
+    PSMTXMultVec(texMtx, &point, &output);
+    GXTexCoord2f32(output.param1, output.param2);
+    point.param1 = 321.0f; point.param2 = -240.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition3f32(output.param1, output.param2, output.param3);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    point.param1 = u1; point.param2 = v0; point.param3 = 0.0f;
+    PSMTXMultVec(texMtx, &point, &output);
+    GXTexCoord2f32(output.param1, output.param2);
+    point.param1 = -320.0f; point.param2 = 241.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition3f32(output.param1, output.param2, output.param3);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    point.param1 = u0; point.param2 = v1; point.param3 = 0.0f;
+    PSMTXMultVec(texMtx, &point, &output);
+    GXTexCoord2f32(output.param1, output.param2);
+    point.param1 = 321.0f; point.param2 = 241.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    GXPosition3f32(output.param1, output.param2, output.param3);
+    GXColor4u8(255, 255, 255, (u8)alpha);
+    point.param1 = u1; point.param2 = v1; point.param3 = 0.0f;
+    PSMTXMultVec(texMtx, &point, &output);
+    GXTexCoord2f32(output.param1, output.param2);
+    layer->endSurface();
+    _fadeEffectEnd(layer);
+}
+
+static void _fadeEffectSnapshotRotate(GSgfxLayer* layer, GStexture* texture, GSvec* center, f32 scale, GSvec* pivot, f32 angle, f32 progress, f32 opacity) {
+    FadeMtx transform, rotation;
+    GSvec blend, point, output;
+    _fadeEffectStartTexture(layer, texture);
+    point.param1 = 1.0f; point.param2 = 1.0f; point.param3 = 1.0f;
+    output.param1 = 0.0f; output.param2 = 0.0f; output.param3 = 0.0f;
+    GSlerpGetLinearInterpolationVector(&blend, &point, &output, opacity);
+    point.param1 = scale; point.param2 = scale; point.param3 = scale;
+    f32 baseAlpha = (s32)(255.0f * blend.param1);
+    s32 alpha = (s32)(baseAlpha * (1.0f - progress));
+    f64 dv = scale;
+    PSMTXScale(transform, dv, dv, dv);
+    PSMTXTransApply(transform, transform, -pivot->param1, -pivot->param2, 0.0f);
+    PSMTXRotRad(rotation, 'Z', 0.017453292f * angle);
+    PSMTXConcat(rotation, transform, transform);
+    PSMTXTransApply(transform, transform, center->param1, center->param2, center->param3);
+    layer->beginSurface(4);
+    point.param1 = -320.0f; point.param2 = -240.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    {
+        f32 u = 0.0f; f32 v = 0.0f;
+        GXPosition3f32(output.param1, output.param2, output.param3);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(u, v);
+    }
+    point.param1 = 321.0f; point.param2 = -240.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    {
+        f32 u = 1.0f; f32 v = 0.0f;
+        GXPosition3f32(output.param1, output.param2, output.param3);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(u, v);
+    }
+    point.param1 = -320.0f; point.param2 = 241.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    {
+        f32 u = 0.0f; f32 v = 1.0f;
+        GXPosition3f32(output.param1, output.param2, output.param3);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(u, v);
+    }
+    point.param1 = 321.0f; point.param2 = 241.0f; point.param3 = 0.0f;
+    PSMTXMultVec(transform, &point, &output);
+    {
+        f32 u = 1.0f; f32 v = 1.0f;
+        GXPosition3f32(output.param1, output.param2, output.param3);
+        GXColor4u8(255, 255, 255, (u8)alpha);
+        GXTexCoord2f32(u, v);
+    }
+    layer->endSurface();
+    _fadeEffectEnd(layer);
+}
+
 static void _fadeEffectMaskFunction(GSgfxLayer* layer, f32 amount) {
     _fadeEffectStartSprites(layer);
     s32 alpha = 255 - (s32)(255.0f * amount);
@@ -2099,6 +2706,118 @@ static void _fadeVirtualHexaDecayInit() {
         GSgfxVFSetElement(_fadeHexaNoiseVF, 14, 1, 4, 0);
     }
 }
+bool fadeEffectHookFunction_distortion_yoko(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GSgfxLayer* layer;
+    GStexture* texture;
+    layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    texture = (GStexture*)opaque;
+    if (!texture) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeDistortionInit();
+        _fadeEffectWork.rotation = 0.0f;
+        s32 rand0 = HSD_Rand();
+        s32 hi0 = HSD_Rand();
+        if ((u32)(((hi0 << 0x10) | rand0) & 1) == 0) {
+            _fadeEffectWork.rotationStep = 0.4f;
+            _fadeEffectWork.distanceStep = 128.0f;
+        } else {
+            _fadeEffectWork.rotationStep = -0.4f;
+            _fadeEffectWork.distanceStep = -128.0f;
+        }
+        s32 rand1 = HSD_Rand();
+        s32 hi1 = HSD_Rand();
+        s32 dir;
+        if ((u32)(((hi1 << 0x10) | rand1) & 1) != 0) {
+            dir = 2;
+        } else {
+            dir = 1;
+        }
+        _fadeEffectWork.direction = (u16)dir;
+        s32 rand2 = HSD_Rand();
+        s32 hi2 = HSD_Rand();
+        s32 st;
+        if ((u32)(((hi2 << 0x10) | rand2) & 1) != 0) {
+            st = 1;
+        } else {
+            st = 0;
+        }
+        _fadeEffectWork.state = (u16)st;
+        GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) {
+        _fadeDistortionQuit();
+        GSgfxEndBackFBCapture(texture);
+        return active;
+    }
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) {
+        f32 pos = _fadeEffectWork.rotation + _fadeEffectWork.rotationStep;
+        f32 step = _fadeEffectWork.rotationStep;
+        ++_fadeEffectWork.frame;
+        _fadeEffectWork.rotation = pos;
+        if (step >= 0.0f) {
+            _fadeEffectWork.rotationStep = 0.5f * progress + step;
+            if (pos >= _fadeEffectWork.distanceStep) _fadeEffectWork.rotation = _fadeEffectWork.distanceStep;
+        } else {
+            _fadeEffectWork.rotationStep = -(0.5f * progress - step);
+            if (pos <= _fadeEffectWork.distanceStep) _fadeEffectWork.rotation = _fadeEffectWork.distanceStep;
+        }
+        _fadeDistortionDoAverage(10);
+        GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
+    } else {
+        GSgfxEndBackFBCapture(texture);
+    }
+    _fadeEffectMaskFunction(layer, progress);
+    FADE_LAYER_SETUP
+    layer->field1998 = 0x98;
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
+    FADE_LAYER_BIND_TEXTURE(texture)
+    int columns = _fadeDistortionWork.columns;
+    int rows = _fadeDistortionWork.rows;
+    FadeGridPoint* points = _fadeDistortionWork.points;
+    FadeUV* uv = _fadeDistortionWork.uv;
+    if (!points || !uv) return false;
+    int count = columns * 2;
+    s32 alpha = (s32)(255.0f * (1.0f - fadeSqrt(progress)));
+    for (int x = 1; x < rows; ++x) {
+        layer->beginSurface(count);
+        for (int y = 0; y < columns; ++y) {
+            int index = x * columns + y;
+            GXPosition3s16(points[index].x, points[index].y, 0);
+            GXColor4u8(255, 255, 255, alpha);
+            GXTexCoord2f32(uv[index].u, uv[index].v);
+            index = (x - 1) * columns + y;
+            GXPosition3s16(points[index].x, points[index].y, 0);
+            GXColor4u8(255, 255, 255, alpha);
+            GXTexCoord2f32(uv[index].u, uv[index].v);
+        }
+        layer->endSurface();
+    }
+    GSvec center;
+    switch (_fadeEffectWork.direction) {
+    case 1:
+    case 2:
+        center.param2 = 240.0f;
+        center.param1 = 320.0f + _fadeEffectWork.rotation;
+        break;
+    case 3:
+        break;
+    case 4:
+    case 8:
+        center.param1 = 320.0f;
+        center.param2 = 240.0f + _fadeEffectWork.rotation;
+        break;
+    }
+    center.param3 = 0.0f;
+    f32 sign = _fadeEffectWork.state != 0 ? 3.0f : -3.0f;
+    f32 remaining = 1.0f - progress;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, sign * (remaining * (1.0f - progressSecond)), progress, 0.5f);
+    return active;
+}
+
 bool fadeEffectHookFunction_distortion_strip_yoko(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32, f32, void* opaque) {
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (!layer) return active;
@@ -2413,6 +3132,78 @@ static void _fadeVirtualHexaDecayLineUpdate() {
     }
 }
 
+bool fadeEffectHookFunction_ball_second(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GSgfxLayer* layer;
+    s32 alpha;
+    GStexture* texture;
+    layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    texture = (GStexture*)opaque;
+    if (!texture) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeEffectBallSecondInit();
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) {
+        _fadeEffectBallSecondQuit();
+        return active;
+    }
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) {
+        f32 distance = _fadeEffectWork.rotation + _fadeEffectWork.rotationStep;
+        f32 limit = _fadeEffectWork.distanceStep;
+        ++_fadeEffectWork.frame;
+        _fadeEffectWork.rotation = distance;
+        if (distance >= limit) _fadeEffectWork.rotation = limit;
+    }
+    _fadeEffectMaskFunction(layer, progress);
+    GSvec center;
+    center.param1 = 320.0f;
+    center.param2 = 240.0f;
+    center.param3 = 0.0f;
+    progressSecond = progressSecond * progressSecond;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, 0.0f, progress, progressSecond);
+    _fadeEffectStartTexture(layer, _fadeEffectWork.ballTexture);
+    f32 movement[2], rotation[2];
+    movement[0] = _fadeEffectWork.rotation;
+    rotation[0] = 360.0f * (_fadeEffectWork.rotation / 471.23892f);
+    movement[1] = -_fadeEffectWork.rotation;
+    rotation[1] = -rotation[0];
+    f32 x;
+    for (int side = 0; side < 2; ++side) {
+        FADE_EFFECT_BALL* balls = _fadeEffectBall[side];
+        for (int i = 11; i > 0; --i) {
+            FADE_EFFECT_BALL* ball = balls + i;
+            if (timeGetLastFrameTime() != 0 && (_fadeEffectWork.frame & 3) == 0) {
+                ball->position.param1 = ball[-1].position.param1;
+                ball->position.param2 = ball[-1].position.param2;
+                ball->position.param3 = ball[-1].position.param3;
+                ball->rotation = ball[-1].rotation;
+            }
+            if (!(x > 790.0f) && !(x < -150.0f)) {
+                alpha = (s32)((1.0f - progress) * ball->alpha);
+                _dispball(layer, &ball->position, 0.5f, ball->rotation, alpha);
+            }
+        }
+        f32 angle = balls->rotation + rotation[side];
+        if (angle <= 0.0f) angle += 360.0f;
+        else if (angle >= 360.0f) angle -= 360.0f;
+        if (timeGetLastFrameTime() != 0) balls->rotation = angle;
+        x = balls->position.param1 + movement[side];
+        if (timeGetLastFrameTime() != 0) balls->position.param1 = x;
+        if (!(x > 790.0f) && !(x < -150.0f)) {
+            f32 y = balls->position.param2 - movement[side];
+            if (y > 405.0f) y = 405.0f;
+            else if (y < 75.0f) y = 75.0f;
+            balls->position.param2 = y;
+            _dispball(layer, &balls->position, 0.5f, balls->rotation, alpha);
+        }
+    }
+    _fadeEffectEnd(layer);
+    return active;
+}
+
 bool fadeEffectHookFunction_ball(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (!layer) return active;
@@ -2472,6 +3263,141 @@ bool fadeEffectHookFunction_ball(GSgfxLayerID id, bool active, f32 elapsed, f32 
     }
     _fadeEffectEnd(layer);
     return active;
+}
+
+bool fadeEffectHookFunction_four_ball(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GSgfxLayer* layer;
+    GStexture* texture;
+    GSvec center;
+    layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    texture = (GStexture*)opaque;
+    if (!texture) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeEffectFourBallInit();
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) return active;
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) {
+        f32 distance = _fadeEffectWork.rotation + _fadeEffectWork.rotationStep;
+        f32 limit = _fadeEffectWork.distanceStep;
+        ++_fadeEffectWork.frame;
+        _fadeEffectWork.rotation = distance;
+        if (distance >= limit) _fadeEffectWork.rotation = limit;
+    }
+    _fadeEffectMaskFunction(layer, progress);
+    center.param1 = 320.0f;
+    center.param2 = 240.0f;
+    center.param3 = 0.0f;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, 0.0f, progress, progressSecond);
+    _fadeEffectStartTexture(layer, _fadeEffectWork.ballTexture);
+    f32 opacity = 1.0f - progress;
+    f32 movement[2], rotation[2];
+    movement[0] = _fadeEffectWork.rotation;
+    rotation[0] = 360.0f * (_fadeEffectWork.rotation / 408.40704f);
+    movement[1] = -_fadeEffectWork.rotation;
+    rotation[1] = -rotation[0];
+    for (int side = 0; side < 2; ++side) {
+        FADE_EFFECT_BALL* balls = _fadeEffectBall[side];
+        for (int i = 11; i > 0; --i) {
+            FADE_EFFECT_BALL* ball = balls + i;
+            if (timeGetLastFrameTime() != 0 && (_fadeEffectWork.frame % 3) == 0) {
+                ball->position.param1 = ball[-1].position.param1;
+                ball->position.param2 = ball[-1].position.param2;
+                ball->position.param3 = ball[-1].position.param3;
+                ball->rotation = ball[-1].rotation;
+            }
+            f32 x = ball->position.param1;
+            if (!(x > 770.0f) && !(x < -130.0f)) {
+                center.param1 = x;
+                f32 a = ball->alpha;
+                center.param2 = ball->position.param2;
+                f32 scaled = opacity * a;
+                center.param3 = ball->position.param3;
+                s32 alpha = (s32)scaled;
+                _disp_four_ball(layer, &center, 1.0f, ball->rotation, alpha);
+                center.param2 += 235.0f;
+                _disp_four_ball(layer, &center, 1.0f, ball->rotation, alpha);
+            }
+        }
+        f32 angle = balls->rotation;
+        if (timeGetLastFrameTime() != 0) {
+            angle += rotation[side];
+            if (angle <= 0.0f) angle += 360.0f;
+            else if (angle >= 360.0f) angle -= 360.0f;
+            balls->rotation = angle;
+        }
+        f32 x = balls->position.param1;
+        if (timeGetLastFrameTime() != 0) {
+            x += movement[side];
+            balls->position.param1 = x;
+        }
+        if (!(x > 770.0f) && !(x < -130.0f)) {
+            center.param1 = balls->position.param1;
+            center.param2 = balls->position.param2;
+            center.param3 = balls->position.param3;
+            _disp_four_ball(layer, &center, 1.0f, balls->rotation, (s32)(255.0f * opacity));
+            center.param2 += 235.0f;
+            _disp_four_ball(layer, &center, 1.0f, balls->rotation, (s32)(255.0f * opacity));
+        }
+    }
+    _fadeEffectEnd(layer);
+    return active;
+}
+
+bool fadeEffectHookFunction_blur_ball(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    GSgfxLayer* layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    if (!opaque) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeBlurBallInit();
+        GSgfxBeginBackFBCapture((GStexture*)opaque, _myBackFB, 0);
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) {
+        _fadeBlurBallQuit();
+        GSgfxEndBackFBCapture((GStexture*)opaque);
+        return active;
+    }
+    f32 tilt;
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) {
+        tilt = 4.0f * progressSecond;
+        ++_fadeEffectWork.frame;
+        if (_fadeEffectWork.direction == 0) tilt *= -1.0f;
+        GSgfxBeginBackFBCapture((GStexture*)opaque, _myBackFB, 0);
+    } else {
+        GSgfxEndBackFBCapture((GStexture*)opaque);
+    }
+    GSvec center;
+    center.param1 = 320.0f;
+    center.param2 = 240.0f;
+    center.param3 = 0.0f;
+    _fadeEffectSnapshotTex(layer, (GStexture*)opaque, &center, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, tilt, progress, 0.0f);
+    FADE_LAYER_SETUP
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(1, 4, 0, 0, 1, 5, 1, 1, 4));
+    GStexture* ballTex = _fadeEffectWork.ballTexture;
+    FADE_LAYER_BIND_TEXTURE(ballTex)
+    s32 alpha = (s32)(0.5f * (255.0f * (1.0f - progress)));
+    f32 dist = 1.4f * (640.0f * progressSecond);
+    layer->field1998 = 0x98;
+    f32 angle = (360.0f * dist) / 376.99112f;
+    if (dist > 753.98224f) dist = 753.98224f;
+    if (dist > 580.0f) dist = 580.0f;
+    center.param1 = 640.0f - dist;
+    center.param2 = _fadeEffectWork.direction == 0 ? 72.0f : 408.0f;
+    f32 x2 = 320.0f + center.param1;
+    if (x2 > 640.0f) x2 = 640.0f;
+    _disp_blur_ball(layer, &center, x2, -angle, alpha);
+    center.param1 = dist;
+    center.param2 = _fadeEffectWork.direction != 0 ? 72.0f : 408.0f;
+    f32 x3 = center.param1 - 320.0f;
+    if (x3 < 0.0f) x3 = 0.0f;
+    _disp_blur_ball(layer, &center, x3, angle, alpha);
+    return true;
 }
 
 static void _disp_dist_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 angle, int alpha) {
@@ -2552,11 +3478,10 @@ static void _disp_blur_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 ang
     layer->beginSurface(4);
     f32 ext = 60.0f; f32 half = 0.5f; f32 zero = 0.0f; f32 one = 1.0f;
     GXPosition3f32(center->param1, center->param2 - ext, center->param3);
-    u8 trailAlpha = alpha / 5;
-    GXColor4u8(255, 255, 255, trailAlpha);
+    GXColor4u8(255, 255, 255, (u8)(alpha / 5));
     GXTexCoord2f32(half, zero);
     GXPosition3f32(center->param1, ext + center->param2, center->param3);
-    GXColor4u8(255, 255, 255, trailAlpha);
+    GXColor4u8(255, 255, 255, (u8)(alpha / 5));
     GXTexCoord2f32(half, one);
     GXPosition3f32(scale, center->param2 - ext, center->param3);
     GXColor4u8(255, 255, 255, 0);
@@ -2607,6 +3532,106 @@ static void _disp_blur_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 ang
         GXTexCoord2f32(u, v);
     }
     layer->endSurface();
+}
+
+bool fadeEffectHookFunction_distortion_zoom(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque, bool zoomOut) {
+    GSgfxLayer* layer;
+    GStexture* texture;
+    layer = GSgfxLayerFindByID(id);
+    if (!layer) return active;
+    texture = (GStexture*)opaque;
+    if (!texture) return active;
+    if (_fadeEffectFirstFlag == 1) {
+        _fadeEffectFirstFlag = 0;
+        _fadeDistortionInit();
+        s32 lo0 = HSD_Rand();
+        s32 hi0 = HSD_Rand();
+        _fadeEffectWork.direction = ((hi0 << 0x10) | lo0) & 1;
+        s32 lo1 = HSD_Rand();
+        s32 hi1 = HSD_Rand();
+        _fadeEffectWork.state = ((hi1 << 0x10) | lo1) & 3;
+        GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
+    }
+    if (_fadeEffectFirstFlag == 0 && !active) {
+        _fadeDistortionQuit();
+        GSgfxEndBackFBCapture(texture);
+        return active;
+    }
+    f32 progress = elapsed / duration;
+    f32 progressSecond = elapsedSecond / durationSecond;
+    if (timeGetLastFrameTime() != 0) {
+        _fadeEffectWork.frame++;
+        GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
+    } else {
+        GSgfxEndBackFBCapture(texture);
+    }
+    _fadeEffectMaskFunction(layer, progress);
+    if (timeGetLastFrameTime() != 0) _fadeDistortionDoSecond(10, true);
+    FADE_LAYER_SETUP
+    layer->field1998 = 0x98;
+    layer->setRenderStateAndSelect(GSgfxVFBuildTemp(1, 3, 0, 0, 1, 5, 1, 1, 4));
+    FADE_LAYER_BIND_TEXTURE(texture)
+    int columns = _fadeDistortionWork.columns;
+    int rows = _fadeDistortionWork.rows;
+    FadeGridPoint* points = _fadeDistortionWork.points;
+    FadeUV* uv = _fadeDistortionWork.uv;
+    if (!points || !uv) return false;
+    int count = columns * 2;
+    s8 alpha = (s32)(255.0f * (1.0f - progress));
+    for (int x = 1; x < rows; ++x) {
+        layer->beginSurface(count);
+        for (int y = 0; y < columns; ++y) {
+            int index = x * columns + y;
+            GXPosition3s16(points[index].x, points[index].y, 0);
+            GXColor4u8(255, 255, 255, alpha);
+            GXTexCoord2f32(uv[index].u, uv[index].v);
+            index = (x - 1) * columns + y;
+            GXPosition3s16(points[index].x, points[index].y, 0);
+            GXColor4u8(255, 255, 255, alpha);
+            GXTexCoord2f32(uv[index].u, uv[index].v);
+        }
+        layer->endSurface();
+    }
+    f32 stepX = 320.0f / (f32)_fadeDistortionWork.columns;
+    GSvec center;
+    center.param1 = 320.0f;
+    center.param2 = 240.0f;
+    center.param3 = 0.0f;
+    f32 stepY = 240.0f / (f32)_fadeDistortionWork.rows;
+    if (zoomOut) {
+        if (_fadeEffectWork.state % 2 == 0) stepX = -stepX;
+        center.param1 += stepX;
+        if (_fadeEffectWork.state <= 1) stepY = -stepY;
+        center.param2 += stepY;
+        f32 angle = _fadeEffectWork.direction != 0 ? 4.0f : -4.0f;
+        if (progressSecond < 0.99999f) {
+            _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f - 0.4f * (progressSecond * progressSecond), angle, progress, 0.4f * progressSecond + 0.6f);
+        }
+        if (progress > 0.00001f) {
+            center.param1 = 320.0f;
+            center.param2 = 240.0f;
+            _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.01f, 0.0f, progress, 0.8f);
+        }
+    } else {
+        if (_fadeEffectWork.state % 2 == 0) stepX = -stepX;
+        center.param1 += stepX;
+        if (_fadeEffectWork.state <= 1) stepY = -stepY;
+        center.param2 += stepY;
+        f32 angle = _fadeEffectWork.direction != 0 ? 3.0f : -3.0f;
+        if (progressSecond < 0.99999f) {
+            GSvec pivot;
+            pivot.param1 = center.param1 - 320.0f;
+            pivot.param3 = 0.0f;
+            pivot.param2 = center.param2 - 240.0f;
+            _fadeEffectSnapshotRotate(layer, texture, &center, 1.0f + 0.4f * (progressSecond * progressSecond), &pivot, angle, progress, 0.5f * progressSecond + 0.5f);
+        }
+        if (progress > 0.00001f) {
+            center.param1 = 320.0f;
+            center.param2 = 240.0f;
+            _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.01f, 0.0f, progress, 0.8f);
+        }
+    }
+    return active;
 }
 
 extern bool fadeEffectHookFunction_distortion_zoom(GSgfxLayerID, bool, f32, f32, f32, f32, void*, bool);

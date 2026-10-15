@@ -63,7 +63,7 @@ extern "C" void peBankRender(ParticleBankState* bank) {
     if (!(bank->flags & 1)) return;
     if (!(bank->flags & 4)) return;
     if (!(bank->flags & 8)) return;
-    s32 kind = g_current_layer->kind;
+    u32 kind = g_current_layer->kind;
     u32 mask = 1 << kind;
     if (g_render_pass == 1) mask <<= 16;
     if (bank->rendered & mask) return;
@@ -93,6 +93,10 @@ void GStextureFree(void*);
 u32 shapeGetUsedMemorySize(u16);
 void shapeRelease(u16);
 }
+static inline _particleData* _peBankData(_gpdHeader* header) {
+    _gpdResourceItem* items = (_gpdResourceItem*)(header + 1);
+    return (_particleData*)(items + header->count);
+}
 static void _peFreeInternalBankData(_particleData* data) {
     void* object = data->data;
     if (object) {
@@ -107,10 +111,8 @@ static void _peFreeInternalBankData(_particleData* data) {
         }
         case 2: {
             BankModel* model = (BankModel*)object;
-            if (model && !(model->flags & 0x40)) {
-                if (!model->model) return;
-                HSD_JObjUnref(model->model);
-            }
+            if (!model || (model->flags & 0x40) || !model->model) return;
+            HSD_JObjUnref(model->model);
             break;
         }
         case 4: {
@@ -133,14 +135,80 @@ static void _peFreeInternalBankData(_particleData* data) {
     }
 }
 
+extern "C" {
+void GSboundCreate(void*, void*);
+u8 GSgfxVideoGetVsyncRate();
+void* memset(void*, int, u32);
+u32 GSmemGetSize(void*);
+extern ParticleBankState* g_particleBanks;
+}
+extern u16 _peBankCalculateMaxParticles(_particleData*, f32);
+extern "C" ParticleBankState* peBankCreate(_gpdHeader* file) {
+    if (!file) return 0;
+    ParticleBankState* bank = new ParticleBankState;
+    if (!bank) return 0;
+    u32 size = GSmemGetSize(bank);
+    g_particle_debug_stats[1] += size;
+    g_particle_debug_stats[5] += size;
+    GSboundCreate(bank->bound, 0);
+    _particleData* data = (_particleData*)((_gpdResourceItem*)(file + 1) + file->count);
+    bank->file = (ParticleBankFile*)file;
+    file->references++;
+    memset(&bank->node, 0, sizeof(peEmitterNode));
+    bank->data = (ParticleBankFile*)data;
+    bank->transform[0] = 0.0f;
+    bank->transform[1] = 0.0f;
+    bank->transform[2] = 0.0f;
+    bank->transform[3] = 0.0f;
+    bank->transform[4] = 0.0f;
+    bank->transform[5] = 0.0f;
+    bank->transform[6] = 1.0f;
+    bank->transform[7] = 1.0f;
+    bank->transform[8] = 1.0f;
+    bank->transform[9] = 1.0f;
+    bank->flags = 0;
+    bank->rendered = 0;
+    bank->token = 0;
+    bank->camera = 0;
+    ParticleBankState* last = g_particleBanks;
+    if (last) {
+        while (last->next) last = last->next;
+        last->next = bank;
+    } else g_particleBanks = bank;
+    bank->next = 0;
+    g_currentBank = bank;
+    bank->node.transformParent = bank->transform;
+    bank->node.Init((_peEmitter*)data->data);
+    bank->maxParams = _peBankCalculateMaxParticles(data, 1.0f / GSgfxVideoGetVsyncRate());
+    if (bank && bank->maxParams > g_maxEmitParams) {
+        _EmitParams* old = g_emitParams;
+        if (old) {
+            u32 previous = g_particle_debug_stats[0];
+            g_particle_debug_stats[0] = 0;
+            g_particle_debug_stats[5] -= previous;
+            delete[] old;
+        }
+        g_emitParamsBank = bank;
+        g_maxEmitParams = (bank->maxParams + 9) / 10 * 10;
+        u16 count = g_maxEmitParams;
+        g_emitParams = new _EmitParams[count];
+        u32 bytes = g_maxEmitParams * sizeof(_EmitParams);
+        g_particle_debug_stats[0] += bytes;
+        g_particle_debug_stats[5] += bytes;
+    }
+    return bank;
+}
+
 extern "C" void peBankFreeFile(_gpdHeader* file) {
     if (file->magic == 0x01f056da) {
-        switch(file->version - 0x30000) {
+        u32 version = file->version - 0x30000;
+        switch(version) {
         case 2:
             if (file->references == 0) {
-                _peFreeInternalBankData((_particleData*)((u8*)(file + 1) + file->count * 12));
-                u32 remaining = file->count;
+                _peFreeInternalBankData(_peBankData(file));
                 _gpdResourceItem* resource = (_gpdResourceItem*)(file + 1);
+                u32 remaining = file->count;
+                u32* stats = g_particle_debug_stats;
                 while (remaining) {
                     if ((resource->flags & 0x40) == 0x40) {
                         switch(resource->kind) {
@@ -148,15 +216,16 @@ extern "C" void peBankFreeFile(_gpdHeader* file) {
                         case 3: {
                             u16 shape = (u32)resource->data - 1;
                             u32 size = shapeGetUsedMemorySize(shape);
-                            g_particle_debug_stats[4] -= size;
-                            g_particle_debug_stats[5] -= size;
+                            stats[4] -= size;
+                            stats[5] -= size;
                             shapeRelease(shape);
                             break;
                         }
                         case 2: {
                             u32* textures = (u32*)resource->data;
+                            u32 i = 0;
                             u32 count = *textures++;
-                            for(u32 i = 0; i < count; ++i, ++textures) {
+                            for(; i < count; ++i, ++textures) {
                                 if (*textures) GStextureFree((void*)*textures);
                             }
                             break;
@@ -171,10 +240,31 @@ extern "C" void peBankFreeFile(_gpdHeader* file) {
     }
 }
 extern bool _peConvertFileData(_gpdHeader*,_gpdResourceItem*,_particleData*,const char*);
-extern "C" _gpdHeader* peBankLoadFile(_gpdHeader* file) {
+extern "C" _gpdHeader* peBankLoadFile(_gpdHeader* source) {
+    _gpdHeader* file = source;
     _gpdResourceItem* items = (_gpdResourceItem*)(file + 1);
-    if (_peConvertFileData(file,items,(_particleData*)(items+file->count),(const char*)file)) return file;
+    if (_peConvertFileData(source,items,(_particleData*)(items+file->count),(const char*)file)) return file;
     return 0;
+}
+
+extern "C" u8 peBankStart(ParticleBankState* bank) {
+    static _EmitParams params;
+    if (!bank) return 0;
+    params.time = 1.0f;
+    peBankStop(bank);
+    g_currentBank = bank;
+    g_currentBound = 0;
+    _peEmitter* emitter = bank->data->emitter;
+    bank->flags = 5;
+    if (emitter->flags & 0x20000) {
+        bank->flags |= 0x10;
+        g_currentBound = bank->bound;
+        GSboundReset(g_currentBound);
+        GSboundAlwaysInView(g_currentBound, 0);
+    }
+    bank->node.Start(0, bank->data->emitter, &params);
+    bank->token = 0;
+    return 1;
 }
 
 extern "C" {
@@ -195,11 +285,12 @@ extern "C" void peBankFree(ParticleBankState* bank) {
         bank->node.Release();
         --bank->file->references;
         GSboundFree(bank->bound);
-        if (bank && g_maxEmitParams && g_emitParamsBank == bank) {
+        if (bank && g_maxEmitParams && bank == g_emitParamsBank) {
+            _EmitParams* old = g_emitParams;
             u32 previous = g_particle_debug_stats[0];
             g_particle_debug_stats[0] = 0;
             g_particle_debug_stats[5] -= previous;
-            delete[] g_emitParams;
+            delete[] old;
             g_emitParams = 0;
             g_emitParamsBank = 0;
             g_maxEmitParams = 0;

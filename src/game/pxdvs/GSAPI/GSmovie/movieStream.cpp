@@ -176,3 +176,57 @@ extern "C" u8 _StreamInitFillStreamBuffer(__GSmovieStreaming* movie) {
     movie->reserved1a=1;
     return 1;
 }
+
+extern "C" u8 GSfsysStreamGetData(u32,u32,void*,u32,u32,void(*)(s32,void*,s32),void*,s32);
+static inline void _advanceStream(__GSmovieStreaming* movie,u32 size) {
+    MovieDecoder* decoder=movie->decoder;
+    decoder->streamOffset+=0x8000;
+    if(decoder->preload) {
+        if(decoder->streamOffset>=decoder->movieBytes) decoder->streamOffset=0;
+    } else if(decoder->streamOffset>=decoder->movieBytes) decoder->streamOffset=0;
+    else if(decoder->streamOffset>=GSfsysStreamGetCacheSize()) decoder->streamOffset=0;
+    _movieStreamPrepareGetDataCallback_Exec(movie,0,size);
+}
+extern "C" void _movieStreamPrepareGetData(__GSmovieStreaming* movie) {
+    MovieDecoder* decoder;
+    s32 state;
+    u32 size;
+    s32 interrupts;
+    MovieDecoder* first=movie->decoder;
+    interrupts=OSDisableInterrupts();
+    switch(movie->state) {
+    case 0:case 1:case 2:case 3:case 4:case 5:case 6:case 10:case 11:
+        break;
+    default:
+        if(!first->reads[first->readWrite].valid) {
+            size=first->fetchSize;
+            if(size) {
+                decoder=movie->decoder;
+                state=decoder->fetchState;
+                switch(state) {
+                case 1:
+                    decoder->fetchState=2;
+                    u8* buffer=decoder->streamBuffer;
+                    u32 offset=decoder->streamOffset;
+                    if(!(decoder->loop&1) && decoder->fetchPos+decoder->currentFrame>=decoder->frames) {
+                        memset(buffer,0,0x8000);
+                        _advanceStream(movie,size);
+                    } else if(decoder->preload) {
+                        memcpy(buffer,decoder->preloadBuffer+offset,0x8000);
+                        _advanceStream(movie,size);
+                    } else if(!GSfsysStreamGetData(movie->handle,0,buffer,0x8000,offset,_movieStreamPrepareGetDataCallback,(void*)size,(s32)movie)) {
+                        decoder->fetchState=state;
+                    }
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    _movieStreamPrepareGetDataCallback_Exec(movie,decoder->fetchArg,size);
+                    break;
+                }
+            }
+        }
+        break;
+    }
+    OSRestoreInterrupts(interrupts);
+}

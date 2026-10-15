@@ -74,7 +74,7 @@ void GSmsgPrint2(s32, s32, s32, u32, s32);
 void windowDrawSprite2(s16, s16, s16, s16, u32, tagWINDOW_WORK*, s32, s32, s32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 u8 winSeqCheckMove(s32);
-u8 GSgfxVideoGetVsyncRate(void);
+u32 GSgfxVideoGetVsyncRate(void);
 void floorSetFadeScript(s32, s32);
 void floorWaitForChange(void);
 void fightFreeResourceID(s32, s32);
@@ -546,8 +546,8 @@ static Pokemon* loadPkmFace(void* arg) {
 extern "C" {
 
 s32 menuBdisk_selectL_Btn(tagWINDOW_WORK* win) {
-    s16 scroll;
     u16 key;
+    s16 scroll;
     key = windowGetKeyRepeat();
     gBDisk.unk12 = win->cursor;
     scroll = gBDisk.scroll;
