@@ -8591,10 +8591,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
     u8 bingoPanelType;
     BingoSprite sp98;
     BingoSprite sp20;
-    f32 sp1C;
-    f32 sp18;
-    f32 sp14;
-    f32 sp10;
+    f32 facePositionA[2];
+    f32 facePositionB[2];
     s32 sp8;
     f32 temp_f2;
     f32 temp_f31;
@@ -8698,20 +8696,20 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
             return;
         }
         getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]);
-        sp18 = 14.0f;
-        sp1C = 5.0f;
-        temp_r31 = pokemonDataBiosGetStatusFaceMenuSpriteId(getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]));
+        facePositionA[0] = 14.0f;
+        facePositionA[1] = 5.0f;
+        temp_r31 = pokemonDataBiosGetStatusFaceMenuSpriteId(getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]), 0);
         memcpy(&sp98, arg3, 0x78U);
         arg3->unk56 = 0x2A;
         arg3->unk54 = 0x2A;
         if (temp_f31 > 0.0f) {
-            temp_r0 = (s32) sp18 - 0x23;
+            temp_r0 = (s32) facePositionA[0] - 0x23;
             temp_f4 = (f32) fabs((f32) cos((f64) temp_f31));
             temp_r4_2 = (s16) (temp_f4 * (f32) temp_r0);
             arg3->unk54 = (s16) ((temp_f4 * (f32) (s16) (temp_r0 + arg3->unk54)) - (f32) temp_r4_2);
-            sp18 = (f32) (s16) (temp_r4_2 + 0x23);
+            facePositionA[0] = (f32) (s16) (temp_r4_2 + 0x23);
         }
-        menuFaceDispFromID2(arg2, arg3, temp_r31, &sp18);
+        menuFaceDispFromID2(arg2, arg3, temp_r31, &facePositionA[0]);
         memcpy(arg3, &sp98, 0x78U);
         temp_f3_12 = fabs((f32) cos((f64) temp_f31));
         sp8 = temp_r30;
@@ -8731,6 +8729,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
     } else if ((u8) arg0->cells[arg1].unk0 != 0) {
         temp_r3_6 = getGridGrid__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, (u32) arg0->cells[arg1].unk1);
         switch ((s32) temp_r3_6) {                  /* switch 2; irregular */
+        case 0:
+            break;
         case 1:                                     /* switch 2 */
             sp8 = temp_r30;
             windowDrawSprite2(0, 0, 0x46, 0x43, -1U, arg2, 0x281U, 0, sp8);
@@ -8752,13 +8752,13 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
         }
     } else {
         getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]);
-        sp10 = 14.0f;
-        sp14 = 5.0f;
-        temp_r29 = pokemonDataBiosGetStatusFaceMenuSpriteId(getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]));
+        facePositionB[0] = 14.0f;
+        facePositionB[1] = 5.0f;
+        temp_r29 = pokemonDataBiosGetStatusFaceMenuSpriteId(getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]), 0);
         memcpy(&sp20, arg3, 0x78U);
         arg3->unk56 = 0x2A;
         arg3->unk54 = 0x2A;
-        menuFaceDispFromID2(arg2, arg3, temp_r29, &sp10);
+        menuFaceDispFromID2(arg2, arg3, temp_r29, &facePositionB[0]);
         memcpy(arg3, &sp20, 0x78U);
         sp8 = temp_r30;
         windowDrawSprite2(0, 0, 0x46, 0x43, -1U, arg2, 0x280U, 0, sp8);
@@ -9136,7 +9136,7 @@ loop_70:
         temp_r31 = var_r31 + lbl_804EAA00;
         sp14 = 14.0f;
         sp10 = (f32) (temp_r31 + 0xE);
-        temp_r25 = pokemonDataBiosGetStatusFaceMenuSpriteId(getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[var_r28]));
+        temp_r25 = pokemonDataBiosGetStatusFaceMenuSpriteId(getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[var_r28]), 0);
         memcpy(&sp18, arg3, 0x78U);
         arg3->unk56 = 0x2A;
         arg3->unk54 = 0x2A;
@@ -9253,12 +9253,12 @@ noChange:
 
 void makeRandomSheet__6cBingoFv(BingoState *arg0) {
     u8 order[16] = {0,1,2,3,7,11,15,14,13,12,8,4,5,6,10,9};
+    s32 var_r31_2;
     BingoState *var_r31;
+    s32 var_r30;
     f32 temp_f1;
     f32 temp_f28;
     s32 temp_r0_2;
-    s32 var_r30;
-    s32 var_r31_2;
     s32 temp_r3;
     u8 temp_r4;
     u8 temp_r4_2;

@@ -37,7 +37,7 @@ void pcboxAddItem(s32, u16, u16);
 u16 pcboxGetItemCapacity(s32, u16);
 void menuPokemonClose(void);
 s32 menuPokemonOpenItemGive(u8, u8, u16, s32);
-s32 menuPokemonOpenItemUse(s32, s32, u16, s32);
+s32 menuPokemonOpenItemUse(s32, s32, s32, s32);
 void menuOffScreenSetPriority(s32);
 void menuCloseCustom(s32, s32, s32);
 void fadeSet(s32, f32);
@@ -61,9 +61,9 @@ void menuSubCursorAnimeInit(f32 *);
 void menuSubCursorAnimeMain(void);
 void menuSubCursorAnimeStart(void);
 void menuSubCursorAnimeValGet(void *, s32 *);
-void menuSubDrawCursorBack2(s32, s32, s16, s16, u8, s32, s32);
-void windowDrawSpriteCursor(s32, s32, s32, tagWINDOW_WORK *, s32, s32, s32, void *, s32);
-void *fightTrainerBiosGetFightPokemonPtr(s32, u16);
+void menuSubDrawCursorBack2(s32, s32, s32, s16, s16, u8, s32, s32);
+void windowDrawSpriteCursor(s32, s16, s32, tagWINDOW_WORK *, s32, s32, s32, void *, s32);
+void *fightTrainerBiosGetFightPokemonPtr(s32, s32);
 void *fightPokemonGetPokemonPtr(void *);
 Hero *fightTrainerBiosGetHeroPtr(s32);
 void *memset(void *, int, u32);
@@ -105,6 +105,7 @@ void _printItemTaisetsu(GSgfxLayerID, int, int, int, int);
 int _actTukauNormal(int, int, int *);
 int _actMotaseruNormal(int, int, int *);
 int _actSuteruNormal(int, int, int *);
+u8 _getItemDeposit(u16 item);
 
 const SActionMenuItem ActionMenuDouguField[] = {
     { 0x4292, _actTukauNormal, 0, 0 },
@@ -254,14 +255,6 @@ s32 _getItemPrice(int item) {
     return itemDataBiosGetPrice(itemDataBiosGetPtr(item));
 }
 
-u8 _getItemKind(int item) {
-    return itemDataBiosGetKind(itemDataBiosGetPtr(item));
-}
-
-u8 _getItemDeposit(u16 item) {
-    return itemDataBiosGetDeposit(itemDataBiosGetPtr(item));
-}
-
 u32 (*_getUseFunc(u32 item))(u32) {
     u32 data = itemDataBiosGetPtr(item);
     if (Data.mode == 0) {
@@ -334,9 +327,11 @@ namespace {
 u16 _getItemIDFromMenuPos(int tab, int pos) {
     u16 count;
     u32 *ary;
-    int found = -1;
+    int found;
     int i;
-    ary = heroItemGetItemKindToItemAryPtr(Data.hero, TabTbl[tab].kind, &count, 0, 0, 0);
+    Hero *hero = Data.hero;
+    ary = heroItemGetItemKindToItemAryPtr(hero, TabTbl[tab].kind, &count, 0, 0, 0);
+    found = -1;
     for (i = 0; i < count; i++, ary++) {
         if (itemCheckValid(ary) != 0) {
             found++;
@@ -581,12 +576,20 @@ int _swapItemSlot(int kind, int from, int to) {
     return 0;
 }
 
-u8 _openPokemonMenuForGiveItem(u16 item, u8 kind, u8 index) {
+bool _openPokemonMenuForGiveItem(u16 item, u8 kind, u8 index) {
     menuCloseCustom(0x2C, 0, 1);
     Data.pokemonSlot = menuPokemonOpenItemGive(kind, index, item, 0);
     menuOffScreenSetPriority(0);
     menuPokemonClose();
-    return ((u32)Data.pokemonSlot >> 31) ^ 1;
+    return Data.pokemonSlot >= 0;
+}
+
+u8 _getItemKind(int item) {
+    return itemDataBiosGetKind(itemDataBiosGetPtr(item));
+}
+
+u8 _getItemDeposit(u16 item) {
+    return itemDataBiosGetDeposit(itemDataBiosGetPtr(item));
 }
 
 int _actSuteruNormal(int tab, int index, int *dec) {
@@ -630,7 +633,8 @@ int _actMotaseruNormal(int tab, int index, int *dec) {
         *dec = 0;
         return 0;
     }
-    if (_openPokemonMenuForGiveItem(item, _getItemKind(item), index) == 0) {
+    u8 kind = _getItemKind(item);
+    if (_openPokemonMenuForGiveItem(item, kind, index) == 0) {
         return 1;
     }
     *dec = 0;
@@ -677,6 +681,7 @@ int _execActionMenu(int tab, u16 item, int index, u16 *used) {
     int sel;
     int result;
     u16 cologne;
+    u32 id;
     int (*func)(u16, int *);
     *used = 0;
     if (Data.mode == 0) {
@@ -688,16 +693,17 @@ int _execActionMenu(int tab, u16 item, int index, u16 *used) {
         if (item == 0x200) {
             _setExplanationMsgID(0x3AB8);
             cologne = menuPocketCologne(-1);
-            if (cologne == 0) {
+            id = cologne;
+            if (id == 0) {
                 return 1;
             }
             *used = cologne;
-            func = (int (*)(u16, int *))_getUseFunc(cologne);
+            func = (int (*)(u16, int *))_getUseFunc(id);
             if (func == 0) {
                 _infoBeep(0xC374);
                 return 0;
             }
-            if (func(cologne, &dec) == 2) {
+            if (func(id, &dec) == 2) {
                 if (dec > 0) {
                     _decItem(cologne, 6, -1, dec);
                 }
@@ -1018,9 +1024,9 @@ const MenuPocket2NumEntry MenuPocket2Num[4] = {
     { 0x31, NumPriceWinItem3, 3 }
 };
 
-int _actionMenuLineHeight(tagWINDOW_WORK *win);
-
 }
+
+int _actionMenuLineHeight(tagWINDOW_WORK *win);
 
 struct PocketNumArg {
     s32 menu;
@@ -1040,8 +1046,7 @@ s32 menuPocket2PrintExplanation(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
     cursorBiosGetPos(TabTbl[win->selected].cursorId);
     msg = Data.msg;
     if (msg != 0) {
-        winSpriteGetLayerID(win, spr);
-        GSmsgPrint2(0, 0, 0, -1, msg);
+        GSmsgPrint2(winSpriteGetLayerID(win, spr), 0, 0, -1, msg);
     }
     return 0;
 }
@@ -1051,8 +1056,8 @@ void menuPocket2GetHero(Hero **hero, s32 *fightId) {
     *fightId = Data.fightId;
 }
 
-void menuPocket2GetCurrentTemochiPokemonSlotID(void) {
-    Data.pokemonSlot = Data.pokemonSlot2;
+s32 menuPocket2GetCurrentTemochiPokemonSlotID(void) {
+    return Data.pokemonSlot = Data.pokemonSlot2;
 }
 
 void menuPocket2GetTemochiPokemon(u16 slot, void **pokemon, void **fight) {
@@ -1098,8 +1103,7 @@ s32 menuPocket2PrintPrice(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
     }
     msgctrlSetValue(0x50, price * Data.num);
     w = GSmsgGetRect(0x434F) >> 16;
-    winSpriteGetLayerID(win, spr);
-    GSmsgPrint2(0, spr->width - w, 0, -1, 0x434F);
+    GSmsgPrint2(winSpriteGetLayerID(win, spr), spr->width - w, 0, -1, 0x434F);
     return 0;
 }
 
@@ -1177,14 +1181,13 @@ s32 menuPocket2DrawXHelp(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
 
 s32 menuPocket2PrintMoney(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
     s16 w;
-    u16 money = _getMoney();
+    s32 money = _getMoney();
     if (Data.mode != 3) {
         return 0;
     }
     msgctrlSetValue(0x50, money);
     w = GSmsgGetRect(0x434E) >> 16;
-    winSpriteGetLayerID(win, spr);
-    GSmsgPrint2(0, spr->width - w, 0, -1, 0x434E);
+    GSmsgPrint2(winSpriteGetLayerID(win, spr), spr->width - w, 0, -1, 0x434E);
     return 0;
 }
 
@@ -1206,9 +1209,278 @@ s32 menuPocket2DrawMoney(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
     return 0;
 }
 
+s32 menuPocket2PrintNumMenu(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    u32 i;
+    s32 idx;
+    s32 div;
+    s32 j;
+    const s32 *p;
+    s32 *arg = (s32 *)win->parameters[0];
+    s32 menu = arg[0];
+    for (i = 0; i < 4; i++) {
+        if (menu == MenuPocket2Num[i].menu) {
+            break;
+        }
+    }
+    if (i >= 4) {
+        return 0;
+    }
+    p = MenuPocket2Num[i].items;
+    for (idx = 0; idx < MenuPocket2Num[i].count; idx++) {
+        if ((s16)spr->id == *p) {
+            break;
+        }
+        p += 3;
+    }
+    if (idx >= MenuPocket2Num[i].count) {
+        return 0;
+    }
+    div = 1;
+    for (j = 0; j < MenuPocket2Num[i].count - idx - 1; j++) {
+        div *= 10;
+    }
+    msgctrlSetValue(0x34, (Data.num / div) % 10);
+    GSmsgPrintRight(winSpriteGetLayerID(win, spr), 0, 0, spr->width, spr->height, -1, 0x4270);
+    return 0;
+}
+
+s32 menuPocket2PrintItemKind(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    MENU_ITEM_dd_ *area;
+    MENU_ITEM_dd_ *self;
+    s16 w;
+    s32 msg;
+    s32 half;
+    s16 tw;
+    area = menuItemBiosGetPtr(win->menu, 0xB7);
+    self = menuItemBiosGetPtr(win->menu, spr->id);
+    spriteSetScissor(winSpriteGetLayerID(win, spr), area->x - self->x, area->y - self->y, area->width, area->height);
+    w = spr->width;
+    msg = TabTbl[win->selected].unk14;
+    half = w / 2;
+    tw = GSmsgGetRect(msg) >> 16;
+    GSmsgPrint2(winSpriteGetLayerID(win, spr), (s32)Data.tabScroll + (half - tw / 2), 0, -1, msg);
+    if (Data.tabScroll != 0.0f) {
+        s32 idx;
+        f32 off;
+        s32 msg2;
+        s16 tw2;
+        if (Data.tabScroll > 0.0f) {
+            idx = win->selected - 1;
+            if (idx < 0) {
+                idx = 4;
+            }
+            off = Data.tabScroll - (f32)menuItemBiosGetPtr(0x2C, 0xB6)->width;
+        } else {
+            idx = win->selected + 1;
+            if ((u32)idx >= 5) {
+                idx = 0;
+            }
+            off = Data.tabScroll + (f32)menuItemBiosGetPtr(0x2C, 0xB6)->width;
+        }
+        msg2 = TabTbl[idx].unk14;
+        tw2 = GSmsgGetRect(msg2) >> 16;
+        GSmsgPrint2(winSpriteGetLayerID(win, spr), (s32)off + (half - tw2 / 2), 0, -1, msg2);
+    }
+    spriteClearScissor(winSpriteGetLayerID(win, spr));
+    spriteSetEnv(winSpriteGetLayerID(win, spr));
+    return 0;
+}
+
+s32 menuPocket2PrintItemList(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    CURSOR cursor;
+    CURSOR cursor2;
+    MENU_ITEM_dd_ *area;
+    MENU_ITEM_dd_ *self;
+    area = menuItemBiosGetPtr(win->menu, 0xB6);
+    self = menuItemBiosGetPtr(win->menu, spr->id);
+    spriteSetScissor(winSpriteGetLayerID(win, spr), area->x - self->x, area->y - self->y, area->width, area->height);
+    *(u32 *)&cursor = cursorBiosGetPos(TabTbl[win->selected].cursorId);
+    _printItemList((GSgfxLayerID)winSpriteGetLayerID(win, spr), (s32)Data.tabScroll, win->selected, cursor);
+    if (Data.tabScroll != 0.0f) {
+        s32 idx;
+        f32 off;
+        if (Data.tabScroll > 0.0f) {
+            idx = win->selected - 1;
+            if (idx < 0) {
+                idx = 4;
+            }
+            off = Data.tabScroll - (f32)menuItemBiosGetPtr(0x2C, 0xB6)->width;
+        } else {
+            idx = win->selected + 1;
+            if ((u32)idx >= 5) {
+                idx = 0;
+            }
+            off = Data.tabScroll + (f32)menuItemBiosGetPtr(0x2C, 0xB6)->width;
+        }
+        const PocketTab *tab = TabTbl + idx;
+        *(u32 *)&cursor2 = cursorBiosGetPos(tab->cursorId);
+        _printItemList((GSgfxLayerID)winSpriteGetLayerID(win, spr), (s32)off, idx, cursor2);
+    }
+    spriteClearScissor(winSpriteGetLayerID(win, spr));
+    spriteSetEnv(winSpriteGetLayerID(win, spr));
+    return 0;
+}
+
+s32 menuPocket2DrawActionMenu(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    PocketActArg *arg = (PocketActArg *)win->parameters[0];
+    u32 i;
+    if (arg->count < 4) {
+        for (i = 0; i < 7; i++) {
+            if ((u32)spr->id == ActMenuResizeWork[i].id) {
+                break;
+            }
+        }
+        if (i < 7) {
+            ActMenuResizeWorkEntry *e;
+            s32 off;
+            off = (4 - arg->count) * _actionMenuLineHeight(win);
+            e = &ActMenuResizeWork[i];
+            spr->y = off + e->width;
+            if (e->flag != 0) {
+                spr->height = e->height - off;
+            }
+        }
+    }
+    return 0;
+}
+
+s32 menuPocket2DrawActionCursor(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    const s32 ids[4] = {0xDC, 0xDB, 0xDA, 0xD9};
+    s32 idx = win->selected + (4 - ((PocketActArg *)win->parameters[0])->count);
+    if (idx < 0 || idx >= 4) {
+        return 0;
+    }
+    if ((s16)spr->id == ids[idx]) {
+        PocketVec<s32> pos = {0, 0};
+        s32 anim = -1;
+        if (win->menu == windowGetActiveID()) {
+            menuSubCursorAnimeValGet(&pos, &anim);
+        }
+        windowDrawSpriteCursor(0, 0, -1, win, 0xC2, 0, winSpriteGetLayerID(win, spr), &pos, anim);
+    }
+    winSpriteSetDisp(spr, 0);
+    return 0;
+}
+
+s32 menuPocket2DrawNumMenuCursor(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    s32 *arg = (s32 *)win->parameters[0];
+    u32 i;
+    s32 menu = arg[0];
+    for (i = 0; i < 4; i++) {
+        if (menu == MenuPocket2Num[i].menu) {
+            break;
+        }
+    }
+    if (i >= 4) {
+        return 0;
+    }
+    s16 sel = win->selected;
+    if (sel < 0 || !(sel < MenuPocket2Num[i].count)) {
+        return 0;
+    }
+    s16 id = spr->id;
+    const s32 *p = MenuPocket2Num[i].items + sel * 3;
+    if (p[1] == id || p[2] == id) {
+        spr->color.channels.alpha = 0xFF;
+    } else {
+        spr->color.channels.alpha = 0;
+    }
+    return 0;
+}
+
+s32 menuPocket2DrawLineCursor(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    CURSOR cursor;
+    s32 y;
+    u8 visible;
+    *(u32 *)&cursor = cursorBiosGetPos(TabTbl[win->selected].cursorId);
+    if (Data.swapIndex >= 0) {
+        y = (Data.swapIndex - cursor.first) * 0x1E;
+        if (Data.isScroll != 0) {
+            y -= (s32)Data.curPos;
+        }
+        visible = 0;
+        if (y >= 0 && y < 0x10E) {
+            visible = 1;
+        }
+    } else {
+        y = cursor.selected * 0x1E;
+        if (Data.isScroll == 0) {
+            y += (s32)Data.curPos;
+        }
+        visible = 1;
+    }
+    if (Data.tabScroll != 0.0f) {
+        visible = 0;
+    }
+    if (visible != 0) {
+        s32 iy = menuItemBiosGetPtr(win->menu, spr->id)->y;
+        spr->y = iy + y;
+        if (Data.swapIndex >= 0) {
+            MENU_ITEM_dd_ *item;
+            winSpriteSetDisp(spr, 0);
+            item = menuItemBiosGetPtr(win->menu, spr->id);
+            menuSubDrawCursorBack2(winSpriteGetLayerID(win, spr), 0, 0, item->width, item->height,
+                                   spr->color.channels.alpha, 1, 1);
+        } else {
+            winSpriteSetDisp(spr, 1);
+        }
+    } else {
+        winSpriteSetDisp(spr, 0);
+    }
+    return 0;
+}
+
+s32 menuPocket2DrawBallCursor(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    CURSOR cursor;
+    s32 y;
+    *(u32 *)&cursor = cursorBiosGetPos(TabTbl[win->selected].cursorId);
+    y = cursor.selected * 0x1E;
+    if (Data.isScroll == 0) {
+        y += (s16)Data.curPos;
+    }
+    if (((Data.swapIndex >= 0) ^ (spr->id == 0xB1)) != 0 && Data.tabScroll == 0.0f) {
+        PocketVec<s32> pos = {0, 0};
+        s32 anim = -1;
+        if (win->menu == windowGetActiveID()) {
+            menuSubCursorAnimeValGet(&pos, &anim);
+        }
+        windowDrawSpriteCursor(0, y, -1, win, 0xC2, 0, winSpriteGetLayerID(win, spr), &pos, anim);
+    }
+    winSpriteSetDisp(spr, 0);
+    return 0;
+}
+
+s32 menuPocket2DrawExchangeCursor(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
+    CURSOR cursor;
+    *(u32 *)&cursor = cursorBiosGetPos(TabTbl[win->selected].cursorId);
+    s32 y = cursor.selected * 0x1E;
+    f32 t;
+    if (Data.isScroll == 0) {
+        y += (s16)Data.curPos;
+    }
+    if (Data.swapIndex >= 0) {
+        s32 iy = menuItemBiosGetPtr(win->menu, spr->id)->y;
+        spr->y = iy + y;
+        winSpriteSetDisp(spr, 1);
+        static f32 duration = 0.5f;
+        Data.anim += timeGetLastFrameSec();
+        if (Data.anim > duration) {
+            Data.anim = 0.0f;
+        }
+        t = Data.anim / duration;
+        if (t > 0.5f) {
+            t = 1.0f - t;
+        }
+        spr->color.channels.alpha = (u8)(155.0f * (t * 2.0f) + 100.0f);
+    } else {
+        winSpriteSetDisp(spr, 0);
+    }
+    return 0;
+}
+
 s32 menuPocket2DrawActiveTab(tagWINDOW_WORK *win, tagSPRITE_WORK *spr) {
     if (spr->id == TabTbl[win->selected].unk8) {
-        spr->color.channels.red = 0xFF;
+        spr->color.value = 0xFFFFFFFF;
     } else {
         spr->color.channels.alpha = 0;
     }
@@ -1233,8 +1505,6 @@ u8 menuPocket2GetLastSlotID(void) {
 
 }
 
-namespace {
-
 int _actionMenuLineHeight(tagWINDOW_WORK *win) {
     MENU_ITEM_dd_ *a = menuItemBiosGetPtr(win->menu, 0xDA);
     int h = a->y - menuItemBiosGetPtr(win->menu, 0xD9)->y;
@@ -1242,8 +1512,6 @@ int _actionMenuLineHeight(tagWINDOW_WORK *win) {
         h = -h;
     }
     return h;
-}
-
 }
 
 extern "C" {
@@ -1480,8 +1748,7 @@ u16 menuPocket2Open(s32 mode, s32 *slot, s32 arg) {
         Data.hero = (Hero *)arg;
         Data.pokemonSlot = -1;
     }
-    Data.floorPop = 1;
-    GSfloorPush(0x38F, &Data);
+    GSfloorPush(0x38F, (Data.floorPop = 1, &Data));
     floorSetFadeScript(0, 0);
     floorWaitForChange();
     if (Data.result == 0) {

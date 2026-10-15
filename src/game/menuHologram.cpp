@@ -42,6 +42,19 @@ GStexture *GStextureCreate(s32, s32, s32, s32, s32);
 void *HSD_ArchiveGetPublicAddress(void *, const char *);
 u32 soundGetBGMID(void);
 void soundStop(u32, s32);
+void GSflagSet(u32, s32);
+void GSmodelGetAnimIndex(void *, s32 *, s32);
+u8 GSmodelHasAnimationEnded(void *);
+void GSmodelSetPosition(void *, f32 *);
+void GSmodelSetRotation(void *, f32 *);
+void GSmodelSetScale(void *, f32 *);
+void GSthreadSwitch();
+u32 windowGetKeyTrg();
+u32 windowGetKeyOn();
+s32 floorGetCurrentGroupID();
+void cameraPlayAnime(s32, u32, f32, s32);
+void GScharCpy(u16 *, u16 *);
+void menuDrawReliveUpdate();
 extern GSgfxColAu8 GSgfxColAu8_Black;
 extern GSgfxColAu8 relivehallAisyou2ColorTbl[];
 }
@@ -52,6 +65,13 @@ long relivehallGetLastViewStage(void);
 void menuModelGetPkxRndFromPokemonForSeqenceLoad(unsigned long &, unsigned short &, Pokemon *);
 f32 menuGetPokemonScale(u32, int);
 void menuPtPlayBgm(u32);
+void menuPtPlaySe(u32);
+extern "C" int actionMenu__9CMetaMenuFPUlill(CMetaMenu *, u32 *, int, long, long, long);
+void relivehallSetLastViewStage(long);
+void relivehallDraw9StageNumber(int);
+void relivehallDraw9StageInfo(int);
+void relivehallDrawStageInfoCursor(long, int, int, Pokemon *, bool);
+u32 reliveCeremonyFromHologram(Pokemon *, unsigned long);
 
 inline void *operator new(unsigned long, void *p)
 {
@@ -72,6 +92,12 @@ struct GSvec {
         z = az;
     }
 };
+
+inline void CState::change(s32 n)
+{
+    next = n;
+    memset(work, 0, 0x40);
+}
 
 namespace {
 
@@ -101,6 +127,184 @@ void thisNew()
     CMenuHologram *p = (CMenuHologram *)GSmemAllocClr(0x418);
     new (p) CMenuHologram;
     pMenuHologram = p;
+}
+
+void _getNeckRotationCB(GSpart *, GSpartMixType, void *, GSvec *out)
+{
+    static GSvec neckRotVec(-0.7853982f, 0.0f, 0.0f);
+    *out = neckRotVec;
+}
+
+inline s32 ModelSlot::getAnimIndex()
+{
+    s32 index;
+    if (model == 0) {
+        return 0;
+    }
+    GSmodelGetAnimIndex(model, &index, 0);
+    return index;
+}
+
+inline void ModelSlot::setAnim(s32 index)
+{
+    if (model != 0) {
+        GSmodelSetAnimIndex(model, index);
+        GSmodelSetAnimType(model, 1);
+        GSmodelStartAnimation(model);
+    }
+}
+
+void CMenuHologram::drawAll()
+{
+    if (stageModel != 0) {
+        static GSvec pos(0.0f, 0.0f, 0.0f);
+        static GSvec rot(0.0f, 3.1415927f, 0.0f);
+        static GSvec scl(1.0f, 1.0f, 1.0f);
+        GSmodelSetPosition(stageModel, &pos.x);
+        GSmodelSetRotation(stageModel, &rot.x);
+        GSmodelSetScale(stageModel, &scl.x);
+    }
+    renderOffscreenData();
+    if (unk375 == 0) {
+        if (slots[0].model != 0) {
+            s32 anim = slots[0].getAnimIndex();
+            if (anim == 1 || anim == 3) {
+                if (GSmodelHasAnimationEnded(slots[0].model)) {
+                    {
+                        s32 next = anim + 1;
+                        slots[0].setAnim(next);
+                    }
+                }
+            }
+        }
+        if (slots[1].model != 0) {
+            s32 anim = slots[1].getAnimIndex();
+            if (anim == 1 || anim == 3) {
+                if (GSmodelHasAnimationEnded(slots[1].model)) {
+                    {
+                        s32 next = anim + 1;
+                        slots[1].setAnim(next);
+                    }
+                }
+            }
+        }
+        if (unk344 != 0) {
+            f32 t = calcAnimationTimeRate0to1(32.0f);
+            f32 v[3];
+            v[0] = 0.0f;
+            v[2] = 0.0f;
+            v[1] = 2.0f * (3.1415927f * -t);
+            GSmodelSetRotation(slots[1].model, v);
+        }
+        {
+            CReliveStage *st = CReliveHall::getPointer()->getStage(stageIndex2);
+            s32 tempo = st->getTempo();
+            bool cursor;
+            relivehallDraw9StageNumber(stageIndex);
+            relivehallDraw9StageInfo(stageIndex2);
+            cursor = false;
+            if (state.current != 4 && state.current != 7) {
+                cursor = true;
+            }
+            relivehallDrawStageInfoCursor(stageIndex2, tempo, st->getDancerQuantity(), st->getVisitorPointer(), cursor);
+            infoWindow.draw();
+            localWindowDrawAll();
+            menuDrawReliveUpdate();
+        }
+    }
+}
+
+void CMenuHologram::stateReliveCeremony()
+{
+    Pokemon copy;
+    u16 name[12];
+    Pokemon *visitor;
+    u32 trigger;
+    GSflagSet(0x5A3, 1);
+    unk344 = 0;
+    for (;;) {
+        if (slots[1].getAnimIndex() == 2) {
+            break;
+        }
+        updateAll();
+    }
+    aButtonWait();
+    menuPtPlayBgm(0x5A8);
+    menuPtPlaySe(0x5A7);
+    cameraPlayAnime(floorGetCurrentGroupID(), 0x18E21800, 0.0f, 0);
+    cameraSetType(4);
+    if (slots[0].model != 0) {
+        GSmodelSetAnimIndex(slots[0].model, 3);
+        GSmodelSetAnimType(slots[0].model, 0);
+        GSmodelStartAnimation(slots[0].model);
+    }
+    waitAtTime(0.3f);
+    GSmodelSetVisibility(stageModel, 0);
+    waitAtTime(6.0f);
+    visitor = stage->getVisitorPointer();
+    unk375 = 1;
+    unk384 = reliveCeremonyFromHologram(visitor, slots[2].sequence);
+    unk375 = 0;
+    systemFadeInKick();
+    systemFadeWaitToEnd();
+    GScharCpy(name, visitor->getNicknamePtr());
+    do {
+        GSthreadSwitch();
+        trigger = windowGetKeyTrg();
+    } while ((u16)windowGetKeyOn() != 0 || (u16)trigger != 0);
+    infoWindow.setMsgCtrlValue(0x32, (u32)name);
+    infoWindow.exec(*this, 0xD15E, true);
+    stage->pickupVisitor(copy);
+    PCBOX::getPointer()->addPokemonLastWatchBox(&copy);
+    if (CReliveHall::getPointer()->isReliveReadyPokemonExist()) {
+        systemFadeInKick();
+        if (PCBOX::getPointer()->isPokemonFull()) {
+            infoWindow.exec(*this, 0xD132, true);
+            state.change(7);
+        } else if (actionYesNo(0xD131, true) == 0) {
+            systemFadeOutSetAndWait(-1.0f);
+            setStageToReliveReady();
+            reloadDatas(true);
+            systemFadeInKick();
+            state.change(4);
+        } else {
+            state.change(7);
+        }
+    } else {
+        state.change(7);
+    }
+}
+
+void CMenuHologram::stateMainProc()
+{
+    do {
+        MetaKeyInfo *key = getKeyInfo();
+        if ((key->trigger | key->repeat) != 0) {
+            switch (key->repeat) {
+            case 4:
+            case 0x200:
+                stageIndex2 = (stageIndex2 + 8) % 9;
+                menuPtPlaySe(0x45F);
+                break;
+            case 8:
+            case 0x400:
+                stageIndex2 = (stageIndex2 + 1) % 9;
+                menuPtPlaySe(0x45F);
+                break;
+            }
+            switch (key->trigger) {
+            case 0x10:
+                menuPtPlaySe(0x45A);
+                state.change(3);
+                break;
+            case 0x20:
+                menuPtPlaySe(0x45B);
+                state.change(6);
+                break;
+            }
+        }
+        updateAll();
+    } while (state.next == -1);
 }
 
 void CMenuHologram::setStage(int index)
@@ -155,6 +359,88 @@ void CMenuHologram::reloadDatas(bool kick)
 }
 
 static long localWindowTable[] = { 0x71, 0x72, 0x88, 0xD0, 0x87, 0 };
+
+int CMenuHologram::actionYesNo(u32 message, bool exec)
+{
+    static u32 msgTbl[2] = { 0x426A, 0x426B };
+    int result;
+    if (exec) {
+        infoWindow.exec(*this, message, false);
+    } else {
+        infoWindow.open(message, false);
+    }
+    result = actionMenu__9CMetaMenuFPUlill(this, msgTbl, 2, 0x1FE, 0x7F, 0);
+    infoWindow.close();
+    return result;
+}
+
+void CMenuHologram::loop()
+{
+    state.change(1);
+    for (;;) {
+        state.update();
+        switch (state.current) {
+        case 0:
+            break;
+        case 1:
+            if (stage->isReliveReady()) {
+                state.change(4);
+            } else {
+                state.change(2);
+            }
+            break;
+        case 2:
+            unk344 = 1;
+            stateMainProc();
+            break;
+        case 3: {
+            static u32 msgTbl[3] = { 0xD134, 0xD135, 0xD136 };
+            switch (actionMenu__9CMetaMenuFPUlill(this, msgTbl, 3, 0x1B8, 0x78, 0)) {
+            case 0:
+                state.change(5);
+                break;
+            case 1:
+                moveStageWait(stageIndex2);
+                state.change(2);
+                break;
+            case 2:
+                state.change(2);
+                break;
+            }
+            break;
+        }
+        case 4:
+            stateReliveCeremony();
+            break;
+        case 5:
+            relivehallSetLastViewStage(stageIndex2);
+            systemFadeOutSetAndWait(-1.0f);
+            {
+                CMenuGlobalState *g = globalState;
+                g->previous = g->current;
+                g->current = 2;
+            }
+            return;
+        case 6:
+            if (actionYesNo(0xD15C, false) == 0) {
+                state.change(2);
+            } else {
+                state.change(8);
+            }
+            break;
+        case 7:
+        case 8:
+            relivehallSetLastViewStage(stageIndex);
+            systemFadeOutSetAndWait(-1.0f);
+            {
+                CMenuGlobalState *g = globalState;
+                g->previous = g->current;
+                g->current = 0;
+            }
+            return;
+        }
+    }
+}
 
 void CMenuHologram::init(CMenuGlobalState &gstate)
 {
@@ -371,9 +657,13 @@ void CMenuHologram::modelVisitorSetYPosition(long index)
     case 0x14B:
         y = -20.0f;
         break;
+    case 0x14C:
+        break;
     case 0x169:
         break;
     case 0x16A:
+        break;
+    case 0x16B:
         break;
     case 0x15:
         y = -2.0f;
@@ -449,15 +739,10 @@ void CMenuHologram::bgmKick()
     } else {
         bgm = 0x50E;
     }
-    if (bgm != soundGetBGMID()) {
+    u32 current = soundGetBGMID();
+    if (current != bgm) {
         menuPtPlayBgm(bgm);
     }
-}
-
-void _getNeckRotationCB(GSpart *, GSpartMixType, void *, GSvec *out)
-{
-    static GSvec neckRotVec(-0.7853982f, 0.0f, 0.0f);
-    *out = neckRotVec;
 }
 
 void CMenuHologram::main(CMenuGlobalState &state)

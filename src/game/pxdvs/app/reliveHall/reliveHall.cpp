@@ -1,13 +1,16 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 
 
-struct FootStepCounter;
+struct FootStepCounter {
+    u32 value;
+};
 struct FLAGETC {
     u8 pad[0x428];
     u32 value;
 };
 
 extern "C" {
+extern u32 *zokusei_data_number;
 u8 pokemonDataBiosGetZokuseiDataId(void *, u16);
 u16 zokuseiGetWazaJoutai(u16, u16);
 void *memset(void *, int, u32);
@@ -92,64 +95,57 @@ s32 _tempoNormal[5] = {0, 2, 2, 2, 4};
 s32 _bonusStageBonusTbl[10] = {0, 0, 1, 5, 10, 15, 25, 35, 50, 100};
 }
 
-s32 reliveHallPokemonToAisyou(Pokemon *a, Pokemon *b) {
-    static u16 jyoutai2levelTbl[4] = {0x43, 0x42, 0x3F, 0x41};
-    Pokemon *p[2];
-    s32 z[2][2];
-    p[0] = a;
-    p[1] = b;
-    if (!a || !b) {
-        return -1;
+static u16 jyoutai2levelTbl[4] = {0x43, 0x42, 0x3F, 0x41};
+
+static inline s32 _aisyouLevel(s32 r) {
+    s32 k;
+    for (k = 0; k < 4; k++) {
+        if (r == jyoutai2levelTbl[k]) {
+            s32 m = k - 1;
+            return m & ~(m >> 31);
+        }
     }
-    s32 *zbase = &z[0][0];
-    Pokemon **pp = p;
-    s32 *zp = zbase;
-    s32 i = 0;
-    do {
-        s32 j = 0;
-        s32 *q = zp;
-        do {
-            *q = pokemonDataBiosGetZokuseiDataId((*pp)->getPokemonDataPtr(), (u16)j);
-            j++;
-            q++;
-        } while (j < 2);
-        i++;
-        pp++;
-        zp += 2;
-    } while (i < 2);
-    s32 best = 0;
-    i = 0;
-    s32 *zi = zbase;
-    do {
-        s32 j = 0;
-        s32 *zj = zbase;
-        do {
-            s32 v;
-            s32 x = *zi;
-            s32 y = zj[2];
-            if (x == 0 && y == 0) {
-                v = 2;
-            } else {
-                s32 r = zokuseiGetWazaJoutai(x, y);
-                v = 0x7B;
-                for (s32 k = 0; k < 4; k++) {
-                    if (r == jyoutai2levelTbl[k]) {
-                        s32 m = k - 1;
-                        v = m & ~(m >> 31);
-                        break;
-                    }
-                }
-            }
-            if (best < v) {
-                best = v;
-            }
-            j++;
-            zj++;
-        } while (j < 2);
-        i++;
-        zi++;
-    } while (i < 2);
+    return 0x7B;
+}
+
+#define AISYOU_BODY                                                           \
+    Pokemon *p[2];                                                            \
+    s32 z[2][2];                                                              \
+    s32 i;                                                                    \
+    p[0] = a;                                                                 \
+    p[1] = b;                                                                 \
+    if (!a || !b) {                                                           \
+        return -1;                                                            \
+    }                                                                         \
+    for (i = 0; i < 2; i++) {                                                 \
+        for (s32 j = 0; j < 2; j++) {                                         \
+            z[i][j] = pokemonDataBiosGetZokuseiDataId(p[i]->getPokemonDataPtr(), (u16)j); \
+        }                                                                     \
+    }                                                                         \
+    s32 best = 0;                                                             \
+    for (s32 k = 0; k < 2; k++) {                                             \
+        for (s32 j = 0; j < 2; j++) {                                         \
+            s32 v;                                                            \
+            s32 y = z[1][j];                                                  \
+            s32 x = z[0][k];                                                  \
+            if (x == 0 && y == 0) {                                           \
+                v = 2;                                                        \
+            } else {                                                          \
+                v = _aisyouLevel(zokuseiGetWazaJoutai(x, y));                 \
+            }                                                                 \
+            if (best < v) {                                                   \
+                best = v;                                                     \
+            }                                                                 \
+        }                                                                     \
+    }                                                                         \
     return best;
+
+static inline s32 _aisyouInline(Pokemon *a, Pokemon *b) {
+    AISYOU_BODY
+}
+
+s32 reliveHallPokemonToAisyou(Pokemon *a, Pokemon *b) {
+    AISYOU_BODY
 }
 
 CReliveHall *CReliveHall::getPointer() {
@@ -162,6 +158,30 @@ extern "C" void reliveHallDebugPokemonSetup(long arg) {
 
 extern "C" void reliveHallCallBackInit(void) {
     _heroCallBackHandle = heroMoveAddStepCallback(_heroCallBackFunc, 0);
+}
+
+extern "C" void reliveHallInfomationPokemonDP0(Pokemon *p) {
+    if (!darkPokemonBiosGetInformationFlag(pokemonBiosGetDarkpokemonDataId(p))) {
+        darkPokemonWhere place;
+        u8 slot;
+        heroMoveInitEvent();
+        heroMoveSetColision(1);
+        GSthreadSwitch();
+        p->getDarkPokemon()->getPlace(place, slot);
+        menuScriptInfoRelive(p, place != place3, place);
+        heroMoveTermEvent();
+    }
+}
+
+namespace {
+void _heroCallBackFunc(long, FootStepCounter, long steps) {
+    if (GSflagGet(0x3C4) >= flag_etc->value) {
+        Pokemon *p = CReliveHall::getPointer()->heroWalkReliveCallBack(steps);
+        if (p) {
+            reliveHallInfomationPokemonDP0(p);
+        }
+    }
+}
 }
 
 bool CReliveHall::isOpen() {
@@ -205,12 +225,15 @@ s32 CReliveStage::getTempo() {
     s32 n = getDancerQuantity();
     s32 base = _tempoBase[n];
     s32 sum = 0;
+    s32 i;
     s32 v;
-    for (s32 i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         Pokemon *a = getDancerPointer(i);
         Pokemon *b = getDancerPointer((i + 1) % n);
-        switch (reliveHallPokemonToAisyou(a, b)) {
+        switch (_aisyouInline(a, b)) {
         case -1:
+            v = 0;
+            break;
         case 0:
             v = 0;
             break;
@@ -293,6 +316,53 @@ void CReliveStage::putVisitor(Pokemon &p) {
     pokemonInit((u32)&p);
 }
 
+
+void CReliveHall::checkWithBackupSet() {
+    CReliveStage *stage = (CReliveStage *)this;
+    s32 offset = 0;
+    u32 i = 0;
+    do {
+        if (memcmp(stage, (u8 *)_pRelivehallCopy + offset, 0x3D8) != 0) {
+            Pokemon *v = stage->getVisitorPointer();
+            if (v) {
+                darkPokemonBiosSetSteps(pokemonBiosGetDarkpokemonDataId(v), 0);
+            }
+        }
+        i++;
+        offset += 0x3D8;
+        stage++;
+    } while (i < 9);
+    u32 k = 0;
+    offset = 0;
+    do {
+        CReliveStage *backup = (CReliveStage *)((u8 *)_pRelivehallCopy + offset);
+        Pokemon *bv = backup->getVisitorPointer();
+        if (bv) {
+            u16 id = pokemonBiosGetDarkpokemonDataId(bv);
+            bool found = false;
+            CReliveStage *cur = (CReliveStage *)this;
+            u32 j = 0;
+            do {
+                Pokemon *v = cur->getVisitorPointer();
+                if (v && id == pokemonBiosGetDarkpokemonDataId(v)) {
+                    found = true;
+                    break;
+                }
+                j++;
+                cur++;
+            } while (j < 9);
+            if (!found) {
+                darkPokemonBiosSetSteps(id, 0);
+            }
+        }
+        k++;
+        offset += 0x3D8;
+    } while (k < 9);
+    if (_pRelivehallCopy) {
+        GSmemFree(_pRelivehallCopy);
+        _pRelivehallCopy = 0;
+    }
+}
 
 void CReliveHall::init() {
     CReliveStage *s = (CReliveStage *)this;
@@ -438,4 +508,100 @@ Pokemon *CReliveStage::heroWalkReliveCallBack(long steps, bool flag) {
     }
     darkPokemonBiosSetSteps(id, cur + steps);
     return 0;
+}
+
+s32 CReliveStage::getPassionWoBonus() {
+    Pokemon *visitor = getVisitorPointer();
+    if (visitor == 0) {
+        return 0;
+    }
+    s32 tempo = getTempo();
+    if (tempo == 0) {
+        return 0;
+    }
+    Pokemon *partner = getDancerPointer(pairIndex);
+    f32 mults[3] = {1.0f, 1.5f, 2.0f};
+    s32 aisyou = _aisyouInline(visitor, partner);
+    f32 mult;
+    if (aisyou == -1) {
+        mult = 0.0f;
+    } else {
+        mult = mults[aisyou];
+    }
+    return (s32)((f32)tempo * mult);
+}
+
+bool CReliveStage::isBonusGet() {
+    s32 passion = getPassionWoBonus();
+    bool r = false;
+    if (isPokemonZokuseiAllUnique(true) && passion == 0xC0) {
+        r = true;
+    }
+    return r;
+}
+
+s32 CReliveStage::getPassion() {
+    s32 passion = getPassionWoBonus();
+    if (isBonusGet()) {
+        passion += _bonusStageBonusTbl[CReliveHall::getPointer()->getReliveGiveStageQuantity()];
+    }
+    return passion;
+}
+
+bool CReliveStage::isPokemonZokuseiAllUnique(bool includeVisitor) {
+    s32 n;
+    u8 *used;
+    used = (u8 *)__alloca(*zokusei_data_number);
+    memset(used, 0, *zokusei_data_number);
+    n = 0;
+    do {
+        if (!pokemonCheckValid(&dancer[n])) {
+            break;
+        }
+        n++;
+    } while (n < 4);
+    s32 total = n;
+    if (includeVisitor) {
+        total = n + 1;
+    }
+    for (s32 i = 0; i < total; i++) {
+        Pokemon *p;
+        if (i == n) {
+            p = getVisitorPointer();
+            if (p == 0) {
+                break;
+            }
+        } else {
+            p = getDancerPointer(i);
+        }
+        s32 prev = -1;
+        for (s32 j = 0; j < 2; j++) {
+            s32 zid = pokemonDataBiosGetZokuseiDataId(p->getPokemonDataPtr(), (u16)j);
+            if (j == 1 && zid == prev) {
+                break;
+            }
+            prev = zid;
+            if (used[zid]) {
+                return false;
+            }
+            used[zid] = 1;
+        }
+    }
+    return true;
+}
+
+s32 CReliveHall::getReliveGiveStageQuantity() {
+    s32 count = 0;
+    for (s32 i = 0; i < 9; i++) {
+        CReliveStage *stage = CReliveHall::getPointer()->getStage(i);
+        s32 tempo = stage->getTempo();
+        bool r = false;
+        if (stage->isPokemonZokuseiAllUnique(false) && tempo == 0x60) {
+            r = true;
+        }
+        if (r) {
+            count++;
+        }
+    }
+    return count;
 }

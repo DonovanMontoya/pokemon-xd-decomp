@@ -28,6 +28,7 @@ public:
     bool isDarkPokemon() const;
     u8 getLevel() const;
     f32 getDarkPoint() const;
+    u16 *getNicknamePtr();
     DarkPokemon *getDarkPokemon();
 };
 
@@ -47,6 +48,7 @@ public:
 
 class CAnt {
 public:
+    static void systemUpdate(bool);
     u32 unk0;
     u32 unk4;
     u32 unk8;
@@ -279,14 +281,16 @@ public:
     s32 repeatCount;
     u16 lastKey;
     u8 tutorialActive;
-    u8 reserved243[0xDD];
+    u8 reserved243;
+    CInfoWindow baseInfoWindow;
+    u8 reserved278[0x320 - 0x278];
     u64 time;
     u8 reserved328[8];
 };
 
 class CMetaMenu : public CMetaMenuBase {
 public:
-    virtual void drawMain() = 0;
+    virtual void drawAll() = 0;
     virtual bool isAnimationStateNone();
     virtual void updateAll();
     virtual void tutorialExitKick();

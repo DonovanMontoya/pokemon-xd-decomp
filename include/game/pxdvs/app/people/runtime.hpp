@@ -33,7 +33,7 @@ struct tagPeopleWork {
     f32 unknown20;
     f32 unknown24;
     f32 unknown28;
-    u8 unknown2C[4];
+    f32 unknown2C;
     f32 walkStartFrames, walkFrames, runStartFrames, runFrames;
     f32 targetRotation;
     f32 rotationProgress;
@@ -52,7 +52,8 @@ struct tagPeopleWork {
     GSvec originPosition;
     u8 unknown8C[4];
     f32 motionFrame;
-    u8 unknown94[8];
+    f32 randomCentre;
+    f32 randomRange;
     s32 motionType;
     u8 unknownA0[8];
     GSvec previousPosition;
@@ -62,7 +63,7 @@ struct tagPeopleWork {
     u8 neckEnabled;
     u8 unknownC5[3];
     GSvec neckTargetPosition, neckTargetRotation, neckRotation;
-    u8 unknownEC[12];
+    GSvec unknownEC;
     u32 neckTargetGroup, neckTargetResource;
     f32 neckMinStep, neckMaxStep, neckDistance;
     u8 secondaryMixRegistered;
@@ -70,13 +71,18 @@ struct tagPeopleWork {
     GSvec chestRotation;
     s32 attachGroup, attachResource, attachIndex;
     f32 motionBlend, motionBlendStep;
-    u8 unknown130[4];
+    f32 chestBlend;
     f32 initialRotation;
-    u8 unknown138[5];
+    f32 idleTimer;
+    u8 chestHidden;
     u8 waitAnimation;
     u8 unknown13E[2];
     s32 followerMotion;
-    u8 unknown144[16];
+    u8 unknown144[4];
+    f32 blinkTimer;
+    u8 flag14C, flag14D;
+    u8 unknown14E[2];
+    f32 value150;
     u8 animationBlend;
     u8 manualAnimation;
     u8 unknown156[6];
@@ -87,9 +93,12 @@ struct tagPeopleWork {
     PeopleMotionTable motions;
     f32 treasureSearchDistance;
     u16 treasure;
-    u8 unknown17E[2];
+    u8 unknown17E;
+    u8 flag17F;
     f32 rotationRate;
-    u8 unknown184[0x2C];
+    u8 unknown184[0x0c];
+    s32 speechAnimations[7];
+    f32 speechTimer;
 };
 
 extern "C" {

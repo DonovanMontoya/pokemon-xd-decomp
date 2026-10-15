@@ -13,7 +13,7 @@ struct MsgBundle {
     MsgBundle* previous;
     MsgDirectoryEntry entries[1];
 };
-struct MsgTask {
+struct MSG_TASK_WORK {
     u8 state;
     u8 reserved01[2];
     u8 soundClass;
@@ -24,7 +24,8 @@ struct MsgTask {
     u16 fontID;
     u8 glyphWidth, glyphHeight;
     u32 color;
-    u8 reserved28[0x1a];
+    const u16 *textStart, *textBase, *textCursor;
+    u8 reserved34[0xe];
     s8 glyphAdvance;
     u8 reserved43;
     u8 fontSelection;
@@ -33,7 +34,17 @@ struct MsgTask {
     u8 reserved4D[0x17];
     f32 scaleX, scaleY;
 };
+typedef MSG_TASK_WORK MsgTask;
 struct MsgFontSlot { u16 identifier; u8 width, height; void* data; };
+struct tagFONT_INFO { u16 code; u8 data[6]; };
+struct MsgFontGroup {
+    u16 count;
+    u8 reserved02[6];
+    MsgFontGroup* next;
+    MsgFontGroup* previous;
+    tagFONT_INFO entries[1];
+};
+struct MsgFontBlob { u16 identifier; u8 width, height; u32 nextOffset; MsgFontGroup group; };
 struct MsgSystem {
     u16 taskCount, fontCount;
     MsgBundle* bundles;

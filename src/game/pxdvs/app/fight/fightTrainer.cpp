@@ -737,7 +737,7 @@ enum FightTrainerStatus {
 extern "C" {
 FightTrainerPokemonPartData* fightTrainerPokemonPartDataBiosGetPtr(u16);
 FightTrainerAiValueAddsubData* fightTrainerAiValueAddsubDataBiosGetPtr(u16);
-u32 fightTrainerDB_GetTemotiPokemonId(u16, u8);
+u16 fightTrainerDB_GetTemotiPokemonId(u16, u8);
 u32 fightTrainerDB_GetTemotiItemDataId(u16, u8);
 u32 fightTrainerDB_GetSyoukaiWzxDataId(u16);
 u32 fightTrainerDB_GetSerihuMsgId(u16, u8);
@@ -747,7 +747,7 @@ u32 fightTrainerPokemonDB_GetNickname(u16);
 u32 fightTrainerPokemonDB_GetStatusRnd(u16, u8);
 u32 fightTrainerPokemonDB_GetStatusEffort(u16, u8);
 u32 fightTrainerPokemonDB_GetLevel(u16);
-u32 fightTrainerPokemonDB_GetItemBallId(u16);
+u16 fightTrainerPokemonDB_GetItemBallId(u16);
 u32 fightTrainerPokemonDB_GetDarkPokemonFlag(u16);
 u32 fightTrainerPokemonDB_GetTokuseiFlag(u16);
 u32 fightTrainerPokemonDB_GetPokemonDataId(u16);
@@ -1355,12 +1355,12 @@ extern "C" void fightTrainerCreateFightTrainerDataIdToHero(u16 trainerId, s32 co
     heroSetStatus(hero, 22, 0);
 }
 
-class DeckTrainer { public: static DeckTrainer* getDeckTrainerObj(u32); u32 getDarkPokemonDataID(u8) const; };
+class DeckTrainer { public: static DeckTrainer* getDeckTrainerObj(u32); u16 getDarkPokemonDataID(u8) const; };
 extern "C" {
 DarkPokemon* darkPokemonGetDarkPokemon(u32);
 void fightEncountDataBiosSetFightTrainerDataId(FightEncountData*, u32, u16);
 void fightEncountDataBiosSetPokemon(FightEncountData*, u32);
-u32 fightTrainerPokemonDB_GetItemBallId(u16);
+u16 fightTrainerPokemonDB_GetItemBallId(u16);
 }
 u32 deckDataVirtualDB_GetAllyDeck(u16);
 u32 deckDataVirtualDB_GetEnemyDeck(u16);
@@ -1506,4 +1506,186 @@ u8 _fightTrainer_GetListUnderTakerDarkPoke(u8* list) {
         }
     }
     return count;
+}
+
+extern "C" u16 HSD_Rand(void);
+
+void _fightTrainer_GetUnderTakerDarkPoke(u8* list, u8 count, u8 start, Hero* hero, u8 extra, u16 encounterId) {
+    u8 chosen[2] = {0, 0};
+    Pokemon pokemon;
+    f32 prob = 0.0f;
+    u8 tries = 0;
+    u8 n = start;
+    u8 i;
+    do {
+        prob += 20.0f / static_cast<f32>(count);
+        i = 0;
+        tries++;
+        for (; i < count; i++) {
+            if (!((80.0f - prob) < static_cast<f32>(HSD_Rand() % 100))) continue;
+            DeckDarkPokemon* deck = DeckDarkPokemon::getDeckDarkPokemonObj(list[i]);
+            DarkPokemon* dark = darkPokemonGetDarkPokemon(list[i]);
+            if (chosen[0] == list[i]) continue;
+            if (chosen[1] == list[i]) continue;
+            u16 ball = fightTrainerPokemonDB_GetItemBallId(deck->getDeckPokemonID());
+            u16 darkId = dark->getDarkPokemonID();
+            if (!_fightTrainerCreateDeckPokemon(hero, deck->getDeckPokemonID(), darkId, ball, &pokemon, n, encounterId)) break;
+            chosen[n++ - start] = list[i];
+            if (n >= extra + 2) break;
+        }
+    } while (n < start + extra && count >= extra && tries <= 100);
+}
+
+extern "C" {
+void* getStaticSheet__10bingo_biosFv(void);
+u8 getStaticIdx__10bingo_biosFUc(u8);
+u32 getPanelHoseiKind__10bingo_biosFP14BINGO_DATA_dd_Ul(void*, u32);
+u32 getPanelHoseiVal__10bingo_biosFP14BINGO_DATA_dd_Ul(void*, u32);
+s32 gamedataGetStatus(s32, s32);
+void pokemonCreate(Pokemon*, u16, u8, s32);
+s32 pokemonCreateRndFit(Pokemon*, s8, s8, u32, u32);
+void pokemon_SetRnd(Pokemon*, u32);
+void pokemonWazaCreate(Pokemon*, u32, u16);
+}
+
+void _fightTrainerCreateDeckBingo(u16 trainerId, Hero* hero) {
+    u8* sheet;
+    u8 val;
+    u8 kind;
+    u16 pokeId;
+    u16 moveId;
+    u8 fitHi;
+    u8 fitLo;
+    u16 hosei;
+    u32 dataId;
+    u32 rnd;
+    u8 idx;
+    u8 level;
+    u8 tokusei;
+    dataId = fightTrainerDB_GetTemotiPokemonId(trainerId, 0);
+    rnd = heroGetStatus(hero, 2, 0);
+    u16 statusA[6] = {0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
+    u16 statusB[7] = {0, 0x8D, 0x8E, 0x8F, 0x90, 0x91, 0x92};
+    Pokemon pokemon;
+    sheet = static_cast<u8*>(getStaticSheet__10bingo_biosFv());
+    if (sheet == nullptr) return;
+    if (trainerId == 0x1388) {
+        idx = getStaticIdx__10bingo_biosFUc(0);
+    } else {
+        idx = getStaticIdx__10bingo_biosFUc(1);
+    }
+    level = sheet[3];
+    u8* entry = sheet + idx * 10;
+    pokeId = *reinterpret_cast<u16*>(entry + 0x28);
+    fitHi = entry[0x27];
+    fitLo = entry[0x26];
+    moveId = *reinterpret_cast<u16*>(entry + 0x2A);
+    tokusei = entry[0x25];
+    hosei = *reinterpret_cast<u16*>(entry + 0x2C);
+    kind = getPanelHoseiKind__10bingo_biosFP14BINGO_DATA_dd_Ul(sheet, idx);
+    val = getPanelHoseiVal__10bingo_biosFP14BINGO_DATA_dd_Ul(sheet, idx);
+    pokemonCreate(&pokemon, pokeId, level, gamedataGetStatus(0, 1));
+    pokemonSetTokuseiFlag(&pokemon, tokusei != 0);
+    pokemon_SetRnd(&pokemon, pokemonCreateRndFit(&pokemon, fitHi, fitLo, 0, rnd));
+    for (u8 i = 0; i < 4; i++) pokemonWazaInit(&pokemon, i);
+    pokemonWazaCreate(&pokemon, 0, moveId);
+    if (hosei != 0) pokemonSetStatus(&pokemon, 0, statusB[kind], 0, val);
+    for (u8 i = 0; i < 6; i++) pokemonSetStatus(&pokemon, 0, statusA[i], 0, 0x10);
+    pokemonResetBasisStatus(&pokemon);
+    deckCreate(dataId, pokeId, &pokemon);
+    pokemon_SetFightTrainerPokemonDataId(&pokemon, dataId);
+    heroCatchPokemon(hero, &pokemon, 0, 1, 0);
+}
+
+extern "C" s32 GSflagGet(u32);
+
+void _fightTrainerCreateDeckUnderTaker(u16 trainerId, Hero* hero, u16 encounterId) {
+    u8 k;
+    u8 i;
+    u8 list[0x80];
+    Pokemon pokemon;
+    u32 deck;
+    u16 deckId;
+    u8 count;
+    for (k = 0; k < 0x80; k++) list[k] = 0;
+    switch (GSflagGet(0x5DC)) {
+    case 0:
+        switch (HSD_Rand() % 2) {
+        case 0: deck = 0x10002; break;
+        case 1: deck = 0x10003; break;
+        }
+        break;
+    case 1:
+        switch (HSD_Rand() % 2) {
+        case 0: deck = 0x10004; break;
+        case 1: deck = 0x10005; break;
+        }
+        break;
+    case 2:
+        switch (HSD_Rand() % 2) {
+        case 0: deck = 0x10006; break;
+        case 1: deck = 0x10007; break;
+        }
+        break;
+    }
+    deckId = deck;
+    for (i = 0; ; i++) {
+        u16 dataId = fightTrainerDB_GetTemotiPokemonId(deckId, i);
+        u16 darkId = DeckTrainer::getDeckTrainerObj(deckId)->getDarkPokemonDataID(i);
+        u16 ball = fightTrainerPokemonDB_GetItemBallId(dataId);
+        if (!_fightTrainerCreateDeckPokemon(hero, dataId, darkId, ball, &pokemon, i, encounterId)) break;
+    }
+    count = _fightTrainer_GetListUnderTakerDarkPoke(list);
+    if (count != 0) {
+        _fightTrainer_SortUnderTakerDarkPoke(list, count);
+        _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, (count >= 7) + 1, encounterId);
+    }
+}
+
+extern "C" {
+u16 fightFloor_GetFightFloorDataId(s32);
+void fightFreeResourceID(s32, u32);
+void fightReadResourceID(s32, u32);
+}
+
+s8 underTakerDeckRand = -1;
+
+void _fightTrainerCreateDeckUnderTakerInColosseum(u16 trainerId, Hero* hero, u16 encounterId) {
+    u8 list[0x80];
+    Pokemon pokemon;
+    u8 count;
+    u32 deck;
+    u16 deckId;
+    u8 i;
+    if (fightFloor_GetFightFloorDataId(0) == 0x1F) {
+        switch (underTakerDeckRand) {
+        case 0: deck = 0x60001; break;
+        case 1: deck = 0x60002; break;
+        case 2: deck = 0x60003; break;
+        case 3: deck = 0x60004; break;
+        }
+    } else if (fightFloor_GetFightFloorDataId(0) == 0x21) {
+        switch (underTakerDeckRand) {
+        case 0: deck = 0x60005; break;
+        case 1: deck = 0x60006; break;
+        case 2: deck = 0x60007; break;
+        case 3: deck = 0x60008; break;
+        }
+    }
+    deckId = deck;
+    for (i = 0; ; i++) {
+        u16 dataId = fightTrainerDB_GetTemotiPokemonId(deckId, i);
+        u16 darkId = DeckTrainer::getDeckTrainerObj(deckId)->getDarkPokemonDataID(i);
+        u16 ball = fightTrainerPokemonDB_GetItemBallId(dataId);
+        if (!_fightTrainerCreateDeckPokemon(hero, dataId, darkId, ball, &pokemon, i, encounterId)) break;
+    }
+    fightFreeResourceID(0x842, 0x184C3400);
+    fightReadResourceID(0x842, 0x18503400);
+    count = _fightTrainer_GetListUnderTakerDarkPoke(list);
+    if (count != 0) {
+        _fightTrainer_SortUnderTakerDarkPoke(list, count);
+        _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, 1, encounterId);
+    }
+    fightFreeResourceID(0x842, 0x18503400);
+    fightReadResourceID(0x842, 0x184C3400);
 }

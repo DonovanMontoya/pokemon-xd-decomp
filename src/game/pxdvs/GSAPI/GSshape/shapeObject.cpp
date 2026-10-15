@@ -1,4 +1,5 @@
-#include <game/pxdvs/GSAPI/GSshape/GSshape.hpp>
+#include <game/pxdvs/GSAPI/GSshape/shapeObjectPrivate.hpp>
+#include <dolphin/gx.h>
 u32 GsShapeObject::GetPolygonCount() { return entry->segmentsU*entry->segmentsV*2; }
 bool GsShapeObject::FreeShapeDrawBuffer(s16 instance) {
     if(instance<0 || instance>=256) return false;
@@ -122,6 +123,38 @@ void GsShapeObject::SetVertexColorGradation(u8 axis,const tagGScol4ub* colors,in
 extern "C" {
 void GSgfxDLBegin(void*, void*, u32, u32);
 void GSgfxDLEnd();
+void GSgfxDLPrimitiveType(u32);
+void GSgfxDLBeginSurface(u16);
+void GSgfxDLEndSurface();
+}
+void GsShapeObject::MakeShapeGfxDL() {
+    u32 vertexCount;
+    u16 row;
+    u16 base;
+    u16 textureCount;
+    u16 columns;
+    columns = entry->segmentsU + 1;
+    textureCount = entry->textureCount;
+    GSgfxDLPrimitiveType(0x98);
+    vertexCount = columns * 2;
+    for (row = 0; row < entry->segmentsV; ++row) {
+        u16 column;
+        base = row * columns;
+        GSgfxDLBeginSurface(vertexCount);
+        u16 next = (row + 1) * columns;
+        for (column = 0; column < columns; ++column) {
+            u16 first = column + base;
+            u16 second = column + next;
+            u16 i;
+            GXWGFifo.u16 = first;
+            GXWGFifo.u16 = first;
+            for (i = 0; i < textureCount; ++i) GXWGFifo.u16 = first;
+            GXWGFifo.u16 = second;
+            GXWGFifo.u16 = second;
+            for (i = 0; i < textureCount; ++i) GXWGFifo.u16 = second;
+        }
+        GSgfxDLEndSurface();
+    }
 }
 void GsShapeObject::MakeDisplayListShape() {
     displayList=GSmemAlloc(16);
@@ -250,4 +283,219 @@ bool GsShapeObject::WaveTextureCoord(u32 texture,f32 offsetU,f32 offsetV,const G
         }
     }
     return true;
+}
+
+void GSgfxLayer::tunitAlphaOp(u8 unit, GSgfxTunitOp operation, GSgfxTunitBias bias, GSgfxTunitScale scale, bool clamp, GSgfxTunitReg output) {
+    alphaOps[unit].operation = operation;
+    alphaOps[unit].bias = bias;
+    alphaOps[unit].scale = scale;
+    alphaOps[unit].clamp = clamp;
+    alphaOps[unit].output = output;
+    alphaOpDirty |= 1 << unit;
+    dirty |= 8;
+    savedAlphaOpDirty |= 1 << unit;
+    savedDirty |= 8;
+}
+void GSgfxLayer::tunitAlphaArg(u8 unit, GSgfxTunitAArg a, GSgfxTunitAArg b, GSgfxTunitAArg c, GSgfxTunitAArg d) {
+    alphaArgs[unit][0] = a;
+    alphaArgs[unit][1] = b;
+    alphaArgs[unit][2] = c;
+    alphaArgs[unit][3] = d;
+    alphaArgDirty |= 1 << unit;
+    dirty |= 8;
+    savedAlphaArgDirty |= 1 << unit;
+    savedDirty |= 8;
+}
+void GSgfxLayer::tunitColorOp(u8 unit, GSgfxTunitOp operation, GSgfxTunitBias bias, GSgfxTunitScale scale, bool clamp, GSgfxTunitReg output) {
+    colorOps[unit].operation = operation;
+    colorOps[unit].bias = bias;
+    colorOps[unit].scale = scale;
+    colorOps[unit].clamp = clamp;
+    colorOps[unit].output = output;
+    colorOpDirty |= 1 << unit;
+    dirty |= 8;
+    savedColorOpDirty |= 1 << unit;
+    savedDirty |= 8;
+}
+void GSgfxLayer::tunitColorArg(u8 unit, GSgfxTunitCArg a, GSgfxTunitCArg b, GSgfxTunitCArg c, GSgfxTunitCArg d) {
+    colorArgs[unit][0] = a;
+    colorArgs[unit][1] = b;
+    colorArgs[unit][2] = c;
+    colorArgs[unit][3] = d;
+    colorArgDirty |= 1 << unit;
+    dirty |= 8;
+    savedColorArgDirty |= 1 << unit;
+    savedDirty |= 8;
+}
+void GSgfxLayer::tunitMapping(u8 unit, u8 texture, u8 coordinate, u8 color) {
+    mapping[unit].texture = texture;
+    mapping[unit].coordinate = coordinate;
+    if (color != 0xff) mapping[unit].color = color + 4;
+    else mapping[unit].color = 0xff;
+    mappingDirty |= 1 << unit;
+    dirty |= 8;
+    savedMappingDirty |= 1 << unit;
+    savedDirty |= 8;
+}
+void GSgfxLayer::texSelect(u8 unit, GStexture* texture) {
+    if (textures[unit] == texture && savedTextures[unit] == texture && !texture->dirty) return;
+    textures[unit] = texture;
+    textureDirty |= 1 << unit;
+    savedTextures[unit] = texture;
+    savedTextureDirty |= 1 << unit;
+}
+
+extern "C" void GSgfxVFSetArray(void*, s32, s32, void*, u8, u32);
+extern "C" void dlDraw__10GSgfxLayerFP7GSgfxDL(GSgfxLayer*, void*);
+extern "C" void beginSurface__10GSgfxLayerFUs(GSgfxLayer*, u16);
+extern "C" void endSurface__10GSgfxLayerFv(GSgfxLayer*);
+struct ShapeAttributeTable { u32 value[4]; };
+static const ShapeAttributeTable kShapeAttributes = {{13, 14, 15, 16}};
+extern "C" void DrawShapeGfx__13GsShapeObjectFP10GSgfxLayersUc(GsShapeObject* self, GSgfxLayer* layer, s16, u8) {
+    ShapeAttributeTable attributes = kShapeAttributes;
+    u16 vertexCount;
+    u16 textureCount;
+    u16 columns;
+    s32 i;
+    bool ready;
+    columns = self->entry->segmentsU + 1;
+    textureCount = self->entry->textureCount;
+    vertexCount = self->entry->vertexCount;
+    if (self->vertexArrays[0] == 0) {
+        ready = false;
+        goto done;
+    }
+    if (self->vertexArrays[0] != 0) {
+        GSgfxVFSetArray(self->vertexFormat, 9, 3, self->vertexArrays[0], 12, vertexCount * 12);
+    } else {
+        ready = false;
+        goto done;
+    }
+    if (self->vertexArrays[1] != 0) {
+        GSgfxVFSetArray(self->vertexFormat, 11, 3, self->vertexArrays[1], 4, vertexCount * 4);
+    } else {
+        ready = false;
+        goto done;
+    }
+    for (i = 0; i < self->entry->textureCount; ++i) {
+        if (self->vertexArrays[2 + i] != 0) {
+            GSgfxVFSetArray(self->vertexFormat, attributes.value[i], 3, self->vertexArrays[2 + i], 8, vertexCount * 8);
+        } else {
+            ready = false;
+            goto done;
+        }
+    }
+    ready = true;
+done:
+    if (ready) {
+        u16 row;
+        *(u32*)((u8*)layer + 0x199c) = (u32)self->vertexFormat;
+        *(u32*)((u8*)layer + 0x1998) = 0x98;
+        u32 vertexTotal = columns * 2;
+        for (row = 0; row < self->entry->segmentsV; ++row) {
+            u16 column;
+            u16 base = row * columns;
+            beginSurface__10GSgfxLayerFUs(layer, vertexTotal);
+            u16 next = (row + 1) * columns;
+            for (column = 0; column < columns; ++column) {
+                u16 first = column + base;
+                u16 second = column + next;
+                u16 j;
+                GXWGFifo.u16 = first;
+                GXWGFifo.u16 = first;
+                for (j = 0; j < textureCount; ++j) GXWGFifo.u16 = first;
+                GXWGFifo.u16 = second;
+                GXWGFifo.u16 = second;
+                for (j = 0; j < textureCount; ++j) GXWGFifo.u16 = second;
+            }
+            endSurface__10GSgfxLayerFv(layer);
+        }
+    }
+}
+
+extern "C" void SetStateMode__13GsShapeObjectFP10GSgfxLayer(GsShapeObject* self, GSgfxLayer* layer) {
+    u8 depth = self->entry->reserved05[0] != 0;
+    u8 alpha = self->entry->reserved05[1] != 0;
+    u8 type;
+    if (self->entry->shapeType == 8) {
+        depth = 1;
+        alpha = 1;
+    }
+    if (depth == 1) layer->depthEnable = 1;
+    else layer->depthEnable = 0;
+    layer->depthFunction = 1;
+    layer->markPixel(8);
+    layer->colorUpdate = 1;
+    layer->alphaUpdate = 1;
+    if (alpha == 1) layer->destinationAlpha = 1;
+    else layer->destinationAlpha = 0;
+    layer->markPixel(4);
+    layer->cullMode = *((u8*)self->entry + 0xd8);
+    layer->transformDirty |= 2;
+    layer->dirty |= 2;
+    layer->savedTransformDirty |= 2;
+    layer->savedDirty |= 2;
+    type = self->entry->shapeType;
+    if (type == 10 && self->entry->textureCount >= 2) {
+        u8 blend = *((u8*)self->entry->textures[1] + 0xa);
+        switch (blend) {
+        case 2:
+        case 4:
+            type = blend;
+            break;
+        }
+    }
+    switch (type) {
+    case 4:
+        layer->selectShader(1);
+        layer->setBlend(1, 4, 1, 5);
+        break;
+    case 5:
+        layer->selectShader(1);
+        layer->setBlend(3, 4, 1, 5);
+        break;
+    case 2:
+        layer->selectShader(1);
+        layer->setBlend(1, 4, 5, 5);
+        break;
+    case 8:
+        layer->selectShader(1);
+        layer->setBlend(1, 4, 5, 5);
+        break;
+    case 10:
+        layer->selectShader(1);
+        layer->setBlend(1, 4, 5, 5);
+        break;
+    default:
+        layer->selectShader(1);
+        layer->setBlend(1, 4, 5, 5);
+        break;
+    }
+}
+
+extern "C" void CallDisplayListShape__13GsShapeObjectFP10GSgfxLayersUc(GsShapeObject* self, GSgfxLayer* layer, s16 instance, u8 flags) {
+    if (self->displayList) {
+        s32 vertexCount;
+        tagGsFilePrimObjectEntry* entry = self->entry;
+        u32 attributes[4] = {13, 14, 15, 16};
+        vertexCount = entry->vertexCount;
+        if (self->vertexArrays[0] != 0) {
+            if (self->vertexArrays[0] != 0) {
+                GSgfxVFSetArray(self->vertexFormat, 9, 3, self->vertexArrays[0], 12, vertexCount * 12);
+                if (self->vertexArrays[1] != 0) {
+                    GSgfxVFSetArray(self->vertexFormat, 11, 3, self->vertexArrays[1], 4, vertexCount * 4);
+                    GsShapeObject* arrays = self;
+                    u32* attribute = attributes;
+                    u32 size = vertexCount * 8;
+                    for (vertexCount = 0; vertexCount < self->entry->textureCount; arrays = (GsShapeObject*)((u8*)arrays + 4), ++attribute, ++vertexCount) {
+                        if (arrays->vertexArrays[2] == 0) break;
+                        GSgfxVFSetArray(self->vertexFormat, *attribute, 3, arrays->vertexArrays[2], 8, size);
+                    }
+                }
+            }
+        }
+        dlDraw__10GSgfxLayerFP7GSgfxDL(layer, self->displayList);
+    } else {
+        DrawShapeGfx__13GsShapeObjectFP10GSgfxLayersUc(self, layer, instance, flags);
+    }
 }

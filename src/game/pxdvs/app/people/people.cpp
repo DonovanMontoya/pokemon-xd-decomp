@@ -1,5 +1,6 @@
 #include <game/pxdvs/app/people/runtime.hpp>
 #pragma dont_inline on
+namespace GSscript { struct Tiga { int getNameToFuncId(const char*); }; }
 extern "C" {
 f64 fmod(f64, f64);
 f32 PSVECDistance(GSvec*, GSvec*);
@@ -108,17 +109,19 @@ void peopleSetDisp(u32 group, u32 resource, u8 visible) {
 }
 bool peopleCheckFlag(u32 group, u32 resource, u32 flags) {
     tagPeopleWork* work = peopleGet(group, resource);
-    bool result;
-    if (!work) result = 0;
-    else result = peopleBiosCheckFlag(work, flags);
-    return result;
+    if (work == 0) {
+        return 0;
+    } else {
+        return peopleBiosCheckFlag(work, flags);
+    }
 }
 s32 peopleGetFlags(u32 group, u32 resource) {
     tagPeopleWork* work = peopleGet(group, resource);
-    s32 result;
-    if (!work) result = 0;
-    else result = work->flags;
-    return result;
+    if (work == 0) {
+        return 0;
+    } else {
+        return work->flags;
+    }
 }
 void peopleSetFlagOff(u32 group, u32 resource, u32 flags) {
     tagPeopleWork* work = peopleGet(group, resource);
@@ -553,7 +556,8 @@ void peopleGetNeckPos(u32 group, u32 resource, GSvec* result) {
     if (work) {
         PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
         if (info) {
-            peopleGetPartsPos(group, resource, peopleInfoBiosGetNeckIndex(info), result);
+            s8 neck = peopleInfoBiosGetNeckIndex(info);
+            peopleGetPartsPos(group, resource, neck, result);
             result->param2 = peopleBiosGetPosPtr(work)->param2;
         }
     }
@@ -890,8 +894,11 @@ void _peopleMoveTypeLinear__FP13tagPeopleWork(tagPeopleWork* work) {
 }
 u8 peopleCheckTresure(u32 group, u32 resource) {
     tagPeopleWork* work = peopleGet(group, resource);
-    if (!work) return 0;
-    return (work->resource & 0x7FFF0000) == 0x7FFF0000;
+    if (work == 0) {
+        return 0;
+    } else {
+        return (work->resource & 0x7FFF0000) == 0x7FFF0000;
+    }
 }
 void peopleWalkToTarget(u32 group, u32 resource, u32 targetGroup, u32 targetResource, u8 rotate, f32 distance) {
     GSvec difference, target, current;
@@ -1025,5 +1032,708 @@ void peopleSetSpeedRate(u32 group, u32 resource, f32 rate) {
             }
         }
     }
+}
+
+struct floorCharacter_dd_;
+floorCharacter_dd_* floorCharacterBiosFindByResID(u32, u32);
+u32 floorCharacterBiosGetMoveSctID(floorCharacter_dd_*);
+u32 floorCharacterBiosGetTalkSctID(floorCharacter_dd_*);
+GSscript::Tiga* floorGetCurentScript__Fv();
+u32 peopleGetMoveSctID(u32 group, u32 resource) {
+    return floorCharacterBiosGetMoveSctID(floorCharacterBiosFindByResID(group, resource));
+}
+u32 peopleGetTalkSctID(u32 group, u32 resource) {
+    if (resource == 101 || resource == 104 || resource == 105) return floorGetCurentScript__Fv()->getNameToFuncId("talk_follower");
+    floorCharacter_dd_* character = floorCharacterBiosFindByResID(group, resource);
+    if (character) return floorCharacterBiosGetTalkSctID(character);
+    return 0;
+}
+void* g_pMana;
+void peopleSetFollowerPtr(void* mana) { g_pMana = mana; }
+void _peopleRegisterAnimMix() {}
+void GSmodelDetachFromGSpart(GSmodel*, s32);
+void GSmodelAttachToGSpart(GSmodel*, GSpart*, s32, s32, u8);
+static u8 m_b_bikkuri;
+void peopleDetach(u32 group, u32 resource, s32 flag) {
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        GSmodel* model = (GSmodel*)GSresGetResource(group, resource);
+        if (model && work->attachIndex >= 0) {
+            work->attachGroup = -1;
+            work->attachResource = -1;
+            work->attachIndex = -1;
+            GSmodelDetachFromGSpart(model, flag);
+            _peopleClearTargetIfFollower__FUlUl(group, resource);
+        }
+    }
+}
+void peopleDoAttach(GSmodel* model, s32 group, s32 resource, s32 index, u8 mode) {
+    GSmodel* target = (GSmodel*)GSresGetResource(group, resource);
+    if (target) {
+        s32 type = 7;
+        if (mode == 1) type = 8;
+        GSpart* part = GSmodelGetPart(target, index);
+        if (part) {
+            GSmodelAttachToGSpart(model, part, type, 0, m_b_bikkuri);
+            GSpartFree(part);
+        }
+    }
+}
+void peopleAttachWithMode(u32 group, u32 resource, s32 targetGroup, s32 targetResource, s32 index, u8 mode) {
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        GSmodel* model = (GSmodel*)GSresGetResource(group, resource);
+        if (model) {
+            GSvec rotation;
+            peopleDetach(group, resource, 1);
+            work->attachGroup = targetGroup;
+            work->attachResource = targetResource;
+            work->attachIndex = index;
+            peopleDoAttach(model, targetGroup, targetResource, index, mode);
+            work->unknown0E = 0;
+            peopleBiosGetRot(work, &rotation);
+            work->targetRotation = rotation.param2;
+        }
+    }
+}
+void peopleAttach(u32 group, u32 resource, s32 targetGroup, s32 targetResource, s32 index) {
+    peopleAttachWithMode(group, resource, targetGroup, targetResource, index, 0);
+}
+bool peopleSetNeckLimitHold(u32 group, u32 resource, u8 hold) {
+    bool previous;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work) return 0;
+    previous = peopleBiosCheckFlag(work, 2);
+    if (hold) peopleBiosSetFlagOn(work, 2);
+    else peopleBiosSetFlagOff(work, 2);
+    return previous;
+}
+
+// Batch 2.
+class Hero {
+public:
+    static Hero* getHeroPtr();
+    u32 getFollowerGrpID();
+    u32 getFollowerResID();
+};
+struct FloorModuleInterface {
+    void (*create)(u32, s32);
+    void (*pre)(u32, s32);
+    void (*normal)(u32, s32);
+    s32 (*thread)(void*);
+    void (*post)(u32, s32);
+    void (*free)(u32, s32);
+    const char* (*getName)();
+    void (*saveState)(s32, void*, u32);
+    void (*loadState)(s32, void*, u32);
+    s32 (*getStateSize)(s32);
+    s32 (*getStateID)();
+};
+struct _GSmodelAnimCBData {
+    u32 unknown0;
+    s32 index;
+    void* user;
+};
+void heroMoveDismissMember(s32);
+void heroMoveJoinMember(s32);
+void* GSlightCreate();
+void GSlightSetType(void*, s32);
+void GSlightSetActive(void*, u8);
+void FloorModuleInterface_clear(FloorModuleInterface*);
+u32 floorRegisterModule(u8, u32, FloorModuleInterface*);
+void* floorOpenObject(u32);
+void GSresRegisterResource(void*, u32, u32, void*);
+void* floorCreateThread(u32, u32, u32, void (*)());
+u32 GSthreadGetCurrentThread();
+void peopleBiosAllocWork();
+void GSmodelSetVisibility(GSmodel*, u8);
+void GSmodelGetPosition(GSmodel*, GSvec*);
+void GSmodelGetRotation(GSmodel*, GSvec*);
+void GSmodelSetPosition(GSmodel*, GSvec*);
+void GSmodelSetRotation(GSmodel*, GSvec*);
+void* floorReadResourceID(u32, u32);
+u8 peopleChangeModel(tagPeopleWork*, u32, u32, u32);
+u8 peopleSetInfo(tagPeopleWork*, u32, u32, u32);
+s32 peopleMoveAlongAngle(u32, u32, f32, f32);
+void _peopleEnterFloor__FUi14FloorEnterMode(u32, s32);
+void _peopleAnimEndCallback__FP8_GSmodelP18_GSmodelAnimCBData(GSmodel*, _GSmodelAnimCBData*);
+void _peopleLoadThread__Fv();
+u32 peopleGetHumanID(u32, u32);
+tagPeopleWork* peopleSearchID(u32);
+u8 peopleReadObject(u32, u32, u32);
+static u32 m_change_people_objID;
+static u32 _hModulePeople;
+static FloorModuleInterface _floorModulePeople;
+static void* shadowLight[2];
+
+void peopleChangeFollower(u32 objectId) {
+    m_change_people_objID = objectId;
+    if (GSthreadGetCurrentThread() == 0) floorCreateThread(0x20, 0, 1, _peopleLoadThread__Fv);
+    else _peopleLoadThread__Fv();
+}
+void _peopleLoadThread__Fv() {
+    Hero* hero = Hero::getHeroPtr();
+    u32 group = hero->getFollowerGrpID();
+    u32 resource = hero->getFollowerResID();
+    if (peopleGet(group, resource)) {
+        switch (resource) {
+        case 0x65:
+            heroMoveDismissMember(2);
+            heroMoveDismissMember(3);
+            heroMoveJoinMember(1);
+            break;
+        case 0x68:
+            heroMoveDismissMember(1);
+            heroMoveDismissMember(3);
+            heroMoveJoinMember(2);
+            break;
+        case 0x69:
+            heroMoveDismissMember(1);
+            heroMoveDismissMember(2);
+            heroMoveJoinMember(3);
+            break;
+        }
+        peopleReadObject(group, resource, m_change_people_objID);
+    }
+}
+void _peopleInitShadow__Fv() {
+    for (s32 i = 0; i < 2; ++i) {
+        shadowLight[i] = GSlightCreate();
+        GSlightSetType(shadowLight[i], 2);
+        GSlightSetActive(shadowLight[i], 0);
+    }
+}
+void peopleInit() {
+    peopleBiosAllocWork();
+    _peopleInitShadow__Fv();
+    FloorModuleInterface_clear(&_floorModulePeople);
+    _floorModulePeople.saveState = _peopleMakeStateData__F14FloorStateModePvUl;
+    _floorModulePeople.loadState = _peopleRestoreStateData__F14FloorStateModePvUl;
+    _floorModulePeople.getStateSize = _peopleGetStateSize__F14FloorStateMode;
+    _floorModulePeople.getStateID = _peopleGetMagicNumber__Fv;
+    _floorModulePeople.getName = _peopleGetModuleName__Fv;
+    _floorModulePeople.pre = _peopleEnterFloor__FUi14FloorEnterMode;
+    _floorModulePeople.post = _peopleExitFloor__FUi14FloorEnterMode;
+    _hModulePeople = floorRegisterModule(10, 0, &_floorModulePeople);
+    m_peopleBlock = 0;
+}
+void _peopleMarkAnimEndCallback__FP8_GSmodelP18_GSmodelAnimCBData(GSmodel* model, _GSmodelAnimCBData* data) {
+    u32* ids = (u32*)data->user;
+    GSmodelSetVisibility(model, 0);
+    peopleSetFlagOn(ids[0], ids[1], 0x40000);
+}
+void _peopleExecAnimEndCallBack__FP13tagPeopleWork(tagPeopleWork* work) {
+    s32 first, second;
+    _GSmodelAnimCBData data;
+    GSmodelGetAnimIndex(work->model, &first, &second);
+    data.index = first;
+    if (second != -1) data.index = second;
+    data.user = work;
+    _peopleAnimEndCallback__FP8_GSmodelP18_GSmodelAnimCBData(work->model, &data);
+}
+s32 peopleMoveForward(u32 group, u32 resource, f32 distance) {
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work || !work->model) return 1;
+    return peopleMoveAlongAngle(group, resource, distance, work->targetRotation);
+}
+u8 peopleOpenSub(tagPeopleWork* work, u32 group, u32 resource, u32 object) {
+    void* model = floorOpenObject(object);
+    if (!model) return 0;
+    GSresRegisterResource(model, group, resource, 0);
+    work->model = (GSmodel*)model;
+    work->unknown13E[0] = 0;
+    return peopleSetInfo(work, group, resource, object);
+}
+u8 _peopleOpenSubWithoutModel__FP13tagPeopleWorkUlUlUl(tagPeopleWork* work, u32 group, u32 resource, u32 object) {
+    work->model = 0;
+    work->unknown13E[0] = 0;
+    return peopleSetInfo(work, group, resource, object);
+}
+u8 peopleReadObject(u32 group, u32 resource, u32 objectId) {
+    GSvec position;
+    GSvec rotation;
+    GSmodel* model;
+    u8 visible;
+    tagPeopleWork* work;
+    u32 previous;
+    u32 human = peopleGetHumanID(group, resource);
+    if (!human) return 0;
+    work = peopleSearchID(human);
+    if (!work) return 0;
+    if (objectId == work->object) return 1;
+    visible = work->visible;
+    model = peopleBiosGetModelPtr(work);
+    previous = work->object;
+    if (!floorReadResourceID(0x9A, objectId)) return 0;
+    if (model) {
+        GSmodelSetVisibility(model, 0);
+        GSmodelGetPosition(model, &position);
+        GSmodelGetRotation(model, &rotation);
+    }
+    if (!peopleChangeModel(work, group, resource, objectId)) {
+        work->object = 0;
+        return 0;
+    }
+    work->object = objectId;
+    model = peopleBiosGetModelPtr(work);
+    if (model) {
+        GSmodelSetVisibility(model, visible);
+        GSmodelSetPosition(model, &position);
+        GSmodelSetRotation(model, &rotation);
+    }
+    if (work->unknown13E[0]) floorFreeResource(0x9A, previous);
+    work->unknown13E[0] = 1;
+    if (!peopleSetInfo(work, group, resource, objectId)) return 0;
+    peopleSetDisp(group, resource, visible);
+    return 1;
+}
+
+// Batch 3.
+void GSpartRegisterAnimMix(GSpart*, s32, u32, void*, void*);
+void GSpartUnregisterAnimMix(GSpart*, s32);
+s8 peopleInfoBiosGetChestIndex(PeopleInfo*);
+void GSmodelClearShadowFlags(GSmodel*, u32);
+void GSmodelSetShadowFlags(GSmodel*, u32);
+void _peopleUpdateShadows__FP13tagPeopleWork(tagPeopleWork*);
+void _peoplePostUpdateShadows__Fv();
+
+void _registerNeck__FP13tagPeopleWork(tagPeopleWork* work) {
+    if (work->object != 0) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
+        if (info) {
+            s8 neck = peopleInfoBiosGetNeckIndex(info);
+            if (neck >= 0 && work->animationMixRegistered == 0) {
+                GSpart* part = GSmodelGetPart(work->model, neck);
+                if (part) {
+                    GSpartRegisterAnimMix(part, 2, 0x20202, (void*)_peopleGetNeckRotationCB__FP6GSpart13GSpartMixTypePvP5GSvec, work);
+                    GSpartFree(part);
+                    work->animationMixRegistered = 1;
+                }
+            }
+        }
+    }
+}
+void _peopleUnregisterChestPart__FP13tagPeopleWork(tagPeopleWork* work) {
+    if (work && work->used && work->model && work->chestHidden == 0 && work->object) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
+        if (info) {
+            s8 chest = peopleInfoBiosGetChestIndex(info);
+            if (chest >= 0) {
+                work->chestBlend = 0.0f;
+                if (work->secondaryMixRegistered == 1) {
+                    GSpart* part = GSmodelGetPart(work->model, chest);
+                    if (part) {
+                        GSpartUnregisterAnimMix(part, 2);
+                        GSpartFree(part);
+                        work->secondaryMixRegistered = 0;
+                    }
+                }
+                work->chestHidden = 1;
+            }
+        }
+    }
+}
+void _peopleRegisterChestPart__FP13tagPeopleWork(tagPeopleWork* work) {
+    if (work && work->used && work->model && work->chestHidden != 0 && work->object) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(work->object);
+        if (info) {
+            s8 chest = peopleInfoBiosGetChestIndex(info);
+            if (chest >= 0) {
+                work->chestBlend = 0.0f;
+                if (work->secondaryMixRegistered == 0) {
+                    GSpart* part = GSmodelGetPart(work->model, chest);
+                    if (part) {
+                        GSpartRegisterAnimMix(part, 2, 0x20202, (void*)_peopleGetChestRotationCB__FP6GSpart13GSpartMixTypePvP5GSvec, work);
+                        GSpartFree(part);
+                        work->secondaryMixRegistered = 1;
+                    }
+                }
+                work->chestHidden = 0;
+            }
+        }
+    }
+}
+void peopleUpdateShadow() {
+    tagPeopleWork* work;
+    s32 index = peopleBiosGetMaxNum();
+    while (index-- > 0) {
+        work = peopleBiosGetWorkPtr(index);
+        if (work->used && work->model && work->visible) {
+            if (peopleBiosCheckFlag(work, 0x2000)) GSmodelClearShadowFlags(work->model, 1);
+            else GSmodelSetShadowFlags(work->model, 1);
+            _peopleUpdateShadows__FP13tagPeopleWork(work);
+        }
+    }
+    _peoplePostUpdateShadows__Fv();
+}
+s32 peopleCheckNeckRotate(u32 group, u32 resource, u8 wait) {
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work) return 0;
+    GSthreadSwitch();
+    for (;;) {
+        f32 dx = work->neckRotation.param1 - work->neckTargetRotation.param1;
+        f32 dy = work->neckRotation.param2 - work->neckTargetRotation.param2;
+        if (dx < 0.00001f && dx > -0.00001f && dy < 0.00001f && dy > -0.00001f) return 0;
+        if (wait) GSthreadSwitch();
+        else return 1;
+    }
+}
+s32 peopleMoveCheck(u32 group, u32 resource, u8 wait) {
+    s32 count = 0;
+    s32 animation;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work) return 0;
+    peopleBiosSetFlagOn(work, 8);
+    for (;;) {
+        GSmodelGetAnimIndex(work->model, &animation, 0);
+        if (animation == 0) {
+            if (++count > 180) {
+                work->walkActive = 0;
+                return 0;
+            }
+        }
+        if (!work->walkActive && !work->unknown0E) return 0;
+        if (!peopleBiosCheckFlag(work, 8)) return 0;
+        if (!_peopleIsMoving__FP13tagPeopleWork(work) && !work->unknown0E) return 0;
+        if (wait) GSthreadSwitch();
+        else return 1;
+    }
+}
+
+// Batch 4.
+f32 HSD_Randf();
+u32 HSD_Rand();
+void soundOpenPlay(u32, u32, u32);
+s32 peopleStartRotRandom(u32 group, u32 resource, f32 centre, f32 range) {
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (!work) return 0;
+    work->walkActive = 5;
+    work->walkPhase = 0;
+    peopleSetFlagOn(group, resource, 8);
+    peopleBiosGetPos(work, &work->originPosition);
+    f32 randomOffset = 2.0f * HSD_Randf() - 1.0f;
+    work->motionFrame = work->randomRange * randomOffset + work->randomCentre;
+    work->randomCentre = centre;
+    work->randomRange = range;
+    work->unknown28 = work->unknown20;
+    return 1;
+}
+void peopleFallAppear(u32 group, u32 resource, f32 height) {
+    GSvec position;
+    s32 count = 0;
+    s32 previous;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if (work) {
+        peopleGetPos(group, resource, &position);
+        position.param2 = height;
+        peopleSetDisp(group, resource, 1);
+        soundOpenPlay(0x5A2, 0, 0x7F);
+        peopleSetMotionType(work, 7);
+        for (;;) {
+            previous = count++;
+            position.param2 = position.param2 - ((f32)count * (0.4f * (f32)count) / 2.0f - (f32)previous * (0.4f * (f32)previous) / 2.0f);
+            peopleSetPos(group, resource, &position);
+            if (position.param2 <= 0.0f) {
+                position.param2 = 0.0f;
+                peopleSetPos(group, resource, &position);
+                break;
+            }
+            GSthreadSwitch();
+        }
+        soundOpenPlay(0x5A3, 0, 0x7F);
+        peopleSetMotionType(work, 8);
+        peopleWaitSyncMotion(group, resource, 1);
+        peopleSetMotionType(work, 1);
+    }
+}
+
+// Batch 5.
+void* floorDataBiosGetCurrentPtr();
+u8 floorDataBiosGetFloorKind(void*);
+void peopleTalkEnterFloor();
+s32 peopleViewerThread(void*);
+void peopleViewerSetPlaySpeedRate(f32);
+void gimmickBoxFloorInit();
+static u8 m_hero_move = 1;
+static u8 m_bPeopleOpenWithModel = 1;
+static f32 m_hero_idling_time;
+static f32 m_hero_next_special_idling_time;
+static s32 m_before_special_effect;
+enum PeopleEnterMode { PEOPLE_ENTER_0 = 0, PEOPLE_ENTER_1 = 1, PEOPLE_ENTER_3 = 3 };
+void _peopleEnterFloor__FUi14FloorEnterMode(u32 floor, s32 modeValue) {
+    PeopleEnterMode mode = (PeopleEnterMode)modeValue;
+    if (floorDataBiosGetFloorKind(floorDataBiosGetCurrentPtr()) != 2) {
+        if (mode == PEOPLE_ENTER_0 || mode == PEOPLE_ENTER_1 || mode == PEOPLE_ENTER_3) {
+            s32 index;
+            m_bPeopleOpenWithModel = 1;
+            peopleTalkEnterFloor();
+            if (floor == 0xFA1) floorCreateThread(0x40, 0, 1, (void (*)())peopleViewerThread);
+            for (index = 0; index < peopleBiosGetMaxNum(); ++index) {
+                tagPeopleWork* work = peopleBiosGetWorkPtr(index);
+                if (work) work->idleTimer = 0.0f;
+            }
+            peopleViewerSetPlaySpeedRate(1.0f);
+            m_hero_move = 1;
+            gimmickBoxFloorInit();
+            switch ((u16)HSD_Rand() % 3) {
+            case 0: m_before_special_effect = 0x13; break;
+            case 1: m_before_special_effect = 0x14; break;
+            default: m_before_special_effect = 0x15; break;
+            }
+            m_hero_idling_time = 0.0f;
+            m_hero_next_special_idling_time = 4.0f * HSD_Randf() + 8.0f;
+            peopleSetMotion(0, 100, 3, 0, 1);
+        }
+    }
+}
+
+// Batch 6.
+f32 peopleInfoBiosGetTalkDistance(PeopleInfo*);
+void _peopleUpdateNeck__FP13tagPeopleWorkf(tagPeopleWork*, f32);
+void* memset(void*, int, u32);
+void* g_pHero;
+u32 peopleOpen(u32 group, u32 resource, u32 object) {
+    tagPeopleWork* work;
+    PeopleInfo* info;
+    Hero* hero;
+    u32 followerGroup;
+    u32 followerResource;
+    if (peopleGetHumanID(group, resource) != 0) return 0;
+    work = peopleBiosGetNewWork();
+    if (!work) return 0;
+    if (m_bPeopleOpenWithModel != 0) {
+        if (!peopleOpenSub(work, group, resource, object)) {
+            memset(work, 0, 0x1B0);
+            return 0;
+        }
+    } else {
+        if (!_peopleOpenSubWithoutModel__FP13tagPeopleWorkUlUlUl(work, group, resource, object)) {
+            memset(work, 0, 0x1B0);
+            return 0;
+        }
+    }
+    work->slowDown = 1;
+    if (work->group == 0 && work->resource == 0x64) g_pHero = work;
+    hero = Hero::getHeroPtr();
+    followerGroup = hero->getFollowerGrpID();
+    followerResource = hero->getFollowerResID();
+    if (work->group == followerGroup && work->resource == followerResource) g_pMana = work;
+    info = peopleInfoBiosGetPtr(work->object);
+    if (info == 0) work->treasureSearchDistance = 3.0f;
+    else work->treasureSearchDistance = peopleInfoBiosGetTalkDistance(info);
+    work->unknown7C[0] = 0;
+    work->walkPoints = 0;
+    work->walkPointCount = 0;
+    work->unknown2C = 1.1764706f;
+    work->motionFrame = 0.0f;
+    work->randomCentre = 5.0f;
+    work->randomRange = 3.0f;
+    f32 randomOffset = 2.0f * HSD_Randf() - 1.0f;
+    work->motionFrame = work->randomRange * randomOffset + work->randomCentre;
+    work->secondaryMixRegistered = 0;
+    work->rotationProgress = 0.0f;
+    work->rotationRate = 1.0f;
+    work->neckEnabled = 0;
+    work->neckMinStep = 0.07853982f;
+    work->neckTargetRotation.param1 = 0.0f;
+    work->neckTargetRotation.param2 = 0.0f;
+    work->neckTargetRotation.param3 = 0.0f;
+    work->neckRotation.param1 = 0.0f;
+    work->neckRotation.param2 = 0.0f;
+    work->neckRotation.param3 = 0.0f;
+    work->chestRotation.param1 = 0.0f;
+    work->chestRotation.param2 = 0.0f;
+    work->chestRotation.param3 = 0.0f;
+    work->targetRotation = 0.0f;
+    if (work->model) {
+        _peopleRegisterChestPart__FP13tagPeopleWork(work);
+        _peopleUpdateNeck__FP13tagPeopleWorkf(work, 75.0f);
+    }
+    return (u32)work->self;
+}
+
+// Batch 7.
+struct PeopleCharacterFlags {
+    u8 reserved : 5;
+    u8 alwaysBlend : 1;
+    u8 reserved2 : 2;
+};
+void GSresChangeResourceAdress(void*, u32, u32, u32);
+u8 heroIsPlayerPeople(u32, u32);
+u32 floorDataBiosGetShadowLightID(void*);
+u32 floorGetCurrentGroupID();
+void GSmodelSetShadowLight(GSmodel*, void*);
+u8 peopleChangeModel(tagPeopleWork* work, u32 group, u32 resource, u32 object) {
+    GSmodel* model;
+    PeopleCharacterFlags* character;
+    s32 shadow;
+    u32 lightId;
+    void* light;
+    if (object == work->object) return 1;
+    peoplePartAnimationBlinkStop(work);
+    model = (GSmodel*)floorOpenObject(object);
+    if (!model) return 0;
+    GSmodelFree(work->model);
+    GSresChangeResourceAdress(model, group, resource, 0);
+    work->model = model;
+    work->group = group;
+    work->resource = resource;
+    work->object = object;
+    peopleSetMotionType(work, 1);
+    work->attachGroup = -1;
+    work->attachResource = -1;
+    work->attachIndex = -1;
+    work->neckEnabled = 0;
+    character = (PeopleCharacterFlags*)floorCharacterBiosFindByResID(group, resource);
+    if (character) {
+        if (isAlwayBlendChara__13tagPeopleWorkCFv(work) || character->alwaysBlend == 1) {
+            GSmodelEnableAnimBlend(work->model);
+            work->animationBlend = 1;
+        } else {
+            work->animationBlend = 0;
+        }
+    }
+    floorDataBiosGetCurrentPtr();
+    shadow = heroIsPlayerPeople(group, resource) != 1;
+    lightId = floorDataBiosGetShadowLightID(floorDataBiosGetCurrentPtr());
+    if (lightId) light = GSresGetResource(floorGetCurrentGroupID(), lightId);
+    else light = shadowLight[shadow];
+    GSmodelSetShadowFlags(model, 1);
+    if (shadow == 0) GSmodelSetShadowFlags(model, 4);
+    GSmodelSetShadowLight(model, light);
+    work->secondaryMixRegistered = 0;
+    return 1;
+}
+
+// Batch 8.
+struct PeopleCharacterInfo {
+    u8 reserved : 5;
+    u8 alwaysBlend : 1;
+    u8 reserved2 : 2;
+    u8 unknown1;
+    u8 unknown2;
+    u8 animation;
+};
+void peopleSetNeckTargetHero(u32, u32);
+void GSmodelSetBoundCheck(GSmodel*, u8);
+u8 peopleInfoBiosGetBoundCheck(PeopleInfo*);
+u8 peopleViewerIsCheckNpc(tagPeopleWork*);
+void GSmodelStartAnimation(GSmodel*);
+void GSmodelRecalculateBound(GSmodel*);
+u8 peopleSetInfo(tagPeopleWork* work, u32 group, u32 resource, u32 object) {
+    s32 firstIndex, secondIndex;
+    f32 firstFrames, secondFrames;
+    f32 frames;
+    u32 lightId;
+    PeopleCharacterInfo* character;
+    void* light;
+    s32 shadow;
+    work->group = group;
+    work->resource = resource;
+    work->object = object;
+    work->state = 1;
+    work->visible = 1;
+    peopleSetMotionType(work, 1);
+    if (resource == 0x64) peopleSetFlags(group, resource, peopleGetFlags(group, resource) | 0x40000000 | 0xF00);
+    else if (resource == 0x65) peopleSetFlags(group, resource, peopleGetFlags(group, resource) | 0x701);
+    else peopleSetFlags(group, resource, peopleGetFlags(group, resource) | 0x700);
+    work->attachGroup = -1;
+    work->attachResource = -1;
+    work->attachIndex = -1;
+    {
+        Hero* hero = Hero::getHeroPtr();
+        u32 followerGroup = hero->getFollowerGrpID();
+        u32 followerResource = hero->getFollowerResID();
+        if (group == followerGroup && resource == followerResource) peopleSetNeckTargetHero(group, resource);
+        else work->neckEnabled = 0;
+    }
+    if (work->model) {
+        PeopleInfo* info = peopleInfoBiosGetPtr(object);
+        if (info) {
+            GSmodelSetBoundCheck(work->model, peopleInfoBiosGetBoundCheck(info));
+            peopleSetDefaultMotionTable(work->group, work->resource);
+        }
+    }
+    character = (PeopleCharacterInfo*)floorCharacterBiosFindByResID(group, resource);
+    if (work->model && character && (isAlwayBlendChara__13tagPeopleWorkCFv(work) || character->alwaysBlend == 1)) {
+        GSmodelEnableAnimBlend(work->model);
+        work->animationBlend = 1;
+    } else {
+        work->animationBlend = 0;
+    }
+    if (work->model) {
+        floorDataBiosGetCurrentPtr();
+        shadow = heroIsPlayerPeople(group, resource) != 1;
+        lightId = floorDataBiosGetShadowLightID(floorDataBiosGetCurrentPtr());
+        if (lightId) light = GSresGetResource(floorGetCurrentGroupID(), lightId);
+        else light = shadowLight[shadow];
+        GSmodelSetShadowFlags(work->model, 1);
+        if (shadow == 0) GSmodelSetShadowFlags(work->model, 4);
+        GSmodelSetShadowLight(work->model, light);
+    }
+    work->chestHidden = 1;
+    work->waitAnimation = 0;
+    if (work->model && isAlwayBlendChara__13tagPeopleWorkCFv(work)) {
+        GSmodelEnableAnimBlend(work->model);
+        work->animationBlend = 1;
+    } else {
+        work->animationBlend = 0;
+    }
+    work->moveSpeed = work->unknown20;
+    work->unknown13E[1] = 0;
+    work->flag14C = 0;
+    work->flag14D = 0;
+    work->followerMotion = 0;
+    work->manualAnimation = 0;
+    if (work->model) {
+        setAnimType__13tagPeopleWorkF15GSmodelAnimType(work, 1);
+        GSmodelSetTexAnimRate(work->model, 0.5f * peopleViewerGetPlaySpeedRate(work));
+        if (peopleViewerIsCheckNpc(work)) {
+            setAnimIndex__13tagPeopleWorkFi(work, 0);
+            GSmodelStartAnimation(work->model);
+        } else {
+            character = (PeopleCharacterInfo*)floorCharacterBiosFindByResID(work->group, work->resource);
+            if (character == 0 || work->group == 0) {
+                if (isAlwayBlendChara__13tagPeopleWorkCFv(work)) setAnimBlend__13tagPeopleWorkFii(work, work->motions.idle, work->motions.walk);
+                else setAnimIndex__13tagPeopleWorkFi(work, work->motions.idle);
+            } else {
+                setAnimIndex__13tagPeopleWorkFi(work, character->animation);
+                if (character->animation != 3) work->manualAnimation = 1;
+            }
+            setAnimType__13tagPeopleWorkF15GSmodelAnimType(work, 1);
+            GSmodelStartAnimation(work->model);
+        }
+        GSmodelGetAnimIndex(work->model, &firstIndex, &secondIndex);
+        GSmodelGetFrameCount(work->model, &firstFrames, &secondFrames);
+        if (secondIndex == -1) frames = firstFrames;
+        else frames = secondFrames;
+        setAnimFrame__13tagPeopleWorkFf(work, frames * HSD_Randf());
+        GSmodelRecalculateBound(work->model);
+    }
+    work->neckMinStep = 0.07853982f;
+    work->neckMaxStep = 0.07853982f;
+    work->neckInstant = 0;
+    work->animationMixRegistered = 0;
+    work->neckRotation.param1 = 0.0f;
+    work->neckRotation.param2 = 0.0f;
+    work->neckRotation.param3 = 0.0f;
+    work->neckTargetRotation.param1 = 0.0f;
+    work->neckTargetRotation.param2 = 0.0f;
+    work->neckTargetRotation.param3 = 0.0f;
+    work->moveScriptThread = 0;
+    work->value150 = 0.0f;
+    work->chestRotation.param1 = 0.0f;
+    work->chestRotation.param2 = 0.0f;
+    work->chestRotation.param3 = 0.0f;
+    work->unknownEC.param1 = 0.0f;
+    work->unknownEC.param2 = 0.0f;
+    work->unknownEC.param3 = 0.0f;
+    work->secondaryMixRegistered = 0;
+    work->running = 0;
+    work->flag17F = 0;
+    work->rotationProgress = 0.0f;
+    work->rotationRate = 1.0f;
+    _registerNeck__FP13tagPeopleWork(work);
+    return 1;
 }
 }

@@ -212,7 +212,7 @@ void msgctrlSetValue(s32,u32);
 s32 pokecoloGetLanguage();
 void pokemonCreate(BingoPokemon *,s32,s32,s32);
 u16 pokemonDB_GetTokuseiDataId(u16);
-u16 pokemonDataBiosGetStatusFaceMenuSpriteId(void *);
+u32 pokemonDataBiosGetStatusFaceMenuSpriteId(void *, s32);
 u8 pokemonDataBiosGetZokuseiDataId(void *,u16);
 u32 pokemonGetStatus(BingoPokemon *,s32,s32,s32);
 u32 pokemonTokuseiDataBiosGetName(void *);

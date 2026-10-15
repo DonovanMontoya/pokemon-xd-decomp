@@ -1,7 +1,24 @@
 #include <game/pxdvs/GSAPI/GSScript/tiga.hpp>
+#include <libc/string.h>
+
+extern "C" {
+void* floorCreateThreadLocal(int, int, int, void (*)(GSscript::Tiga*, long));
+void GSthreadSetName(void*, const char*);
+void GSthreadSetArgs(void*, int, ...);
+}
 
 #pragma auto_inline off
 namespace GSscript {
+
+// Makes a script the current one for the duration of a scope.
+struct TigaCurrentScope {
+    Tiga* previous;
+    TigaCurrentScope(Tiga* tiga) {
+        previous = Tiga::m_cpCurrentObject;
+        Tiga::m_cpCurrentObject = tiga;
+    }
+    ~TigaCurrentScope() { Tiga::m_cpCurrentObject = previous; }
+};
 
 
 
@@ -9,6 +26,126 @@ int Tiga::getStateSize() {
     GSBinWriteSizeStream stream;
     makeStateData(&stream);
     return stream.getWriteSize();
+}
+
+void Tiga::makeStateData(GSBinWriteStream* stream) {
+    int i;
+    stream->writeU32(0);
+    stream->writeU32(field8D8);
+    stream->writeU32(chunk.blockA);
+    stream->writeU32(chunk.chankD);
+    stream->writeU32(threadCount);
+    for (i = 0; i < 4; i++) {
+        stream->writeFloat(timers[i]);
+    }
+    for (i = 0; i < 16; i++) {
+        stream->writeU8(flags[i]);
+    }
+    stream->writeU32(nextHandle);
+    stream->writeBool(hitFlag);
+    stream->writeU32(field930);
+    stream->writeU32(globalCount);
+    for (i = 0; i < globalCount; i++) {
+        globals[i].makeStateData(stream);
+    }
+    stream->writeU32(field968);
+    for (i = 0; i < field968; i++) {
+        stream->writeBool(((tigaArrayFixed**)field96C)[i]->isDynamic);
+        if (((tigaArrayFixed**)field96C)[i]->isDynamic == 0) {
+            stream->writeU32(((tigaArrayFixed**)field96C)[i]->count);
+            for (int j = 0; j < ((tigaArrayFixed**)field96C)[i]->count; j++) {
+                ((tigaArrayFixed**)field96C)[i]->get(j)->makeStateData(stream);
+            }
+        }
+    }
+    stream->writeU32(8);
+    for (i = 0; i < 8; i++) {
+        threads[i]->makeStateData(stream);
+    }
+}
+
+bool Tiga::restoreStateData(void* data, unsigned long size) {
+    GSBinReadStream stream(data, size);
+    TigaCurrentScope scope(this);
+    int i;
+    if (size == 0) {
+        return false;
+    }
+    if (stream.readU32() != 0) {
+        return false;
+    }
+    field8D8 = stream.readU32();
+    u32 blockA = stream.readU32();
+    if (blockA != chunk.blockA && (blockA != 0 || chunk.blockA != 0)) {
+        return false;
+    }
+    u32 chankD = stream.readU32();
+    if (chankD != chunk.chankD) {
+        return false;
+    }
+    threadCount = stream.readU32();
+    for (i = 0; i < 4; i++) {
+        timers[i] = stream.readFloat();
+    }
+    for (i = 0; i < 16; i++) {
+        flags[i] = stream.readU8();
+    }
+    nextHandle = stream.readU32();
+    hitFlag = stream.readBool();
+    field930 = stream.readU32();
+    globalCount = stream.readU32();
+    for (i = 0; i < globalCount; i++) {
+        globals[i].restoreStateData(&stream);
+    }
+    field968 = stream.readU32();
+    for (i = 0; i < field968; i++) {
+        stream.readU8();
+        if (((tigaArrayFixed**)field96C)[i]->isDynamic == 0) {
+            stream.readU32();
+            for (int j = 0; j < ((tigaArrayFixed**)field96C)[i]->count; j++) {
+                ((tigaArrayFixed**)field96C)[i]->get(j)->restoreStateData(&stream);
+            }
+        }
+    }
+    s32 count = 8;
+    s32 saved = stream.readU32();
+    if (saved < 8) {
+        count = saved;
+    }
+    for (i = 0; i < count; i++) {
+        threads[i]->initTiga();
+        threads[i]->restoreStateData(&stream);
+        if (threads[i]->state != 0) {
+            threads[i]->handle = nextHandle++;
+            threads[i]->group = floorGetCurrentFloorGroupID();
+            if (nextHandle == 0) {
+                nextHandle = 1;
+            }
+        }
+    }
+    for (i = 0; i < count; i++) {
+        if (threads[i]->state != 0) {
+            s32 handle = threads[i]->handle;
+            void* thread = floorCreateThreadLocal(1, 0x2000, 1, _executeScriptThread);
+            GSthreadSetName(thread, "GSscript thread");
+            GSthreadSetArgs(thread, 2, this, handle);
+            threads[i]->thread = thread;
+        }
+    }
+    return true;
+}
+
+int Tiga::getNameToFuncId(const char* name) {
+    int index = 0;
+    if (funcCount == 0) {
+        return 0;
+    }
+    for (u32* p = codeTable; p != codeTable + codeCount * 2; p += 2, index++) {
+        if (strcmp((const char*)p[1], name) == 0) {
+            return index | 0x01000000;
+        }
+    }
+    return 0;
 }
 
 int Tiga::getResultValue(long) {
@@ -182,7 +319,7 @@ TigaThread* Tiga::getHandleToThread(long id) {
     return 0;
 }
 
-int Tiga::makeThread(TPCCode* code, int& index, long& handle) {
+bool Tiga::makeThread(TPCCode* code, int& index, long& handle) {
     int i = 0;
     TigaThread** p = threads;
     for (; p < (TigaThread**)&cellMemory; p++, i++) {
@@ -201,10 +338,10 @@ int Tiga::makeThread(TPCCode* code, int& index, long& handle) {
             if (nextHandle == 0) {
                 nextHandle = 1;
             }
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
 int Tiga::runParamsWait(int id, tigaVariant* params, int count, tigaVariant* result) {
@@ -226,6 +363,47 @@ int Tiga::runParamsWait(int id, tigaVariant* params, int count, tigaVariant* res
         result->value.integer = v->value.integer;
     }
     return 1;
+}
+
+long Tiga::runParamsPC(TPCCode* code, tigaVariant* params, int count, bool threaded) {
+    TigaThread* previous = currentThread;
+    int index;
+    long handle;
+    if (makeThread(code, index, handle) != 0) {
+        int i;
+        currentThread = threads[index];
+        TigaThread* thread = threads[index];
+        tigaVariant* stack = thread->stackPtr10;
+        for (i = 0; i < count; i++) {
+            stack--;
+            tigaVariant* source = &params[count - i];
+            source--;
+            stack->type = source->type;
+            stack->flags = source->flags;
+            stack->value.integer = source->value.integer;
+            stack->flags = 0;
+        }
+        stack--;
+        stack->type = 0x35;
+        stack->flags = 0;
+        stack->value.integer = 0;
+        thread->stackPtr10 = stack;
+        thread->stackPtr14--;
+        *thread->stackPtr14 = (s32)thread->stackPtr0C;
+        thread->stackPtr0C = stack;
+        if (threaded) {
+            void* created = floorCreateThreadLocal(1, 0x2000, 1, _executeScriptThread);
+            GSthreadSetName(created, "GSscript thread");
+            GSthreadSetArgs(created, 2, this, handle);
+            thread->thread = created;
+        } else {
+            execute(thread);
+        }
+        currentThread = previous;
+        return thread->handle;
+    }
+    currentThread = previous;
+    return 0;
 }
 
 long Tiga::runParams(int id, tigaVariant* params, int count, bool flag) {
@@ -341,6 +519,73 @@ void TigaThread::stop() {
         GSthreadTerminate(thread);
         thread = 0;
     }
+}
+
+bool TigaThread::restoreStateData(GSBinReadStream* stream) {
+    int i;
+    s32 codeBase = owner->field944;
+    state = stream->readU32();
+    sleepTime = stream->readFloat();
+    u32 codeOffset = stream->readU32();
+    u32 offset0C = stream->readU32();
+    u32 offset10 = stream->readU32();
+    u32 offset14 = stream->readU32();
+    code = (TPCCode*)(codeBase + codeOffset * 4);
+    stackPtr0C = stackBase38 + offset0C;
+    stackPtr10 = stackBase38 + offset10;
+    stackPtr14 = stackBase3C + offset14;
+    for (i = 0; i < 4; i++) {
+        (&retVar)[i].restoreStateData(stream);
+    }
+    field14C = stream->readU32();
+    stackCount = stream->readU32();
+    for (i = 0; i < stackCount; i++) {
+        stackArea[i].restoreStateData(stream);
+    }
+    stackCount2 = stream->readU32();
+    for (i = 0; i < stackCount2; i++) {
+        ((tigaVariant**)stackArea2)[i] = stackBase38 + stream->readU32();
+    }
+    timerIndex = stream->readU8();
+    timerLimit = stream->readFloat();
+    waitMode = stream->readU8();
+    flagIndex = stream->readU8();
+    flagValue = stream->readU32();
+    return true;
+}
+
+void TigaThread::makeStateData(GSBinWriteStream* stream) {
+    int i;
+    if (!(state & 0x10)) {
+        stream->writeU32(state);
+    } else {
+        stream->writeU32(0);
+    }
+    stream->writeFloat(sleepTime);
+    u32 offset14 = ((u32)stackPtr14 - (u32)stackBase3C) >> 2;
+    u32 codeOffset = ((u32)code - owner->field944) >> 2;
+    stream->writeU32(codeOffset);
+    stream->writeU32(((u32)stackPtr0C - (u32)stackBase38) >> 3);
+    stream->writeU32(((u32)stackPtr10 - (u32)stackBase38) >> 3);
+    stream->writeU32(offset14);
+    for (i = 0; i < 4; i++) {
+        (&retVar)[i].makeStateData(stream);
+    }
+    stream->writeU32(field14C);
+    stream->writeU32(stackCount);
+    for (i = 0; i < stackCount; i++) {
+        stackArea[i].makeStateData(stream);
+    }
+    stream->writeU32(stackCount2);
+    for (i = 0; i < stackCount2; i++) {
+        s32* slot = stackArea2 + i;
+        stream->writeU32(((u32)slot - (u32)stackBase3C) >> 2);
+    }
+    stream->writeU8(timerIndex);
+    stream->writeFloat(timerLimit);
+    stream->writeU8(waitMode);
+    stream->writeU8(flagIndex);
+    stream->writeU32(flagValue);
 }
 
 bool TigaThread::checkSleepEnd() {

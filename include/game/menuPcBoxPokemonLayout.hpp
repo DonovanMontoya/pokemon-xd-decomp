@@ -60,7 +60,8 @@ class CAnt {
 public:
     u32 unk0;
     u32 unk4;
-    u32 unk8;
+    s16 x;
+    s16 y;
     f32 unkC;
     u8 unk10;
     u32 unk14;
@@ -75,6 +76,13 @@ public:
     void init();
     void initByPokemonAndSetColorAnimationInAny(Pokemon *);
     void setAnimation(long);
+    void use();
+    void drawAndUpdateWithOffset(PocketVec<short>);
+    static void systemUsecountReset();
+    static void systemUnUseResourceRelease();
+    static void allRequestCancel();
+    static void waitEndOfReading();
+    static void systemUpdate(bool);
 };
 
 class CMenuPokemonCursor {
@@ -91,8 +99,10 @@ public:
     Pokemon pokemon;
     CAnt ant;
     CAnt beforeAnt;
-    u8 unk14C;
-    u8 reserved14D[7];
+    bool unk14C;
+    u8 reserved14D[3];
+    u8 flag150;
+    u8 reserved151[3];
     static PocketVec<short> defaultPositionTbl;
     void draw();
     bool isCatchPokemon();
@@ -108,8 +118,8 @@ public:
 
 class CState {
 public:
-    s32 unk0;
-    s32 unk4;
+    s32 state;
+    s32 sub;
     s32 unk8;
     s32 frames;
     f32 time;
@@ -127,7 +137,9 @@ public:
 
 class CMenuGlobalState {
 public:
-    u8 reserved0[0xC];
+    u8 reserved0[4];
+    s32 mode;
+    u8 reserved8[4];
     CMenuPokemonCursor cursor;
     CState state;
     void init();
@@ -279,9 +291,7 @@ class CMetaMenuBase {
 public:
     s32 fadeTime;
     s32 fadeState;
-    u8 reserved8[4];
-    u32 seId;
-    u8 reserved10[0xC];
+    u32 soundTbl[5];
     long windows[64];
     void (*windowFuncs[64])(CMetaMenu *, long);
     long *windowTable;
@@ -290,14 +300,19 @@ public:
     s32 repeatCount;
     u16 lastKey;
     u8 tutorialActive;
-    u8 reserved243[0xDD];
+    u8 reserved243;
+    CInfoWindow baseInfo;
+    CState baseAnim;
     u64 time;
-    u8 reserved328[8];
+    CMenuGlobalState *globalState;
+    u8 flag32C;
+    u8 pad32D;
+    s16 val32E;
 };
 
 class CMetaMenu : public CMetaMenuBase {
 public:
-    virtual void drawMain() = 0;
+    virtual void drawAll() = 0;
     virtual bool isAnimationStateNone();
     virtual void updateAll();
     virtual void tutorialExitKick();
@@ -310,7 +325,7 @@ public:
     void systemFadeWaitToEnd();
     void systemFadeOutSetAndWait(f32);
     void systemFadeOutKick(f32);
-    void systemFadeInKick();
+    static void systemFadeInKick();
     void systemFadeOutKeepAfterFloorPush();
     void alphaFadeDraw();
     u8 getAlphaFadeAlpha() const;
@@ -323,6 +338,7 @@ public:
     void localWindowDeleteAll();
     void localWindowCreateAll();
     void localWindowSetTable(long *);
+    static long defautlLocalWindowOpenTable[];
     static CMetaMenu *pCurrentMenu;
     void alphaFadeOutAndWait();
     void alphaFadeUpdate();
@@ -332,6 +348,15 @@ public:
     void aButtonWait();
     u16 tutorialManage();
     void tutorialManageUpdate();
+};
+
+struct MENU_MODEL {
+    u8 data[0xEC];
+};
+
+struct tagWINDOW_KEY {
+    u8 reserved0[6];
+    u16 trigger;
 };
 
 void menuPtPlaySe(u32);

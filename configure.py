@@ -871,32 +871,32 @@ config.libs = [
             Object(NonMatching, "game/menuWorldMapMX.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuItemMX.cpp"),
             Object(NonMatching, "game/menuPokemon.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuFightStatus.cpp"),
+            Object(NonMatching, "game/menuFightStatus.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuFight.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPocketTool.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPocket.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuTop.cpp"),
+            Object(NonMatching, "game/menuTop.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/menuNameEntry.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/menuPokemonStatus.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuItemTool.cpp"),
-            Object(NonMatching, "game/menuSaveLoad.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuSaveLoad.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPda.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/menuReliveHall.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuPdaSearcher.cpp"),
-            Object(NonMatching, "game/menuPdaMailXD.cpp"),
+            Object(NonMatching, "game/menuPdaSearcher.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
+            Object(NonMatching, "game/menuPdaMailXD.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPdaMailList.XD.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw on"]),
             Object(NonMatching, "game/menuColosseumBattle.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/menuCB_BattleResult.cpp"),
-            Object(NonMatching, "game/menuCB_BattleStart.cpp"),
+            Object(NonMatching, "game/menuCB_BattleResult.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
+            Object(NonMatching, "game/menuCB_BattleStart.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuCB_Bios.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuCB_Common.cpp"),
+            Object(NonMatching, "game/menuCB_Common.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuCB_Debug.cpp"),
             Object(NonMatching, "game/menuCB_ItemList.cpp"),
-            Object(NonMatching, "game/menuCB_PokemonEntry.cpp"),
+            Object(NonMatching, "game/menuCB_PokemonEntry.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuCB_Rule.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuCB_Battle.cpp"),
+            Object(NonMatching, "game/menuCB_Battle.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuToolBattle.cpp"),
-            Object(NonMatching, "game/menuGBAC.cpp"),
+            Object(NonMatching, "game/menuGBAC.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPdaDPMonitor.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw on"]),
             Object(NonMatching, "game/menuPdaDPMonitorList.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPdaSub.cpp"),
@@ -905,18 +905,18 @@ config.libs = [
             Object(NonMatching, "game/menuPcBoxPokemon.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuField.cpp"),
             Object(NonMatching, "game/menuScript.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuReliveMeter.cpp"),
+            Object(NonMatching, "game/menuReliveMeter.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuShop.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw on"]),
-            Object(NonMatching, "game/menuPocketCologne.cpp"),
+            Object(NonMatching, "game/menuPocketCologne.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuItemPda.cpp"),
             Object(NonMatching, "game/menuSub.cpp", extra_cflags=["-opt nopeephole", "-inline noauto"]),
-            Object(NonMatching, "game/menuPdaMemoWaveXD.cpp"),
-            Object(NonMatching, "game/menuInterrupt.cpp"),
-            Object(NonMatching, "game/menuPcBoxNew.cpp"),
+            Object(NonMatching, "game/menuPdaMemoWaveXD.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
+            Object(NonMatching, "game/menuInterrupt.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
+            Object(NonMatching, "game/menuPcBoxNew.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPcBoxDouguNew.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuCB_externDB.cpp", extra_cflags=["-lang c", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuDataBios.cpp"),
-            Object(NonMatching, "game/menuPanel.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuDataBios.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
+            Object(NonMatching, "game/menuPanel.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuCB_Sub1.cpp", extra_cflags=["-lang c", "-opt nopeephole"]),
             Object(NonMatching, "game/menuLogoDemo.cpp", extra_cflags=["-opt nopeephole", "-inline noauto"]),
             Object(NonMatching, "game/menuHologram.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
@@ -925,7 +925,7 @@ config.libs = [
             Object(NonMatching, "game/menuReliveHallTutorial.cpp"),
             Object(NonMatching, "game/menuPokemonChange.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuWorldMapMoveDemo.cpp"),
-            Object(NonMatching, "game/menuWorldMapModel.cpp"),
+            Object(NonMatching, "game/menuWorldMapModel.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/menuItem.c"),
             Object(NonMatching, "game/menuBattleDisk.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuItemXD.c"),
@@ -934,8 +934,8 @@ config.libs = [
             Object(NonMatching, "game/menuUseItem.cpp", extra_cflags=["-opt nopeephole", "-inline noauto"]),
             Object(NonMatching, "game/menuItemDebugRelease.c"),
             Object(NonMatching, "game/menuMewWaza.cpp"),
-            Object(NonMatching, "game/menuMoveDemo.cpp"),
-            Object(NonMatching, "game/menuTitleOption.cpp"),
+            Object(NonMatching, "game/menuMoveDemo.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
+            Object(MatchingFor("GXXE01"), "game/menuTitleOption.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
         ],
     },
     {
@@ -952,10 +952,10 @@ config.libs = [
             Object(NonMatching, "game/sysvars.cpp"),
             Object(NonMatching, "game/flashmenuTest.cpp"),
             Object(NonMatching, "game/gbaPokemon.cpp"),
-            Object(NonMatching, "game/gbaCommand.cpp"),
+            Object(NonMatching, "game/gbaCommand.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/agbCommunication.cpp", extra_cflags=["-inline noauto,deferred", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/floorRead.cpp", extra_cflags=["-inline off", "-opt nopeephole"]),
-            Object(NonMatching, "game/pokecolo.cpp"),
+            Object(NonMatching, "game/pokecolo.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/pokeconv.cpp"),
             Object(NonMatching, "game/wazaconv.cpp"),
             Object(NonMatching, "game/floorLayerConfig.cpp"),
@@ -1009,10 +1009,10 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSres/GSres.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
 
             # GSmsg
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmsg/GSmsg.cpp", extra_cflags=["-opt nopeephole"]),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmsg/sprite.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmsg/GSmsg.cpp", extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmsg/sprite.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
 
-            Object(NonMatching, "game/pxdvs/GSAPI/GSgapp/GSgapp.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgapp/GSgapp.cpp"),
 
             # GScolsys
             Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2.cpp"),
@@ -1039,7 +1039,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/particleEngine.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peShape.cpp"),
 
-            Object(NonMatching, "game/pxdvs/GSAPI/GSeffect/GSeffect.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSeffect/GSeffect.cpp"),
 
             # GSsnd
             Object(NonMatching, "game/pxdvs/GSAPI/GSsnd/GSsnd.cpp"),
@@ -1059,11 +1059,11 @@ config.libs = [
 
             Object(NonMatching, "game/pxdvs/GSAPI/GSflag/GSflag.cpp", extra_cflags=["-inline noauto", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/GSAPI/GSbound/GSbound.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSvtr/GSvtr.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSvtr/GSvtr.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
 
             # GSmovie
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/movieStream.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/GSmovie.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/movieStream.cpp", cflags=cflags_xd_app_balanced),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/GSmovie.cpp", cflags=cflags_xd_app_balanced),
             Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/THPDraw.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmovie/THPDec.cpp",
                    source="game/pxdvs/GSAPI/GSmovie/THPDec.c",
@@ -1093,7 +1093,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSshape/shapeRender.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/GSAPI/GSshape/GSshape.cpp", extra_cflags=["-inline deferred,auto", "-str reuse,nopool,readonly"]),
 
-            Object(NonMatching, "game/pxdvs/GSAPI/GSstream/GSstream.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSstream/GSstream.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSlogM/GSlog.cpp"),
 
             # GSgfxM
@@ -1120,7 +1120,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/gamecube.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/screenshot.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/capture.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/reset.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/reset.cpp"),
         ]
     },
     {
@@ -1135,9 +1135,9 @@ config.libs = [
             Object(MatchingFor("GXXE01", "NXXJ01"), "game/pxdvs/app/kaisuu/kaisuuBios.cpp"),
 
             # menu
-            Object(NonMatching, "game/pxdvs/app/menu/winSprite.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/winSprite.cpp", extra_cflags=["-inline noauto,deferred", "-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/menu/menu.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-use_lmw_stmw on", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/menu/menuFace.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/menuFace.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/menu/menuFaceBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/menu/menuModel.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-use_lmw_stmw on", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/menu/menuOffScreen.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-use_lmw_stmw on"]),
@@ -1156,17 +1156,17 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/floor/floorDataBios.cpp", extra_cflags=["-inline noauto", "-use_lmw_stmw off", "-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorFieldCamera.cpp", extra_cflags=["-inline off", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorFieldCameraEditor.cpp"),
-            Object(NonMatching, "game/pxdvs/app/floor/floorOffscreen.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorOffscreen.cpp", extra_cflags=["-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorManager.cpp", extra_cflags=["-inline noauto", "-lang c", "-opt nopeephole", "-use_lmw_stmw off", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorModule.cpp", extra_cflags=["-inline off", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorStack.cpp"),
             Object(NonMatching, "game/pxdvs/app/floor/floorLoad.cpp"),
-            Object(NonMatching, "game/pxdvs/app/floor/floorScript.cpp"),
-            Object(NonMatching, "game/pxdvs/app/floor/floorsound.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorScript.cpp", extra_cflags=["-inline off", "-opt nopeephole"]),
+            Object(NonMatching, "game/pxdvs/app/floor/floorsound.cpp", extra_cflags=["-inline off", "-opt nopeephole", "-str reuse,nopool,readonly"]),
 
             # joutai
             Object(NonMatching, "game/pxdvs/app/joutai/joutaiData.c"),
-            Object(NonMatching, "game/pxdvs/app/joutai/joutai.cpp"),
+            Object(NonMatching, "game/pxdvs/app/joutai/joutai.cpp", extra_cflags=["-inline noauto", "-bool off"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/joutai/joutaiBios.cpp"),
 
             # waza
@@ -1226,13 +1226,13 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/item/tasteData.c"),
             Object(NonMatching, "game/pxdvs/app/item/itemWazaMachineNo.c"),
             Object(NonMatching, "game/pxdvs/app/item/itemParam.c"),
-            Object(NonMatching, "game/pxdvs/app/item/item.cpp"),
+            Object(NonMatching, "game/pxdvs/app/item/item.cpp", extra_cflags=["-inline auto,deferred"]),
             Object(NonMatching, "game/pxdvs/app/item/itemBios.cpp", extra_cflags=["-opt nopeephole"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/item/itemDB.cpp"),
             Object(NonMatching, "game/pxdvs/app/item/itemUse2Pokemon.cpp"),
-            Object(NonMatching, "game/pxdvs/app/item/itemFightItem.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/item/itemFightItem.cpp"),
 
-            Object(NonMatching, "game/pxdvs/app/sound/sound.cpp"),
+            Object(NonMatching, "game/pxdvs/app/sound/sound.cpp", extra_cflags=["-inline off"]),
             Object(NonMatching, "game/pxdvs/app/camera/camera.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
 
             # battleGrid
@@ -1242,8 +1242,8 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/battleGrid/battleCamera.cpp"),
 
             # fade
-            Object(NonMatching, "game/pxdvs/app/fade/fade.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fade/fade_effect.cpp", extra_cflags=["-opt nopeephole"]),
+            Object(NonMatching, "game/pxdvs/app/fade/fade.cpp", extra_cflags=["-inline off", "-opt nopeephole"]),
+            Object(NonMatching, "game/pxdvs/app/fade/fade_effect.cpp", extra_cflags=["-opt nopeephole", "-inline noauto"]),
             Object(NonMatching, "game/pxdvs/app/fade/fade_fluid.cpp"),
 
             # script
@@ -1254,7 +1254,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/script/objMenu.cpp"),
             Object(NonMatching, "game/pxdvs/app/script/objPeople.cpp"),
             Object(NonMatching, "game/pxdvs/app/script/script.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/script/scriptModel.cpp"),
+            Object(NonMatching, "game/pxdvs/app/script/scriptModel.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/script/contSave.cpp"),
 
             # memcard
@@ -1267,8 +1267,8 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/recovery/recoveryEvent.cpp"),
 
             # mail
-            Object(NonMatching, "game/pxdvs/app/mail/mailMain.cpp"),
-            Object(NonMatching, "game/pxdvs/app/mail/mail.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/mail/mailMain.cpp", extra_cflags=["-opt nopeephole"]),
+            Object(NonMatching, "game/pxdvs/app/mail/mail.cpp", extra_cflags=["-opt nopeephole"]),
 
             # wazaSequence
             Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaViewer.c"),
@@ -1283,7 +1283,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaSequence.cpp"),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaSequenceSys.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/modelSequence.cpp"),
-            Object(NonMatching, "game/pxdvs/app/wazaSequence/nullSequence.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/wazaSequence/nullSequence.cpp"),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaResourceData.c"),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaSequenceEntry.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/deoxyspokemonPKXData.c"),
@@ -1298,9 +1298,9 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/sodateya/sodateya.cpp"),
 
             # fight
-            Object(NonMatching, "game/pxdvs/app/fight/fightMain.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightMain.cpp", cflags=cflags_xd_app_fight),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightKind.cpp", cflags=cflags_xd_app_balanced),
-            Object(NonMatching, "game/pxdvs/app/fight/fightTarget.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTarget.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightType.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightWaza.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightWazaBios.cpp"),
@@ -1310,7 +1310,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightFloorBios.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightFloorDB.cpp", cflags=cflags_xd_app_fight),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSideBios.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fightSide.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSide.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightSideDB.cpp"),
             Object(NonMatching, "game/pxdvs/app/fight/fightTrainer.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/fight/fightTrainerBios.cpp", cflags=cflags_xd_app_fight),
@@ -1330,7 +1330,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/fight/fightJouken.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightJoukenBios.cpp", cflags=cflags_xd_app_balanced),
             Object(NonMatching, "game/pxdvs/app/fight/fightAbicnt.cpp"),
-            Object(NonMatching, "game/pxdvs/app/fight/fight.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fight.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/fight/fightEncountWipeData.c"),
 
             # fightData
@@ -1378,21 +1378,21 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/charName/charNameBios.cpp"),
 
             # fightGSfloor
-            Object(NonMatching, "game/pxdvs/app/fight/fightGSfloor.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightGSfloor.cpp", cflags=cflags_xd_app_fight),
 
             # fightMenu
             Object(NonMatching, "game/pxdvs/app/fight/fightMenu.cpp", cflags=cflags_xd_app_fight),
 
             # fightTimer
-            Object(NonMatching, "game/pxdvs/app/fight/fightTimer/fightTimer.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTimer/fightTimer.cpp", extra_cflags=["-inline off"]),
 
             Object(NonMatching, "game/pxdvs/app/d2present/d2present.cpp"),
             Object(NonMatching, "game/pxdvs/app/effectEditor/effectEditor.cpp"),
 
             # flashmenu
-            Object(NonMatching, "game/pxdvs/app/flashmenu/flashmenu.cpp"),
+            Object(NonMatching, "game/pxdvs/app/flashmenu/flashmenu.cpp", extra_cflags=["-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/flashmenu/flashcalc.cpp"),
-            Object(NonMatching, "game/pxdvs/app/flashmenu/vecGraph.cpp"),
+            Object(NonMatching, "game/pxdvs/app/flashmenu/vecGraph.cpp", extra_cflags=["-opt nopeephole"]),
             Object(NonMatching, "game/pxdvs/app/flashmenu/flashsystem.cpp"),
 
             # deck
@@ -1410,7 +1410,7 @@ config.libs = [
 
             # light
             Object(NonMatching, "game/pxdvs/app/light/lightEditor.cpp"),
-            Object(NonMatching, "game/pxdvs/app/light/light.cpp"),
+            Object(NonMatching, "game/pxdvs/app/light/light.cpp", extra_cflags=["-inline off", "-str reuse,nopool,readonly"]),
 
             Object(NonMatching, "game/pxdvs/app/esaba/esaba.cpp"),
 
@@ -1427,7 +1427,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/people/peopleSave.cpp"),
             Object(NonMatching, "game/pxdvs/app/people/peopleTalk.cpp"),
             Object(NonMatching, "game/pxdvs/app/people/peopleWalkList.cpp"),
-            Object(NonMatching, "game/pxdvs/app/people/peopleMemberFunc.cpp"),
+            Object(NonMatching, "game/pxdvs/app/people/peopleMemberFunc.cpp", extra_cflags=["-inline off"]),
             Object(NonMatching, "game/pxdvs/app/people/peopleColision.cpp"),
 
             # mewwaza
@@ -1467,7 +1467,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/pokemon/pokemonStatusFightoutPokemon.cpp"),
             Object(NonMatching, "game/pxdvs/app/pokemon/pokemonStatusFightPokemon.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonStatusPokemon.cpp"),
-            Object(NonMatching, "game/pxdvs/app/pokemon/darkPokemon.cpp"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/darkPokemon.cpp", extra_cflags=["-inline off"]),
             Object(NonMatching, "game/pxdvs/app/pokemon/darkPokemonList.c"),
             Object(NonMatching, "game/pxdvs/app/pokemon/darkPokemonBios.cpp"),
         ]

@@ -49,6 +49,7 @@ MenuItemRect* menuItemBiosGetPtr(s32, s32);
 u8 pokemonWazaCheckValid(Pokemon*, u16);
 void* savedataGetStatus(s32, s32);
 u16 zokuseiBiosGetSpriteID(u16);
+void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 }
 
 struct DarkPokemon {
@@ -95,7 +96,8 @@ u16 _menuPokemonStatusGetWazaDataID(Pokemon* pokemon, u16 index) {
 }
 
 s32 _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
-    if ((u16)pokemonGetStatus(pokemon, 0, 0x75, 0) == 0xA1B8) {
+    u16 id = pokemonGetStatus(pokemon, 0, 0x75, 0);
+    if (id == 0xA1B8) {
         u8* name = GSmsgGetGSchar(0x1828);
         if (GScharCmp((u8*)pokemonGetStatus(pokemon, 0, 0x76, 0), name) == 0) {
             return 1;
@@ -105,13 +107,82 @@ s32 _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
 }
 
 s32 _menuPokemonStatusCheckGinzaru(Pokemon* pokemon) {
-    if ((u16)pokemonGetStatus(pokemon, 0, 0x75, 0) == 0x911D) {
+    u16 id = pokemonGetStatus(pokemon, 0, 0x75, 0);
+    if (id == 0x911D) {
         u8* name = GSmsgGetGSchar(0x17B9);
         if (GScharCmp((u8*)pokemonGetStatus(pokemon, 0, 0x76, 0), name) == 0) {
             return 1;
         }
     }
     return 0;
+}
+
+s32 _menuPokemonStatusCheckWazaItem(tagWINDOW_WORK*, tagSPRITE_WORK* spr) {
+    s32 r = 1;
+    switch (spr->id) {
+    case 0x1E1:
+    case 0x1E2:
+    case 0x1E3:
+    case 0x1E4:
+    case 0x1E5:
+    case 0x1E6:
+    case 0x1E7:
+    case 0x1E8:
+    case 0x1E9:
+    case 0x1EA:
+    case 0x1EB:
+    case 0x1EC:
+    case 0x1ED:
+    case 0x1EE:
+    case 0x1EF:
+    case 0x1F0:
+    case 0x1F1:
+    case 0x1F2:
+    case 0x1F3:
+    case 0x1F4:
+    case 0x1F5:
+    case 0x1F6:
+    case 0x1F7:
+    case 0x1F8:
+    case 0x24C:
+        switch (_menuStatus.mode) {
+        case 3:
+        case 4:
+        case 7:
+            if (_menuStatus.page >= 0 && _menuStatus.page <= 4) {
+                r = 1;
+            } else {
+                r = 0;
+            }
+            break;
+        default:
+            r = 0;
+            break;
+        }
+        winSpriteSetDisp(spr, r);
+        break;
+    case 0x83D:
+    case 0x83E:
+    case 0x83F:
+    case 0x840:
+    case 0x841:
+    case 0x842:
+        winSpriteSetDisp(spr, 0);
+        break;
+    case 0x837:
+    case 0x83C:
+    case 0x846:
+    case 0x847:
+    case 0x848:
+        if (pokemonGetStatus(_menuStatus.pokemon, 0, 0xC2, 0) != 0) {
+            r = 0;
+        } else {
+            r = 1;
+        }
+        winSpriteSetDisp(spr, r);
+        break;
+    }
+    return r;
 }
 
 s32 _menuPokemonStatusCheckOya(Pokemon* pokemon) {
@@ -156,6 +227,75 @@ void menuPokemonStatusCtrlRibbon(void) {
     }
 }
 
+}
+
+struct RibbonMap {
+    u16 id;
+    u8 base;
+    u8 max;
+};
+
+void _menuPokemonStatusMakeRibbon(Pokemon* pokemon, RIBBON_WORK* ribbon) {
+    static RibbonMap ribbon_mapping_tbl[10] = {
+        {0xA3, 0x00, 1}, {0xB0, 0x01, 4}, {0xB1, 0x05, 4}, {0xB2, 0x09, 4}, {0xB3, 0x0D, 4},
+        {0xB4, 0x11, 4}, {0xA4, 0x15, 1}, {0xA5, 0x16, 1}, {0xA6, 0x17, 1}, {0xA7, 0x18, 1},
+    };
+    static RibbonMap exribbon_mapping_tbl[7] = {
+        {0xA8, 0x19, 1}, {0xA9, 0x1A, 1}, {0xAA, 0x1B, 1}, {0xAB, 0x1C, 1},
+        {0xAC, 0x1D, 1}, {0xAD, 0x1E, 1}, {0xAE, 0x1F, 1},
+    };
+    u32 i;
+    s32 count;
+    s32 pos;
+    s32 n;
+    s32 j;
+    s32 r;
+    for (r = 0; r < 4; r++) {
+        for (j = 0; j < 9; j++) {
+            ribbon->slots[j * 4 + r] = -1;
+        }
+    }
+    pos = 0;
+    for (i = 0; i < 10; i++) {
+        n = pokemonGetStatus(pokemon, 0, ribbon_mapping_tbl[i].id, 0);
+        if (n > ribbon_mapping_tbl[i].max) {
+            n = ribbon_mapping_tbl[i].max;
+        }
+        if (n != 0) {
+            for (j = 0; j < n; j++) {
+                s8 v = j + ribbon_mapping_tbl[i].base;
+                ribbon->slots[(pos % 9) * 4 + pos / 9] = v;
+                pos++;
+            }
+        } else {
+            pos += ribbon_mapping_tbl[i].max;
+        }
+    }
+    pos = 0;
+    for (i = 0; i < 7; i++) {
+        n = pokemonGetStatus(pokemon, 0, exribbon_mapping_tbl[i].id, 0);
+        if (n > exribbon_mapping_tbl[i].max) {
+            n = exribbon_mapping_tbl[i].max;
+        }
+        if (n != 0) {
+            for (j = 0; j < n; j++) {
+                s8 v = j + exribbon_mapping_tbl[i].base;
+                ribbon->slots[pos * 4 + 3] = v;
+                pos++;
+            }
+        } else {
+            pos += exribbon_mapping_tbl[i].max;
+        }
+    }
+    count = 0;
+    for (r = 0; r < 4; r++) {
+        for (j = 0; j < 9; j++) {
+            if (ribbon->slots[j * 4 + r] >= 0) {
+                count++;
+            }
+        }
+    }
+    ribbon->count = count;
 }
 
 static s32 _menuPokemonStatusSub(u8, FIGHT_TRAINER*, Pokemon* pokemon, u16, MenuPokemonStatusCb, long) {

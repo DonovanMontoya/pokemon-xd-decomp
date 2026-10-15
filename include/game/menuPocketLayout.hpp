@@ -20,7 +20,7 @@ struct SActionMenuItem {
 enum GSgfxLayerID { GSGFX_LAYER_ID_DUMMY };
 
 struct PocketTab {
-    s8 kind;
+    u8 kind;
     u8 irekae;
     u8 sortable;
     u8 reserved3;

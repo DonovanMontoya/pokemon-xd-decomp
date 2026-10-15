@@ -4,6 +4,10 @@ extern "C" {
 void GSsndFreeEmitter(u32);
 void GSsndClose(u32);
 void GSlensFlareSetVisible(s32, u32);
+void GSlensFlareSetSunPosition(s32, f32 *);
+void *GSmodelGetPart(u32, s16);
+void GSpartGetTransform(void *, f32 *, s32, s32);
+void GSpartFree(void *);
 s32 GSlensFlareLoad(void *);
 void GSlensFlareFree(s32);
 void GSlogWrite(const char *, ...);
@@ -200,6 +204,78 @@ void ModelEntry::SetRenderCamera(_GScamera *camera) {
 
 void LensFlareEntry::Stop(bool) {
     GSlensFlareSetVisible(handle, 0);
+}
+
+// Finds the model part a lens flare follows (a part of a linked model entry or of the owning sequence).
+static inline void *GetLensFlarePart(LensFlareEntry *entry) {
+    void *part;
+    if (entry->fieldA & 1) {
+        u8 id = entry->linkId;
+        if (id != 0 && id != 0xFF) {
+            SequenceEntry *linked = entry->waza->GetEntryFromID(id);
+            if (linked->dataType == 2) {
+                u32 model = ((ModelEntry *)linked)->model;
+                if (linked->startTime > entry->startTime) {
+                    part = 0;
+                } else if (model != 0) {
+                    part = GSmodelGetPart(model, entry->field12);
+                } else {
+                    part = 0;
+                }
+            } else {
+                part = 0;
+            }
+        } else {
+            part = 0;
+        }
+    } else {
+        SequenceBase *seq = entry->waza->sequence;
+        seq = seq->type == 1 ? seq : 0;
+        if (seq != 0) {
+            part = ((ModelSequence *)seq)->GetPart((enumNullJointName)entry->field10);
+        } else {
+            part = 0;
+        }
+    }
+    return part;
+}
+
+bool LensFlareEntry::Update(f32 dt) {
+    f32 position[3];
+    time += dt;
+    if (time - startTime >= sunScale) {
+        return false;
+    }
+    waza->sequence->GetPosition(position);
+    void *part = GetLensFlarePart(this);
+    if (part != 0) {
+        GSpartGetTransform(part, position, 0, 0);
+        GSpartFree(part);
+    }
+    GSlensFlareSetSunPosition(handle, position);
+    return true;
+}
+
+bool LensFlareEntry::Start() {
+    f32 position[3];
+    WazaSequence *w = waza;
+    SequenceBase *seq = w->sequence;
+    if (!(w->flags & 0x2000) && seq->visible == 0) {
+        state = 2;
+        time = startTime;
+        return true;
+    }
+    seq->GetPosition(position);
+    void *part = GetLensFlarePart(this);
+    if (part != 0) {
+        GSpartGetTransform(part, position, 0, 0);
+        GSpartFree(part);
+    }
+    GSlensFlareSetSunPosition(handle, position);
+    GSlensFlareSetVisible(handle, 1);
+    state = 1;
+    time = startTime;
+    return true;
 }
 
 LensFlareEntry::~LensFlareEntry() {

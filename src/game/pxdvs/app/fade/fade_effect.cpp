@@ -1100,22 +1100,25 @@ static bool _fadeEffectFunction_UDLR_Main(GSgfxLayer* layer, bool active, f32 el
     GSvec center;
     f32 progress = elapsed / duration;
     if (timeGetLastFrameTime() != 0) {
-        f32 rotation = _fadeEffectWork.rotationStep + _fadeEffectWork.rotation;
         ++_fadeEffectWork.frame;
-        _fadeEffectWork.rotation = rotation;
+        _fadeEffectWork.rotation += _fadeEffectWork.rotationStep;
         if (_fadeEffectWork.rotationStep >= 0.0f) {
             _fadeEffectWork.rotationStep = (0.5f * progress) + _fadeEffectWork.rotationStep;
-            if (rotation >= _fadeEffectWork.distanceStep) _fadeEffectWork.rotation = _fadeEffectWork.distanceStep;
+            if (_fadeEffectWork.rotation >= _fadeEffectWork.distanceStep) _fadeEffectWork.rotation = _fadeEffectWork.distanceStep;
         } else {
             _fadeEffectWork.rotationStep = -((0.5f * progress) - _fadeEffectWork.rotationStep);
-            if (rotation <= _fadeEffectWork.distanceStep) _fadeEffectWork.rotation = _fadeEffectWork.distanceStep;
+            if (_fadeEffectWork.rotation <= _fadeEffectWork.distanceStep) _fadeEffectWork.rotation = _fadeEffectWork.distanceStep;
         }
     }
     center.param1 = 320.0f; center.param2 = 240.0f; center.param3 = 0.0f;
     _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, 0.0f, progress, 0.0f);
     switch (_fadeEffectWork.direction) {
     case 1:
-    case 2: center.param2 = 240.0f; center.param1 = 320.0f + _fadeEffectWork.rotation; break;
+    case 2: {
+        center.param1 = 320.0f + _fadeEffectWork.rotation;
+        center.param2 = 240.0f;
+        break;
+    }
     case 4:
     case 8: center.param1 = 320.0f; center.param2 = 240.0f + _fadeEffectWork.rotation; break;
     }
@@ -1128,7 +1131,9 @@ static bool _fadeEffectFunction_UDLR_Main(GSgfxLayer* layer, bool active, f32 el
     case 4:
     case 8: center.param2 = (1.5f * _fadeEffectWork.rotation) + 240.0f; break;
     }
-    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, -1.5f * angle, progress, 0.4f);
+    f32 reverseAngle = angle;
+    reverseAngle *= -1.5f;
+    _fadeEffectSnapshotFadeFunction(layer, texture, &center, 1.0f, reverseAngle, progress, 0.4f);
     if (timeGetLastFrameTime() != 0) GSgfxBeginBackFBCapture(texture, _myBackFB, 0);
     else GSgfxEndBackFBCapture(texture);
     if (_fadeEffectFirstFlag == 0 && active == 0) GSgfxEndBackFBCapture(texture);
@@ -2169,4 +2174,15 @@ static void _disp_blur_ball(GSgfxLayer* layer, GSvec* center, f32 scale, f32 ang
         GXTexCoord2f32(u, v);
     }
     layer->endSurface();
+}
+
+extern bool fadeEffectHookFunction_distortion_zoom(GSgfxLayerID, bool, f32, f32, f32, f32, void*, bool);
+bool fadeEffectHookFunction_distortion_zoom_out(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    return fadeEffectHookFunction_distortion_zoom(id, active, elapsed, duration, elapsedSecond, durationSecond, opaque, true);
+}
+bool fadeEffectHookFunction_distortion_zoom_in(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    return fadeEffectHookFunction_distortion_zoom(id, active, elapsed, duration, elapsedSecond, durationSecond, opaque, false);
+}
+bool fadeEffectHookFunction_carde(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
+    return fadeEffectHookFunction_yoko(id, active, elapsed, duration, elapsedSecond, durationSecond, opaque);
 }

@@ -26,15 +26,20 @@ class SequenceBase {
 public:
     virtual ~SequenceBase();
     virtual void Dummy1();
-    virtual void Dummy2();
-    u8 pad04[4];
+    virtual void GetPosition(f32 *);
+    u16 id;                         // 0x4
+    u8 visible;                     // 0x6
+    u8 failed;                      // 0x7
     s32 type;                       // 0x8
 };
+
+enum enumNullJointName { NULL_JOINT_0 };
 
 class ModelSequence : public SequenceBase {
 public:
     void Sleep();
     void WakeUp();
+    void *GetPart(enumNullJointName);
 };
 
 struct SequenceEntryData {
@@ -74,7 +79,7 @@ public:
     s32 dataType;                   // 0xC
     u8 field10;                     // 0x10
     u8 field11;                     // 0x11
-    u16 field12;                    // 0x12
+    s16 field12;                    // 0x12
     f32 *times;                     // 0x14
     s32 state;                      // 0x18
     f32 startTime;                  // 0x1C
@@ -224,7 +229,9 @@ class WazaSequence {
 public:
     SequenceEntry *GetEntryFromID(u8);
 
-    u8 pad00[0x13];
+    u8 pad00[8];
+    u32 flags;                      // 0x8
+    u8 pad0C[7];
     u8 index;                       // 0x13
     u8 pad14[0xc];
     SequenceEntry **entries;        // 0x20

@@ -19,6 +19,8 @@ struct GSresID {
 };
 
 extern "C" void GSmemFree(void*);
+extern "C" void* memcpy(void*, const void*, unsigned long);
+extern "C" void* GSmemAlloc(unsigned long);
 
 struct GSBinWriteStream {
     u8* start;          // 0x0
@@ -48,16 +50,14 @@ struct GSBinWriteStream {
         *cur++ = v;
     }
     void writeS8(s8 v) { writeU8(v); }
-    void writeBool(bool v) {
-        int b;
-        if (v) {
-            b = 1;
-        } else {
-            b = 0;
+    void writeBool(u32 v) {
+        if (writing == 0) {
+            cur++;
+            return;
         }
-        writeS8(b);
+        *cur++ = (v != 0);
     }
-    void writeU16(u16 v) {
+    void writeU16(u32 v) {
         if (writing == 0) {
             cur += 2;
             return;
@@ -75,8 +75,14 @@ struct GSBinWriteStream {
         *cur++ = v >> 8;
         *cur++ = v;
     }
+    void writeBytes(const void* source, u32 length) {
+        if (writing != 0) {
+            memcpy(cur, source, length);
+        }
+        cur += length;
+    }
     void writeFloat(f32 v) {
-        union { f32 f; u32 u; } c;
+        union { f32 f; u32 u; u32 pad[2]; } c;
         c.f = v;
         writeU32(c.u);
     }
@@ -116,7 +122,7 @@ struct GSBinReadStream {
     }
     bool readBool() { return readU8() != 0; }
     f32 readFloat() {
-        union { f32 f; u32 u; } c;
+        union { f32 f; u32 u; u32 pad[2]; } c;
         c.u = readU32();
         return c.f;
     }
@@ -144,7 +150,7 @@ namespace GSscript {
 
 class tigaCellMemory {
 public:
-    u32 cellA, cellB;
+    s32 cellA, cellB;
     tigaCellMemory();
     virtual ~tigaCellMemory();
     void freeVariant(tigaVariant*);
@@ -187,7 +193,7 @@ public:
     ~TigaThread();
     void setSaveFlag(bool);
     void stop();
-    void restoreStateData(GSBinReadStream*);
+    bool restoreStateData(GSBinReadStream*);
     void makeStateData(GSBinWriteStream*);
     bool checkSleepEnd();
     void initTiga();
@@ -218,7 +224,7 @@ class Tiga {
 public:
     CChankBlock chunk;              // 0x00
     TigaObjManager objManager;      // 0x18
-    u8 pad8D8[4];
+    s32 field8D8;
     s32 threadCount;                // 0x8dc
     f32 timers[4];                  // 0x8e0
     TigaThread* threads[8];         // 0x8f0
@@ -274,8 +280,8 @@ public:
     }
     void debugDump();
     int getStateSize();
-    int restoreStateData(void*, unsigned long);
-    int makeStateData(GSBinWriteStream*);
+    bool restoreStateData(void*, unsigned long);
+    void makeStateData(GSBinWriteStream*);
     int getNameToFuncId(const char*);
     int getResultValue(long);
     void* getIdToCodeAdress(int);
@@ -296,7 +302,7 @@ public:
     bool isRunningThread(long);
     void deleteThread(long);
     TigaThread* getHandleToThread(long);
-    int makeThread(TPCCode*, int&, long&);
+    bool makeThread(TPCCode*, int&, long&);
     int runParamsWait(int, tigaVariant*, int, tigaVariant*);
     long runParamsPC(TPCCode*, tigaVariant*, int, bool);
     long runParams(int, tigaVariant*, int, bool);

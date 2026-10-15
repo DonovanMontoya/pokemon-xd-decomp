@@ -1,0 +1,200 @@
+#ifndef POKEMON_PRIVATE_H
+#define POKEMON_PRIVATE_H
+
+#include <global.h>
+#include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/relglobal.h>
+
+struct PokemonData;
+struct PokemonWaza;
+extern const u8 lbl_802F374C[];
+
+// Condition (joutai) sprite table owned by another unit: {condition, sprite} pairs, zero terminated.
+struct PokemonJoutaiSprite {
+    u16 condition;
+    u16 sprite;
+};
+extern PokemonJoutaiSprite spriteTbl[];
+
+static u8 _pokemonGetSexSub(Pokemon*, u32);
+static void _pokemonWazaCopy(Pokemon*, u16, u16);
+
+extern "C" {
+// Functions defined in this unit that other functions here call before their definition.
+bool pokemonCheckValid(Pokemon*);
+bool pokemonCheckFightOut(Pokemon*);
+u32 pokemonGetTokuseiDataId(Pokemon*);
+u16 pokemonDoItemSoubi(Pokemon*, u16, u8);
+bool pokemonDataCheckValid(void*, u32);
+u8 pokemonIsDarkPokemon(Pokemon*);
+bool pokemonIsJoutaiDataId(Pokemon*, u16);
+u8 pokemonGetDeoxysSel(u8);
+s8 pokemonSearchWazaDataId(Pokemon*, u16);
+u8 pokemonGetFightPokemonDeoxysSel(void*);
+u8 pokemonGetAnnonKatati(u32);
+u16 pokemonGetSoubiItemDataId(Pokemon*);
+s8 pokemonCheckSexKotei(Pokemon*);
+bool pokemonWazaCheckValid(Pokemon*, u16);
+void pokemonWazaCopy(Pokemon*, u16, u16);
+f32 pokemonGetDp(Pokemon*);
+void pokemonAddDp(Pokemon*, f32);
+u8 pokemonGetDarkPokemonLevel(Pokemon*);
+void pokemonWazaCreate(Pokemon*, u32, u16);
+u16 pokemonGetOboeWazaDataId(Pokemon*, u8, u8*);
+s32 pokemonSetWazaStatus(Pokemon*, u16, u8);
+u32 pokemonDB_GetPkxDataId(u32);
+
+// Other units.
+u32 figthOutPokemonGetPokemonDataId(void*);
+u16 pokemonDB_GetShout(u32);
+const char* pokemonDB_GetName(u16);
+PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon*, u16, u8);
+void pokemonWazaBiosCopy(PokemonWaza*, const PokemonWaza*);
+u16 pokemon_GetDarkpokemonDataId(Pokemon*);
+u8 pokemon_GetDarkFlag(Pokemon*);
+void pokemonBiosCopy(Pokemon*, const Pokemon*);
+u8 pokemon_GetLevel(Pokemon*);
+u8 pokemon_GetPokerus(Pokemon*);
+u16 pokemon_GetItemDataId(Pokemon*);
+void pokemon_SetItemDataId(Pokemon*, u16);
+u16 darkPokemonBiosGetTemotiDarkWaza(u16, u8);
+u32 joutaiDataBiosGetName(u32);
+u16 joutaiDataBiosGetStatus(u16);
+u8 joutaiDataBiosGetKaisuuDataId(u16);
+u8 joutaiDataBiosGetMaxCount(u16);
+u8 kaisuuGetKaisuu(u8);
+void* tasteDataGetPtr(u32);
+s32 tasteDataGetAisyou(void*, u8);
+struct ItemDataBios;
+ItemDataBios* itemDataBiosGetPtr(u16);
+u8 itemDataBiosGetKind(ItemDataBios*);
+u32 itemDataBiosGetBuff(ItemDataBios*);
+struct PokemonDpFilterDataBios;
+PokemonDpFilterDataBios* pokemonDpFilterDataBiosGetPtr(u16);
+s32 pokemonDpFilterDataBiosGetValue(PokemonDpFilterDataBios*);
+void* fightFloorGetFightPokemonPtrToFightTrainerPtr(u32, void*);
+u8 fightTrainer_GetControllerId(void*);
+u8 fightFloor_GetFightKindRegulationFlag(u32);
+u8 menuCBRule_DEOKISISUCamouflage();
+u16 menuGBACGetRomVer(u16);
+u8 pokemonDB_GetSexRatio(u16);
+u8 sexGetPokemonSexRaitoKotei(u32);
+u8 dbgMenuFightGetSoubikoukaFlag();
+u16 pokemon_GetPokemonWazaDataId(Pokemon*, u16);
+u8 pokemon_GetPokemonWazaPpCount(Pokemon*, u16);
+u8 wazaGetMaxPP(u16, u8);
+u8 wazaDB_GetZokuseiDataId(u16);
+u8 pokemonDB_GetGetWazaLevel(u32, u16);
+u16 pokemonDB_GetGetWazaDataId(u32, u16);
+void pokemonDB_SetMitaFlag(u32, bool);
+void pokemonDB_SetTukamaetaFlag(u32, bool);
+void memoDataSet(u32, Pokemon*);
+void pokemon_SetFightTrainerPokemonDataId(Pokemon*, u16);
+void pokemon_SetPokemonDataId(Pokemon*, u16);
+void pokemon_SetPhyAtk(Pokemon*, u16);
+void pokemon_SetPhyDef(Pokemon*, u16);
+void pokemon_SetSpeAtk(Pokemon*, u16);
+void pokemon_SetSpeDef(Pokemon*, u16);
+void pokemon_SetNimbleness(Pokemon*, u16);
+void pokemon_SetMaxHpEffort(Pokemon*, u16);
+void pokemon_SetPhyAtkEffort(Pokemon*, u16);
+void pokemon_SetPhyDefEffort(Pokemon*, u16);
+void pokemon_SetSpeAtkEffort(Pokemon*, u16);
+void pokemon_SetSpeDefEffort(Pokemon*, u16);
+void pokemon_SetNimblenessEffort(Pokemon*, u16);
+void pokemon_SetMaxHpRnd(Pokemon*, u16);
+void pokemon_SetPhyAtkRnd(Pokemon*, u16);
+void pokemon_SetPhyDefRnd(Pokemon*, u16);
+void pokemon_SetSpeAtkRnd(Pokemon*, u16);
+void pokemon_SetSpeDefRnd(Pokemon*, u16);
+void pokemon_SetNimblenessRnd(Pokemon*, u16);
+void pokemon_SetFriend(Pokemon*, u16);
+void pokemon_SetPara1Amari(Pokemon*, u16);
+void pokemon_SetAmari(Pokemon*, u16);
+void pokemon_SetStyle(Pokemon*, u8);
+void pokemon_SetBeautiful(Pokemon*, u8);
+void pokemon_SetCute(Pokemon*, u8);
+void pokemon_SetClever(Pokemon*, u8);
+void pokemon_SetStrong(Pokemon*, u8);
+void pokemon_SetFur(Pokemon*, u8);
+void pokemon_SetChampRibbon(Pokemon*, u8);
+void pokemon_SetWinningRibbon(Pokemon*, u8);
+void pokemon_SetVictoryRibbon(Pokemon*, u8);
+void pokemon_SetBromideRibbon(Pokemon*, u8);
+void pokemon_SetGanbaRibbon(Pokemon*, u8);
+void pokemon_SetMarineRibbon(Pokemon*, u8);
+void pokemon_SetLandRibbon(Pokemon*, u8);
+void pokemon_SetSkyRibbon(Pokemon*, u8);
+void pokemon_SetCountryRibbon(Pokemon*, u8);
+void pokemon_SetNationalRibbon(Pokemon*, u8);
+void pokemon_SetEarthRibbon(Pokemon*, u8);
+void pokemon_SetWorldRibbon(Pokemon*, u8);
+void pokemon_SetAmariRibbon(Pokemon*, u8);
+void pokemon_SetStyleMedal(Pokemon*, u8);
+void pokemon_SetBeautifulMedal(Pokemon*, u8);
+void pokemon_SetCuteMedal(Pokemon*, u8);
+void pokemon_SetCleverMedal(Pokemon*, u8);
+void pokemon_SetStrongMedal(Pokemon*, u8);
+void pokemon_SetPokerus(Pokemon*, u8);
+void pokemon_SetFlagAmari(Pokemon*, u8);
+void pokemon_SetPcboxMark(Pokemon*, u8);
+void pokemon_SetMailId(Pokemon*, u8);
+void pokemon_SetRnd(Pokemon*, u32);
+void pokemon_SetNicknamePtr(Pokemon*, u16*);
+void pokemon_SetConditionAmari(Pokemon*, u32);
+void pokemon_SetTamagoFlag(Pokemon*, u32);
+void pokemon_SetFuseiFlag(Pokemon*, u32);
+void gamedataAttestInit(void*);
+u8 pokemon_GetTamagoFlag(Pokemon*);
+u16 pokemon_GetFriend(Pokemon*);
+u16 pokemon_GetPoolFriend(Pokemon*);
+u8 pokemon_GetCatchBallId(Pokemon*);
+struct PokemonFriendFilterDataBios;
+PokemonFriendFilterDataBios* pokemonFriendFilterDataBiosGetPtr(u16);
+s8 pokemonFriendFilterDataBiosGetValue(PokemonFriendFilterDataBios*, u8);
+bool pokemonCheckCanGetFriend(Pokemon*, u16);
+u16* pokemon_GetNicknamePtr(Pokemon*);
+void GScharCpy(void*, const void*);
+u16 menuFaceGetID(Pokemon*);
+u16 menuFaceGetID3(Pokemon*, u8, u32);
+u8 menuSubGetPokemonSexForFightDisp(Pokemon*);
+const char* wazaDB_GetName(u16);
+const char* zokuseiBiosGetName(u8);
+u8 pokemon_GetPokemonWazaPp(Pokemon*, u16);
+u32 pokemonGetLevelToExp(Pokemon*, u8);
+void* memset(void*, int, u32);
+u8 pokemon_GetMaxHpRnd(Pokemon*);
+u8 pokemon_GetPhyAtkRnd(Pokemon*);
+u8 pokemon_GetPhyDefRnd(Pokemon*);
+u8 pokemon_GetSpeAtkRnd(Pokemon*);
+u8 pokemon_GetSpeDefRnd(Pokemon*);
+u8 pokemon_GetNimblenessRnd(Pokemon*);
+void gamedataAttestBiosCopy(void*, void*);
+u16* GSmsgGetGSchar(const char*);
+u16 pokemonDB_GetInitFriend(u32);
+u32 pokemonCreateRnd();
+u8 pokemonGetSex(Pokemon*);
+u8 pokemonGetSeikakuAsRnd(u32);
+void Sequence_SetStatus(void*, u32);
+void Sequence_ResetStatus(void*, u32);
+u32 Sequence_LoadPokemon(u16, u32, u32);
+Pokemon* fightPokemonGetPokemonPtr(void*);
+u8 pokemon_GetFuseiFlag(Pokemon*);
+u8 pokemon_GetTokuseiFlag(Pokemon*);
+void* pokemon_GetAttest(Pokemon*);
+u8 gamedataAttestCheckValid(void*);
+u32 HSD_Rand();
+void pokemon_SetCatchFloorId(Pokemon*, u16);
+void pokemon_SetCatchLevel(Pokemon*, u8);
+void pokemon_SetCatchBallId(Pokemon*, u8);
+void pokemon_SetCatchTrainerSex(Pokemon*, u8);
+void pokemon_SetCatchTrainerRnd(Pokemon*, u32);
+void pokemon_SetCatchTrainerNamePtr(Pokemon*, u16*);
+u8 pokemon_GetHinsi(Pokemon*);
+u16 itemDB_GetItemSoubiDataId(u16);
+u32 itemDB_GetBuff(u16);
+u32 pokemon_GetInitDp(Pokemon*);
+void GSsndPlay(u32, u32, u32);
+}
+
+#endif

@@ -5,10 +5,17 @@
 // Partial views of the relive-hall helper types used by the hologram menu.
 class Pokemon {
 public:
+    u8 data[0xC4];
     u16 getPokemonDataId() const;
     bool isDarkPokemon() const;
+    u16 *getNicknamePtr();
 };
-class CMenuGlobalState;
+class CMenuGlobalState {
+public:
+    s32 reserved0;
+    s32 previous;
+    s32 current;
+};
 
 struct GSgfxColAu8 {
     u32 rgba;
@@ -21,12 +28,22 @@ public:
     s32 getTempo();
     Pokemon *getVisitorPointer();
     Pokemon *getDancerPointer(long);
+    s32 getDancerQuantity();
+    void pickupVisitor(Pokemon &);
+};
+
+class PCBOX {
+public:
+    static PCBOX *getPointer();
+    void addPokemonLastWatchBox(Pokemon *);
+    bool isPokemonFull();
 };
 
 class CReliveHall {
 public:
     static CReliveHall *getPointer();
     CReliveStage *getStage(long);
+    bool isReliveReadyPokemonExist();
 };
 
 struct GStexture;
@@ -57,12 +74,23 @@ public:
     void open(u32, bool);
     void close();
     void init(long, u32);
+    void setMsgCtrlValue(u32, u32);
 };
 
 class CState {
 public:
-    u8 data[0xA8];
+    s32 current;
+    s32 next;
+    u8 reserved8[0x10];
+    u8 work[0x40];
+    u8 reserved58[0x50];
     void init();
+    void update();
+    void change(s32);
+};
+
+struct MetaKeyInfo {
+    u16 on, off, trigger, repeat, released;
 };
 
 class CMetaMenu {
@@ -87,10 +115,14 @@ public:
     u8 reserved32D;
     u16 unk32E;
     static long defautlLocalWindowOpenTable[];
-    virtual void drawMain() = 0;
+    virtual void drawAll() = 0;
     virtual bool isAnimationStateNone();
     virtual void updateAll();
     virtual void tutorialExitKick();
+    MetaKeyInfo *getKeyInfo();
+    void aButtonWait();
+    f32 calcAnimationTimeRate0to1(f32);
+    void localWindowDrawAll();
     void waitAtTime(f32);
     void systemFadeWaitToEnd();
     void systemFadeOutSetAndWait(f32);
@@ -106,6 +138,8 @@ struct ModelSlot {
     s32 script;
     void *model;
     u32 sequence;
+    s32 getAnimIndex();
+    void setAnim(s32);
 };
 
 namespace {
@@ -134,7 +168,10 @@ public:
     CMenuGlobalState *globalState;
     u8 reserved414[4];
 
-    virtual void drawMain();
+    virtual void drawAll();
+    void stateReliveCeremony();
+    void stateMainProc();
+    void renderOffscreenData();
     void setStage(int);
     void setStageToReliveReady();
     void moveStageWait(int);

@@ -4,6 +4,7 @@ inline void *operator new(unsigned long, void *p) {
     return p;
 }
 
+class GSgfxLayer;
 struct GSgfxLayerID {
     s32 id;
 };
@@ -30,14 +31,28 @@ extern const GSgfxColAu8 GSgfxColAu8_Black;
 extern const GSgfxColAu8 relivehallAisyou2ColorTbl[3];
 void GSmodelSetVisibility(void *, s32);
 void scriptModelClose(void *);
+u32 floorGetCurrentGroupID();
+void *scriptModelOpen(u32);
+void *GSresGetResource(u32, void *);
+void GSmodelStopTexAnimation(void *);
+void cameraPlayAnime(u32, u32, s32, f32);
+void cameraSetType(s32);
+void msgctrlSetValue(s32, const void *);
+GSgfxLayer *GSgfxLayerFindByID(s32);
+void GSprimSetLineWidth(f32);
+void menuDrawReliveUpdate();
 }
 
+void GSprimSetup2DRender(GSgfxLayer *);
 class CMenuGlobalState;
+void relivehallDrawStageInfoCursor(long, int, int, Pokemon *, bool);
 
 enum MENU_POKEMON_CB_TYPE { MENU_POKEMON_CB_TYPE_0, MENU_POKEMON_CB_TYPE_1, MENU_POKEMON_CB_TYPE_2 };
 
 class CReliveStage {
 public:
+    u8 reserved[0x3D4];
+    s8 partner;
     s32 getDancerQuantity();
     Pokemon *getDancerPointer(long);
     Pokemon *getVisitorPointer();
@@ -109,7 +124,8 @@ public:
     s32 *menuTable;
     u8 reserved618[0x620 - 0x618];
     CStick stick;
-    u8 reserved621[0x80f54 - 0x621];
+    u8 reserved621[0x62c - 0x621];
+    SCircle circles[3];
     void *model0;
     void *model1;
     void *model2;
@@ -125,10 +141,12 @@ public:
     s32 animationFlag;
     u8 reserved10a0[0x10];
     u8 animationWork[0x40];
-    virtual void drawMain();
+    virtual void drawAll();
     virtual bool isAnimationStateNone();
     virtual void updateAll();
     void unloadDatas();
+    void loadDatas();
+    void editAfterDp0VisitorCheck();
     void resetStatusDisplayVisitor();
     void setStatusDisplayVisitor(Pokemon *);
     void infoMessageDisplay(u32);
@@ -141,6 +159,16 @@ public:
     Pokemon *getPokemonFromPositionWithCatch(int);
     int getQuantityMarkerDancerEmpty();
     void draw9StageInfo();
+    void drawStageCursor();
+    void drawStagePokemon();
+    void drawMainBG();
+    void drawVisitorStarLight(long, SPokemonView *);
+    void drawDancerStarLight();
+    void drawMarkers(bool);
+    void drawVsitorLine(long, SPokemonView *);
+    void drawStatusPanel();
+    void drawVisitorHitEffect();
+    void drawDancerHitEffect();
     int getQuantityMarkerDancerOnPlusDancerEmpty();
     int animationProcessButtonInterrupt();
     void animationStateUpdate();
@@ -187,9 +215,7 @@ void thisFree() {
 
 void thisNew() {
     CMenuReliveHall *p = (CMenuReliveHall *)GSmemAllocClr(0x81190);
-    if (p != 0) {
-        new (p) CMenuReliveHall;
-    }
+    new (p) CMenuReliveHall;
     pMenuReliveHall = p;
 }
 
@@ -465,6 +491,14 @@ Pokemon *CMenuReliveHall::getCurrentPokemonPointer() {
     return result;
 }
 
+void CMenuReliveHall::drawStageCursor() {
+    int quantity;
+    Pokemon *visitor;
+    visitor = getStatusDisplayVisitorGetPointer();
+    quantity = dancerPositionQuantityWithCatch();
+    ::relivehallDrawStageInfoCursor(stageIndex, getTempo(true), quantity, visitor, true);
+}
+
 Pokemon *CMenuReliveHall::getStatusDisplayVisitorGetPointer() {
     if (cursor->index == 6 && visitorFlag != 0) {
         if (pokemonCheckValid(&visitor)) {
@@ -584,6 +618,90 @@ void CMenuReliveHall::draw9StageInfo() {
     relivehallDraw9StageNumber(stageIndex);
     relivehallDraw9StageInfo(stageIndex);
 }
+
+const PocketVec<short> circlePosition = { 320, 280 };
+void _antZokuseiDraw(SPokemonView &);
+void _antDraw(SPokemonView &);
+void _antDraw(SPokemonView &, PocketVec<short>);
+
+void CMenuReliveHall::editAfterDp0VisitorCheck() {
+    Pokemon *pokemon;
+    pokemon = stage->getVisitorPointer();
+    if (pokemon == 0) return;
+    f32 darkPoint = pokemon->getDarkPoint();
+    if (darkPoint == 0.0f && stage->getDancerQuantity() == 0) {
+        msgctrlSetValue(0x32, pokemon->getNicknamePtr());
+        infoMessageDisplay3Line(0xD15D);
+    }
+}
+
+void CMenuReliveHall::loadDatas() {
+    u32 group;
+    group = floorGetCurrentGroupID();
+    model1 = scriptModelOpen(0x18041000);
+    model3 = GSresGetResource(group, model1);
+    GSmodelStopTexAnimation(model3);
+    model0 = scriptModelOpen(0x18041001);
+    model2 = GSresGetResource(group, model0);
+    GSmodelStopTexAnimation(model2);
+    cameraPlayAnime(group, 0x18031800, 1, 0.0f);
+    cameraSetType(4);
+    GSmodelSetVisibility(model3, 1);
+    GSmodelSetVisibility(model2, 1);
+    localWindowCreateAll();
+}
+
+void CMenuReliveHall::drawAll() {
+    SPokemonView *partnerView;
+    long compatibility;
+    Pokemon *partnerPokemon;
+    unsigned int i;
+    animationStateUpdate();
+    drawMainBG();
+    drawStageCursor();
+    GSprimSetup2DRender(GSgfxLayerFindByID(7));
+    GSprimSetLineWidth(1.0f);
+    GSprimSetBlendMode(1);
+    partnerView = 0;
+    compatibility = -1;
+    if (dancerPositionQuantityWithCatch() != 0 && getVisitorWithCatch() != 0 && stage->partner != -1) {
+        partnerView = &views[stage->partner];
+        partnerPokemon = getPokemonFromPositionWithCatch(stage->partner);
+        compatibility = pokemonToAisyou(getStatusDisplayVisitorGetPointer(), partnerPokemon);
+    }
+    if (compatibility != -1) drawVisitorStarLight(compatibility, partnerView);
+    drawDancerStarLight();
+    drawMarkers(true);
+    for (i = 0; i < 3; i++) circles[i].draw();
+    if (compatibility != -1) drawVsitorLine(compatibility, partnerView);
+    drawStatusPanel();
+    draw9StageInfo();
+    drawMarkers(false);
+    drawVisitorHitEffect();
+    drawDancerHitEffect();
+    drawStagePokemon();
+    alphaFadeDraw();
+    cursor->draw();
+    localWindowDrawAll();
+    CAnt::systemUpdate(true);
+    menuDrawReliveUpdate();
+    infoWindow.draw();
+    baseInfoWindow.draw();
+}
+
+void CMenuReliveHall::drawStagePokemon() {
+    int quantity;
+    int index;
+    SPokemonView *view;
+    quantity = stage->getDancerQuantity();
+    for (index = 0; index < quantity; index++) {
+        view = &views[index];
+        _antZokuseiDraw(*view);
+        _antDraw(*view);
+    }
+    _antDraw(views[6], circlePosition);
+}
+
 
 int CMenuReliveHall::animationProcessButtonInterrupt() {
     if (animationState != 0) {

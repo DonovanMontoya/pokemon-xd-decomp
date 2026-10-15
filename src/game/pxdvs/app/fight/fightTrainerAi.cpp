@@ -15,8 +15,8 @@ typedef struct FightTrainerKindData FightTrainerKindData;
 typedef struct Hero Hero;
 typedef struct AiWazaCandidate {
  FightOutPokemon *attackers[2]; FightOutPokemon *defenders[2]; u16 moves[2];
- s8 slots[2]; u8 eligible[2]; u8 probability[2]; u8 combination; u8 reserved1b;
- u16 damage[2][2]; u8 result[2]; u8 reserved26[2]; u16 threat; u16 reserved2a;
+ s8 slots[2]; u8 eligible[2]; u8 probability[2]; u8 combination;
+ u16 damage[2][2]; u8 result[2]; u8 reserved26; u16 threat;
 } AiWazaCandidate;
 typedef struct AiWazaWork { u8 count; u8 reserved[3]; } AiWazaWork;
 AiWazaCandidate ai_allwaza_valid_tbl[64];
@@ -236,7 +236,7 @@ u16 fightPokemonGetSoubiItemDataId(FightPokemon *);
 u16 fightPokemonGetSoubiItemSoubiDataId(FightPokemon *);
 u8 fightPokemon_GetEntryId(FightPokemon *);
 u8 fightTrainerIsAllyFightTargetPtr(FIGHT_TRAINER *, void *, u8);
-u16 fightAbicntDoKakeWaru(s32, u16);
+s32 fightAbicntDoKakeWaru(s32, s32);
 u8 wazaDB_GetPp(u16);
 u8 wazaDB_GetRangeId(u16);
 u8 wazaDB_GetTypeId(u16, u8);
@@ -2778,6 +2778,268 @@ void fightAi_InitAllWazaValidSub(AiWazaCandidate *entry) {
                 entry->result[j] = 0;
             }
         }
+    }
+}
+
+void fightAi_AllWazaValid_DelListFromSpeed(FIGHT_TRAINER *trainer, AiWazaCandidate *list, u8 *count, u16 wazaId, u8 faster) {
+    AiWazaCandidate *entry;
+    s8 k;
+    s8 i;
+    s8 j;
+    u8 remove;
+    u8 abiCnt[2];
+    s32 nimble[2];
+    s32 speed[2];
+    for (i = 0; i < *count; i++) {
+        remove = 0;
+        entry = &list[i];
+        for (j = 0; j < 2; j++) {
+            nimble[j] = (u16) pokemon_GetNimbleness(fightOutPokemonGetPokemonPtr(entry->attackers[j]));
+            abiCnt[j] = fightTrainerAiGetFightOutPokemonAbiCntSubayasa(trainer, entry->attackers[j]);
+            if (abiCnt[j] != 6) {
+                speed[j] = fightAbicntDoKakeWaru(abiCnt[j], nimble[j]);
+            } else {
+                speed[j] = nimble[j];
+            }
+        }
+        if (faster == 1) {
+            if (wazaId == entry->moves[0] && speed[0] < speed[1]) {
+                remove = 1;
+            } else if (wazaId == entry->moves[1] && speed[0] > speed[1]) {
+                remove = 1;
+            }
+        } else if (wazaId == entry->moves[0] && speed[0] > speed[1]) {
+            remove = 1;
+        } else if (wazaId == entry->moves[1] && speed[0] < speed[1]) {
+            remove = 1;
+        }
+        if (remove == 1) {
+            fightAi_InitAllWazaValidSub(entry);
+            k = 0;
+            i -= 1;
+            *count -= 1;
+            while (k < *count) {
+                list[k] = list[k + 1];
+                fightAi_CopyAllWazaValidTable(&list[k], &list[k + 1]);
+                k += 1;
+            }
+        }
+    }
+    for (k = *count; k < 0x40; k++) {
+        fightAi_InitAllWazaValidSub(&list[k]);
+    }
+}
+
+void fightAi_AllWazaValid_AddComboList(FIGHT_TRAINER *trainer, AiWazaCandidate *out, u8 *count, u8 kind0, s32 val0, u8 kind1, s32 val1) {
+    s32 type;
+    u8 kinds[2];
+    s32 vals[2];
+    u8 hitA;
+    u8 hitB;
+    u16 *move0;
+    u16 *move1;
+    FightOutPokemon **atk1;
+    AiWazaCandidate *entry;
+    u8 idx;
+    u8 side;
+    u8 n;
+    kinds[0] = kind0;
+    kinds[1] = kind1;
+    vals[0] = val0;
+    vals[1] = val1;
+    n = *count;
+    for (idx = 0; idx < 0x40; idx++) {
+        hitA = 0;
+        hitB = hitA;
+        entry = &ai_allwaza_valid_tbl[idx];
+        move0 = &entry->moves[0];
+        move1 = &entry->moves[1];
+        atk1 = &entry->attackers[1];
+        for (side = 0; side < 2; side++) {
+            switch (kinds[side]) {
+            case 0:
+                hitA += 1;
+                hitB += 1;
+                break;
+            case 1:
+                if (vals[side] != 0) {
+                    if (*move0 == vals[side]) {
+                        if (side == 0) {
+                            hitA = hitA + 1;
+                        }
+                        if (side == 1) {
+                            hitB += 1;
+                        }
+                    }
+                    if (*move1 == vals[side]) {
+                        if (side == 0) {
+                            hitB = hitB + 1;
+                        }
+                        if (side == 1) {
+                            hitA += 1;
+                        }
+                    }
+                }
+                break;
+            case 2: {
+                type = vals[side];
+                if (type != 0) {
+                    if (wazaIsWazaTypeId(*move0, type) == 1) {
+                        if (side == 0) {
+                            hitA = hitA + 1;
+                        }
+                        if (side == 1) {
+                            hitB += 1;
+                        }
+                    }
+                    if (wazaIsWazaTypeId(*move1, type) == 1) {
+                        if (side == 0) {
+                            hitB = hitB + 1;
+                        }
+                        if (side == 1) {
+                            hitA += 1;
+                        }
+                    }
+                }
+                break;
+            }
+            case 3:
+                if (vals[side] != -1) {
+                    if (vals[side] == fightTrainerAiGetWazaZokuseiDataId(trainer, *move0, entry->attackers[0])) {
+                        if (side == 0) {
+                            hitA = hitA + 1;
+                        }
+                        if (side == 1) {
+                            hitB += 1;
+                        }
+                    }
+                    if (vals[side] == fightTrainerAiGetWazaZokuseiDataId(trainer, *move1, *atk1)) {
+                        if (side == 0) {
+                            hitB = hitB + 1;
+                        }
+                        if (side == 1) {
+                            hitA += 1;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        if (hitA == 2 || hitB == 2) {
+            fightAi_CopyAllWazaValidTable(&out[n], entry);
+            n += 1;
+        }
+    }
+    *count = n;
+}
+
+void fightAi_AllWazaValid_DelComboList(FIGHT_TRAINER *trainer, AiWazaCandidate *list, u8 *count, u8 kind0, s32 val0, u8 kind1, s32 val1, u8 mode) {
+    u8 kinds[2];
+    s32 vals[2];
+    AiWazaCandidate tmp[64];
+    u8 hitA;
+    u8 hitB;
+    FightOutPokemon **atk1;
+    AiWazaCandidate *cand;
+    AiWazaCandidate *tblEntry;
+    u8 idx;
+    u8 side;
+    u8 n;
+    u8 k;
+    kinds[0] = kind0;
+    kinds[1] = kind1;
+    n = 0;
+    idx = 0;
+    vals[0] = val0;
+    vals[1] = val1;
+    for (; idx < *count; idx++) {
+        hitB = hitA = 0;
+        fightAi_InitAllWazaValidSub(&tmp[idx]);
+        tblEntry = &ai_allwaza_valid_tbl[idx];
+        cand = &list[idx];
+        atk1 = &tblEntry->attackers[1];
+        for (side = 0; side < 2; side++) {
+            switch (kinds[side]) {
+            case 0:
+                hitA += 1;
+                hitB += 1;
+                break;
+            case 1:
+                if (vals[side] != 0) {
+                    if (cand->moves[0] == vals[side]) {
+                        if (side == 0) {
+                            hitA = hitA + 1;
+                        }
+                        if (side == 1) {
+                            hitB += 1;
+                        }
+                    }
+                    if (cand->moves[1] == vals[side]) {
+                        if (side == 0) {
+                            hitB = hitB + 1;
+                        }
+                        if (side == 1) {
+                            hitA += 1;
+                        }
+                    }
+                }
+                break;
+            case 2: {
+                if (vals[side] != 0) {
+                    if (wazaIsWazaTypeId(cand->moves[0], vals[side]) == 1) {
+                        if (side == 0) {
+                            hitA = hitA + 1;
+                        }
+                        if (side == 1) {
+                            hitB += 1;
+                        }
+                    }
+                    if (wazaIsWazaTypeId(cand->moves[1], vals[side]) == 1) {
+                        if (side == 0) {
+                            hitB = hitB + 1;
+                        }
+                        if (side == 1) {
+                            hitA += 1;
+                        }
+                    }
+                }
+                break;
+            }
+            case 3:
+                if (vals[side] != -1) {
+                    if (vals[side] == fightTrainerAiGetWazaZokuseiDataId(trainer, cand->moves[0], tblEntry->attackers[0])) {
+                        if (side == 0) {
+                            hitA = hitA + 1;
+                        }
+                        if (side == 1) {
+                            hitB += 1;
+                        }
+                    }
+                    if (vals[side] == fightTrainerAiGetWazaZokuseiDataId(trainer, cand->moves[1], *atk1)) {
+                        if (side == 0) {
+                            hitB = hitB + 1;
+                        }
+                        if (side == 1) {
+                            hitA += 1;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        if (hitA == 2 || hitB == 2) {
+            if (mode == 1) {
+                fightAi_CopyAllWazaValidTable(&tmp[n], cand);
+                n += 1;
+            }
+        } else if (mode == 0) {
+            fightAi_CopyAllWazaValidTable(&tmp[n], cand);
+            n += 1;
+        }
+    }
+    *count = n;
+    for (k = 0; k < 0x40; k++) {
+        fightAi_CopyAllWazaValidTable(&list[k], &tmp[k]);
     }
 }
 
