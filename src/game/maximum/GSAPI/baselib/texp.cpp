@@ -1090,114 +1090,112 @@ static void HSD_TExpSetReg(HSD_TExp* texp)
     int i;
     GXColor reg[8];
     u32 changed;
-    HSD_TECnst* clist;
 
     changed = 0;
-    clist = &texp->cnst;
 
-    while (clist != 0) {
-        if (!(clist->type == HSD_TE_CNST)) __assert("texp.c", 1453, "clist->type == HSD_TE_CNST");
-        if (clist->reg < 8) {
-            changed |= 1 << clist->reg;
-            if (clist->comp == HSD_TE_RGB) {
-                switch (clist->ctype) {
+    while (texp != 0) {
+        if (!(texp->cnst.type == HSD_TE_CNST)) __assert("texp.c", 1453, "clist->type == HSD_TE_CNST");
+        if (texp->cnst.reg < 8) {
+            changed |= 1 << texp->cnst.reg;
+            if (texp->cnst.comp == HSD_TE_RGB) {
+                switch (texp->cnst.ctype) {
                 case HSD_TE_U8: {
                     GXColor col;
-                    col = *(GXColor*) clist->val;
-                    col.a = reg[clist->reg].a;
-                    reg[clist->reg] = col;
+                    col = *(GXColor*) texp->cnst.val;
+                    col.a = reg[texp->cnst.reg].a;
+                    reg[texp->cnst.reg] = col;
                     break;
                 }
                 case HSD_TE_U32: {
-                    u32* ptr = (u32*)clist->val;
-                    reg[clist->reg].r = ptr[0] < 0x100 ? ptr[0] : 0xFF;
-                    reg[clist->reg].g = ptr[1] < 0x100 ? ptr[1] : 0xFF;
-                    reg[clist->reg].b = ptr[2] < 0x100 ? ptr[2] : 0xFF;
+                    u32* ptr = (u32*)texp->cnst.val;
+                    reg[texp->cnst.reg].r = ptr[0] < 0x100 ? ptr[0] : 0xFF;
+                    reg[texp->cnst.reg].g = ptr[1] < 0x100 ? ptr[1] : 0xFF;
+                    reg[texp->cnst.reg].b = ptr[2] < 0x100 ? ptr[2] : 0xFF;
                     break;
                 }
                 default: {
                     int r;
                     int g;
                     int b;
-                    switch (clist->ctype) {
+                    switch (texp->cnst.ctype) {
                     case HSD_TE_U16: {
-                        u16* ptr = (u16*)clist->val;
+                        u16* ptr = (u16*)texp->cnst.val;
                         r = ptr[0];
                         g = ptr[1];
                         b = ptr[2];
                         break;
                     }
                     case HSD_TE_F32: {
-                        f32* ptr = (f32*)clist->val;
+                        f32* ptr = (f32*)texp->cnst.val;
                         r = 0xFF * ptr[0];
                         g = 0xFF * ptr[1];
                         b = 0xFF * ptr[2];
                         break;
                     }
                     default: {
-                        f64* ptr = (f64*)clist->val;
+                        f64* ptr = (f64*)texp->cnst.val;
                         r = 0xFF * ptr[0];
                         g = 0xFF * ptr[1];
                         b = 0xFF * ptr[2];
                         break;
                     }
                     }
-                    reg[clist->reg].r = r > 0xFF ? 0xFF : r < 0 ? 0 : r;
-                    reg[clist->reg].g = g > 0xFF ? 0xFF : g < 0 ? 0 : g;
-                    reg[clist->reg].b = b > 0xFF ? 0xFF : b < 0 ? 0 : b;
+                    reg[texp->cnst.reg].r = r > 0xFF ? 0xFF : r < 0 ? 0 : r;
+                    reg[texp->cnst.reg].g = g > 0xFF ? 0xFF : g < 0 ? 0 : g;
+                    reg[texp->cnst.reg].b = b > 0xFF ? 0xFF : b < 0 ? 0 : b;
                 }
                 }
             } else {
                 int x;
                 u8 val;
-                switch (clist->ctype) {
+                switch (texp->cnst.ctype) {
                 case HSD_TE_U8:
-                    x = *(u8*) clist->val;
+                    x = *(u8*) texp->cnst.val;
                     val = x;
                     break;
                 case HSD_TE_U16: {
-                    x = *(u16*) clist->val;
+                    x = *(u16*) texp->cnst.val;
                     val = x > 0xFF ? 0xFF : x < 0 ? 0 : x;
                     break;
                 }
                 case HSD_TE_U32:
-                    x = *(u32*) clist->val;
+                    x = *(u32*) texp->cnst.val;
                     val = x > 0xFF ? 0xFF : x < 0 ? 0 : x;
                     break;
                 case HSD_TE_F32:
-                    x = 0xFF * *(f32*) clist->val;
+                    x = 0xFF * *(f32*) texp->cnst.val;
                     val = x > 0xFF ? 0xFF : x < 0 ? 0 : x;
                     break;
                 default:
-                    x = 0xFF * *(f64*) clist->val;
+                    x = 0xFF * *(f64*) texp->cnst.val;
                     val = x > 0xFF ? 0xFF : x < 0 ? 0 : x;
                     break;
                 }
-                if (clist->reg < 4) {
-                    switch (clist->idx) {
+                if (texp->cnst.reg < 4) {
+                    switch (texp->cnst.idx) {
                     case 0:
-                        reg[clist->reg].r = val;
+                        reg[texp->cnst.reg].r = val;
                         break;
                     case 1:
-                        reg[clist->reg].g = val;
+                        reg[texp->cnst.reg].g = val;
                         break;
                     case 2:
-                        reg[clist->reg].b = val;
+                        reg[texp->cnst.reg].b = val;
                         break;
                     default:
-                        reg[clist->reg].a = val;
+                        reg[texp->cnst.reg].a = val;
                         break;
                     }
-                } else if (clist->idx == 3) {
-                    reg[clist->reg].a = val;
+                } else if (texp->cnst.idx == 3) {
+                    reg[texp->cnst.reg].a = val;
                 } else {
-                    reg[clist->reg].r = val;
-                    reg[clist->reg].g = val;
-                    reg[clist->reg].b = val;
+                    reg[texp->cnst.reg].r = val;
+                    reg[texp->cnst.reg].g = val;
+                    reg[texp->cnst.reg].b = val;
                 }
             }
         }
-        clist = &clist->next->cnst;
+        texp = texp->cnst.next;
     }
     if (changed != 0) {
         GXPixModeSync();

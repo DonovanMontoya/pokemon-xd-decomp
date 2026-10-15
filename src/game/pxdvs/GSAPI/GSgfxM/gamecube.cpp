@@ -4,6 +4,16 @@
 extern "C" {
 
 extern GCGraphicsState *gsgfxState;
+struct GCTmemRegion { u32 even, odd; };
+GCTmemRegion GSgfx_GCTmemRegions[8] = {
+    {0, 0x80000}, {0x10000, 0x88000}, {0x20000, 0x90000}, {0x30000, 0x98000},
+    {0x40000, 0xa0000}, {0x50000, 0xa8000}, {0x60000, 0xb0000}, {0x70000, 0xb8000}
+};
+u32 GSgfx_GCTlutRegions[20] = {
+    0xc0000, 0xc2000, 0xc4000, 0xc6000, 0xc8000, 0xca000, 0xcc000, 0xce000,
+    0xd0000, 0xd2000, 0xd4000, 0xd6000, 0xd8000, 0xda000, 0xdc000, 0xde000,
+    0xe0000, 0xe8000, 0xf0000, 0xf8000
+};
 static GCAASamplePattern _gcDefaultAASample = {{{6,6,6,6,6,6},{6,6,6,6,6,6},{6,6,6,6,6,6},{6,6,6,6,6,6}}};
 u8 GSgfx_GCTexMode0Ids[8] = {0x80, 0x81, 0x82, 0x83, 0xa0, 0xa1, 0xa2, 0xa3};
 u8 GSgfx_GCTexMode1Ids[8] = {0x84, 0x85, 0x86, 0x87, 0xa4, 0xa5, 0xa6, 0xa7};
@@ -663,186 +673,52 @@ while ((attribute = descriptor->attribute) != 0xFF) {
 
 
 void GSgfx_GCInvalidateState(void) {
-    s32 sp14;
-    s32 sp10;
-    s32 spC;
-    s32 sp8;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r10;
-    s32 temp_r10_2;
-    s32 temp_r10_3;
-    s32 temp_r10_4;
-    s32 temp_r10_5;
-    s32 temp_r10_6;
-    s32 temp_r11;
-    s32 temp_r11_2;
-    s32 temp_r11_3;
-    s32 temp_r11_4;
-    s32 temp_r11_5;
-    s32 temp_r11_6;
-    s32 temp_r12;
-    s32 temp_r12_2;
-    s32 temp_r12_3;
-    s32 temp_r12_4;
-    s32 temp_r12_5;
-    s32 temp_r12_6;
-    s32 temp_r14;
-    s32 temp_r14_2;
-    s32 temp_r14_3;
-    s32 temp_r14_4;
-    s32 temp_r14_5;
-    s32 temp_r15;
-    s32 temp_r15_2;
-    s32 temp_r15_3;
-    s32 temp_r15_4;
-    s32 temp_r15_5;
-    s32 temp_r15_6;
-    s32 temp_r16;
-    s32 temp_r16_2;
-    s32 temp_r16_3;
-    s32 temp_r16_4;
-    s32 temp_r16_5;
-    s32 temp_r17;
-    s32 temp_r17_2;
-    s32 temp_r17_3;
-    s32 temp_r17_4;
-    s32 temp_r17_5;
-    s32 temp_r18;
-    s32 temp_r18_2;
-    s32 temp_r18_3;
-    s32 temp_r18_4;
-    s32 temp_r18_5;
-    s32 temp_r19;
-    s32 temp_r19_2;
-    s32 temp_r19_3;
-    s32 temp_r19_4;
-    s32 temp_r19_5;
-    s32 temp_r20;
-    s32 temp_r20_2;
-    s32 temp_r20_3;
-    s32 temp_r20_4;
-    s32 temp_r20_5;
-    s32 temp_r21;
-    s32 temp_r21_2;
-    s32 temp_r21_3;
-    s32 temp_r21_4;
-    s32 temp_r21_5;
-    s32 temp_r22;
-    s32 temp_r22_2;
-    s32 temp_r22_3;
-    s32 temp_r23;
-    s32 temp_r23_2;
-    s32 temp_r23_3;
-    s32 temp_r24;
-    s32 temp_r24_2;
-    s32 temp_r24_3;
-    s32 temp_r25;
-    s32 temp_r25_2;
-    s32 temp_r26;
-    s32 temp_r26_2;
-    s32 temp_r27;
-    s32 temp_r27_2;
-    s32 temp_r28;
-    s32 temp_r29;
-    s32 temp_r30;
-    s32 temp_r30_2;
-    s32 temp_r31;
-    s32 temp_r3;
-    s32 temp_r3_2;
-    s32 temp_r4;
-    s32 temp_r4_2;
-    s32 temp_r4_3;
-    s32 temp_r5;
-    s32 temp_r5_2;
-    s32 temp_r5_3;
-    s32 temp_r5_4;
-    s32 temp_r5_5;
-    s32 temp_r5_6;
-    s32 temp_r6;
-    s32 temp_r6_2;
-    s32 temp_r6_3;
-    s32 temp_r6_4;
-    s32 temp_r6_5;
-    s32 temp_r6_6;
-    s32 temp_r7;
-    s32 temp_r7_2;
-    s32 temp_r7_3;
-    s32 temp_r7_4;
-    s32 temp_r7_5;
-    s32 temp_r7_6;
-    s32 temp_r8;
-    s32 temp_r8_2;
-    s32 temp_r8_3;
-    s32 temp_r8_4;
-    s32 temp_r8_5;
-    s32 temp_r8_6;
-    s32 temp_r9;
-    s32 temp_r9_2;
-    s32 temp_r9_3;
-    s32 temp_r9_4;
-    s32 temp_r9_5;
-    s32 temp_r9_6;
-    s32 var_ctr;
-    s32 var_ctr_2;
-    s32 var_ctr_3;
-    s32 var_ctr_4;
-    s32 var_ctr_5;
-    s32 var_ctr_6;
-    s32 var_r16;
-    s32 var_r29;
-    s32 var_r3;
-    s32 var_r4;
-    s32 var_r4_2;
-    s32 var_r4_3;
-
-    GC_WORD(0x358) = 0xFEFEFEFE;
-    GC_WORD(0x35C) = 0xFEFEFEFE;
-    GC_WORD(0x360) = 0xFEFEFEFE;
+    u32 invalid = 0xFEFEFEFE;
+    GC_WORD(0x358) = invalid;
+    GC_WORD(0x35C) = invalid;
+    GC_WORD(0x360) = invalid;
     GC_BYTE(0x364) = 0xFE;
-    GC_WORD(0x368) = 0xFEFEFEFE;
-    GC_WORD(0x36C) = 0xFEFEFEFE;
-    GC_WORD(0x370) = 0xFEFEFEFE;
-    GC_WORD(0x374) = 0xFEFEFEFE;
+    GC_WORD(0x368) = invalid;
+    GC_WORD(0x36C) = invalid;
+    GC_WORD(0x370) = invalid;
+    GC_WORD(0x374) = invalid;
     GC_BYTE(0x378) = 0xFE;
-    GC_WORD(0x37C) = 0xFEFEFEFE;
-    GC_WORD(0x380) = 0xFEFEFEFE;
-    GC_WORD(0x384) = 0xFEFEFEFE;
-    GC_WORD(0x388) = 0xFEFEFEFE;
+    GC_WORD(0x37C) = invalid;
+    GC_WORD(0x380) = invalid;
+    GC_WORD(0x384) = invalid;
+    GC_WORD(0x388) = invalid;
     GC_BYTE(0x38C) = 0xFE;
-    GC_WORD(0x390) = 0xFEFEFEFE;
-    GC_WORD(0x394) = 0xFEFEFEFE;
-    GC_WORD(0x398) = 0xFEFEFEFE;
-    GC_WORD(0x39C) = 0xFEFEFEFE;
+    GC_WORD(0x390) = invalid;
+    GC_WORD(0x394) = invalid;
+    GC_WORD(0x398) = invalid;
+    GC_WORD(0x39C) = invalid;
     GC_BYTE(0x3A0) = 0xFE;
-    GC_WORD(0x3A4) = 0xFEFEFEFE;
-    GC_WORD(0x3A8) = 0xFEFEFEFE;
-    GC_WORD(0x3AC) = 0xFEFEFEFE;
-    GC_WORD(0x3B0) = 0xFEFEFEFE;
+    GC_WORD(0x3A4) = invalid;
+    GC_WORD(0x3A8) = invalid;
+    GC_WORD(0x3AC) = invalid;
+    GC_WORD(0x3B0) = invalid;
     GC_BYTE(0x3B4) = 0xFE;
-    GC_WORD(0x3B8) = 0xFEFEFEFE;
-    GC_WORD(0x3BC) = 0xFEFEFEFE;
-    GC_WORD(0x3C0) = 0xFEFEFEFE;
-    var_r4 = 0;
-    GC_WORD(0x3C4) = 0xFEFEFEFE;
+    GC_WORD(0x3B8) = invalid;
+    GC_WORD(0x3BC) = invalid;
+    GC_WORD(0x3C0) = invalid;
+    GC_WORD(0x3C4) = invalid;
     GC_BYTE(0x3C8) = 0xFE;
-    GC_WORD(0x3CC) = 0xFEFEFEFE;
-    GC_WORD(0x3D0) = 0xFEFEFEFE;
-    GC_WORD(0x3D4) = 0xFEFEFEFE;
-    GC_WORD(0x3D8) = 0xFEFEFEFE;
+    GC_WORD(0x3CC) = invalid;
+    GC_WORD(0x3D0) = invalid;
+    GC_WORD(0x3D4) = invalid;
+    GC_WORD(0x3D8) = invalid;
     GC_BYTE(0x3DC) = 0xFE;
-    GC_WORD(0x3E0) = 0xFEFEFEFE;
-    GC_WORD(0x3E4) = 0xFEFEFEFE;
-    GC_WORD(0x3E8) = 0xFEFEFEFE;
-    GC_WORD(0x3EC) = 0xFEFEFEFE;
+    GC_WORD(0x3E0) = invalid;
+    GC_WORD(0x3E4) = invalid;
+    GC_WORD(0x3E8) = invalid;
+    GC_WORD(0x3EC) = invalid;
     GC_BYTE(0x3F0) = 0xFE;
-    GC_WORD(0x3F4) = 0xFEFEFEFE;
+    GC_WORD(0x3F4) = invalid;
     GC_BYTE(0x3F8) = 0xFE;
     GC_BYTE(0x3FC) = 0;
-    GC_WORD(0x400) = 0xFEFEFEFE;
+    GC_WORD(0x400) = invalid;
     GC_BYTE(0x404) = 0;
-    GC_WORD(0x408) = 0xFEFEFEFE;
+    GC_WORD(0x408) = invalid;
     GC_BYTE(0x40C) = 0xFE;
     GC_BYTE(0x40D) = 0xFE;
     GC_BYTE(0x40E) = 0xFE;
@@ -859,500 +735,182 @@ void GSgfx_GCInvalidateState(void) {
     GC_BYTE(0x419) = 0xFE;
     GC_BYTE(0x41A) = 0xFE;
     GC_BYTE(0x41B) = 0xFE;
-    GC_WORD(0x41C) = 0xFEFEFEFE;
+    GC_WORD(0x41C) = invalid;
     GC_BYTE(0x438) = 0xFE;
-    GC_WORD(0x43C) = 0xFEFEFEFE;
-    GC_WORD(0x440) = 0xFEFEFEFE;
+    GC_WORD(0x43C) = invalid;
+    GC_WORD(0x440) = invalid;
     GC_HALF(0x444) = 0xFEFE;
     GC_HALF(0x446) = 0xFEFE;
     GC_HALF(0x448) = 0xFEFE;
     GC_HALF(0x44A) = 0xFEFE;
-    GC_WORD(0x44C) = 0xFEFEFEFE;
-    GC_WORD(0x450) = 0xFEFEFEFE;
+    GC_WORD(0x44C) = invalid;
+    GC_WORD(0x450) = invalid;
     GC_FLOAT(0xC24) = -1.0f;
     GC_FLOAT(0xC28) = -1.0f;
     GC_FLOAT(0xC2C) = -1.0f;
     GC_FLOAT(0xC30) = -1.0f;
     GC_FLOAT(0xC34) = 0.0f;
     GC_FLOAT(0xC38) = 1.0f;
-    GC_WORD(0xC3C) = 0xFEFEFEFE;
+    GC_WORD(0xC3C) = invalid;
     GC_BYTE(0x454) = 0xFE;
     GC_BYTE(0x458) = 0xFE;
-    GC_WORD(0x45C) = 0xFEFEFEFE;
-    GC_WORD(0x460) = 0xFEFEFEFE;
-    GC_WORD(0x464) = 0xFEFEFEFE;
-    GC_WORD(0x468) = 0xFEFEFEFE;
-    GC_WORD(0x46C) = 0xFEFEFEFE;
+    GC_WORD(0x45C) = invalid;
+    GC_WORD(0x460) = invalid;
+    GC_WORD(0x464) = invalid;
+    GC_WORD(0x468) = invalid;
+    GC_WORD(0x46C) = invalid;
     GC_BYTE(0x470) = 0xFE;
-    GC_WORD(0x474) = 0xFEFEFEFE;
-    GC_WORD(0x478) = 0xFEFEFEFE;
-    GC_WORD(0x47C) = 0xFEFEFEFE;
-    GC_WORD(0x480) = 0xFEFEFEFE;
-    GC_WORD(0x484) = 0xFEFEFEFE;
+    GC_WORD(0x474) = invalid;
+    GC_WORD(0x478) = invalid;
+    GC_WORD(0x47C) = invalid;
+    GC_WORD(0x480) = invalid;
+    GC_WORD(0x484) = invalid;
     GC_BYTE(0x488) = 0xFE;
-    GC_WORD(0x48C) = 0xFEFEFEFE;
-    GC_WORD(0x490) = 0xFEFEFEFE;
-    GC_WORD(0x494) = 0xFEFEFEFE;
-    GC_WORD(0x498) = 0xFEFEFEFE;
-    GC_WORD(0x49C) = 0xFEFEFEFE;
+    GC_WORD(0x48C) = invalid;
+    GC_WORD(0x490) = invalid;
+    GC_WORD(0x494) = invalid;
+    GC_WORD(0x498) = invalid;
+    GC_WORD(0x49C) = invalid;
     GC_BYTE(0x4A0) = 0xFE;
-    GC_WORD(0x4A4) = 0xFEFEFEFE;
-    GC_WORD(0x4A8) = 0xFEFEFEFE;
-    GC_WORD(0x4AC) = 0xFEFEFEFE;
-    GC_WORD(0x4B0) = 0xFEFEFEFE;
-    GC_WORD(0x4B4) = 0xFEFEFEFE;
+    GC_WORD(0x4A4) = invalid;
+    GC_WORD(0x4A8) = invalid;
+    GC_WORD(0x4AC) = invalid;
+    GC_WORD(0x4B0) = invalid;
+    GC_WORD(0x4B4) = invalid;
     GC_BYTE(0x4B8) = 1;
     GC_BYTE(0x4C2) = 1;
     GC_BYTE(0x4BD) = 1;
     GC_BYTE(0x4C7) = 1;
-    var_ctr = 2;
-    do {
-        GC_WORD((var_r4 + 0x4CC)) = 0xFEFEFEFE;
-        temp_r24 = var_r4 + 0x4DC;
-        temp_r23 = var_r4 + 0x4E0;
-        temp_r22 = var_r4 + 0x4E4;
-        temp_r21 = var_r4 + 0x4E8;
-        temp_r20 = var_r4 + 0x4EC;
-        GC_WORD((var_r4 + 0x4D0)) = 0xFEFEFEFE;
-        temp_r19 = var_r4 + 0x4F0;
-        temp_r18 = var_r4 + 0x4F4;
-        temp_r17 = var_r4 + 0x4F8;
-        temp_r16 = var_r4 + 0x4FC;
-        temp_r15 = var_r4 + 0x500;
-        temp_r14 = var_r4 + 0x504;
-        GC_WORD((var_r4 + 0x4D4)) = 0xFEFEFEFE;
-        temp_r12 = var_r4 + 0x508;
-        temp_r11 = var_r4 + 0x50C;
-        temp_r10 = var_r4 + 0x510;
-        temp_r9 = var_r4 + 0x514;
-        temp_r8 = var_r4 + 0x518;
-        temp_r7 = var_r4 + 0x51C;
-        GC_WORD((var_r4 + 0x4D8)) = 0xFEFEFEFE;
-        temp_r6 = var_r4 + 0x520;
-        temp_r5 = var_r4 + 0x524;
-        temp_r0 = var_r4 + 0x528;
-        var_r4 += 0x60;
-        GC_WORD(temp_r24) = 0xFEFEFEFE;
-        GC_WORD(temp_r23) = 0xFEFEFEFE;
-        GC_WORD(temp_r22) = 0xFEFEFEFE;
-        GC_WORD(temp_r21) = 0xFEFEFEFE;
-        GC_WORD(temp_r20) = 0xFEFEFEFE;
-        GC_WORD(temp_r19) = 0xFEFEFEFE;
-        GC_WORD(temp_r18) = 0xFEFEFEFE;
-        GC_WORD(temp_r17) = 0xFEFEFEFE;
-        GC_WORD(temp_r16) = 0xFEFEFEFE;
-        GC_WORD(temp_r15) = 0xFEFEFEFE;
-        GC_WORD(temp_r14) = 0xFEFEFEFE;
-        GC_WORD(temp_r12) = 0xFEFEFEFE;
-        GC_WORD(temp_r11) = 0xFEFEFEFE;
-        GC_WORD(temp_r10) = 0xFEFEFEFE;
-        GC_WORD(temp_r9) = 0xFEFEFEFE;
-        GC_WORD(temp_r8) = 0xFEFEFEFE;
-        GC_WORD(temp_r7) = 0xFEFEFEFE;
-        GC_WORD(temp_r6) = 0xFEFEFEFE;
-        GC_WORD(temp_r5) = 0xFEFEFEFE;
-        GC_WORD(temp_r0) = 0xFEFEFEFE;
-        var_ctr -= 1;
-    } while (var_ctr != 0);
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->stageOrders[i].coordinate = invalid;
+        gsgfxState->stageOrders[i].texture = invalid;
+        gsgfxState->stageOrders[i].channel = invalid;
+    }
     GC_BYTE(0x58C) = 0xFE;
-    var_r16 = 0;
     GC_BYTE(0x58D) = 0xFE;
-    var_ctr_2 = 2;
-    do {
-        GC_WORD((var_r16 + 0x590)) = 0xFEFEFEFE;
-        temp_r18_2 = var_r16 + 0x5A4;
-        sp10 = var_r16 + 0x608;
-        temp_r15_2 = var_r16 + 0x60C;
-        temp_r19_2 = var_r16 + 0x5A8;
-        temp_r20_2 = var_r16 + 0x5AC;
-        GC_WORD((var_r16 + 0x594)) = 0xFEFEFEFE;
-        temp_r21_2 = var_r16 + 0x5B0;
-        temp_r22_2 = var_r16 + 0x5B4;
-        temp_r23_2 = var_r16 + 0x5B8;
-        temp_r24_2 = var_r16 + 0x5BC;
-        temp_r25 = var_r16 + 0x5C0;
-        temp_r26 = var_r16 + 0x5C4;
-        GC_WORD((var_r16 + 0x598)) = 0xFEFEFEFE;
-        temp_r27 = var_r16 + 0x5C8;
-        temp_r28 = var_r16 + 0x5CC;
-        temp_r29 = var_r16 + 0x5D0;
-        temp_r30 = var_r16 + 0x5D4;
-        temp_r31 = var_r16 + 0x5D8;
-        temp_r12_2 = var_r16 + 0x5DC;
-        GC_WORD((var_r16 + 0x59C)) = 0xFEFEFEFE;
-        temp_r11_2 = var_r16 + 0x5E0;
-        temp_r10_2 = var_r16 + 0x5E4;
-        temp_r9_2 = var_r16 + 0x5E8;
-        temp_r8_2 = var_r16 + 0x5EC;
-        temp_r7_2 = var_r16 + 0x5F0;
-        temp_r6_2 = var_r16 + 0x5F4;
-        GC_WORD((var_r16 + 0x5A0)) = 0xFEFEFEFE;
-        temp_r5_2 = var_r16 + 0x5F8;
-        temp_r4 = var_r16 + 0x5FC;
-        temp_r3 = var_r16 + 0x600;
-        temp_r0_2 = var_r16 + 0x604;
-        sp8 = temp_r15_2;
-        var_r16 += 0x80;
-        GC_WORD(temp_r18_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r19_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r20_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r21_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r22_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r23_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r24_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r25) = 0xFEFEFEFE;
-        GC_WORD(temp_r26) = 0xFEFEFEFE;
-        GC_WORD(temp_r27) = 0xFEFEFEFE;
-        GC_WORD(temp_r28) = 0xFEFEFEFE;
-        GC_WORD(temp_r29) = 0xFEFEFEFE;
-        GC_WORD(temp_r30) = 0xFEFEFEFE;
-        GC_WORD(temp_r31) = 0xFEFEFEFE;
-        GC_WORD(temp_r12_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r11_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r10_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r9_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r8_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r7_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r6_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r5_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r4) = 0xFEFEFEFE;
-        GC_WORD(temp_r3) = 0xFEFEFEFE;
-        GC_WORD(temp_r0_2) = 0xFEFEFEFE;
-        GC_WORD(sp10) = 0xFEFEFEFE;
-        GC_WORD(temp_r15_2) = 0xFEFEFEFE;
-        var_ctr_2 -= 1;
-    } while (var_ctr_2 != 0);
-    var_r29 = 0;
-    var_ctr_3 = 2;
-    do {
-        GC_WORD((var_r29 + 0x690)) = 0xFEFEFEFE;
-        temp_r27_2 = var_r29 + 0x6A4;
-        sp14 = var_r29 + 0x708;
-        temp_r30_2 = var_r29 + 0x70C;
-        temp_r26_2 = var_r29 + 0x6A8;
-        temp_r25_2 = var_r29 + 0x6AC;
-        GC_WORD((var_r29 + 0x694)) = 0xFEFEFEFE;
-        temp_r24_3 = var_r29 + 0x6B0;
-        temp_r23_3 = var_r29 + 0x6B4;
-        temp_r22_3 = var_r29 + 0x6B8;
-        temp_r21_3 = var_r29 + 0x6BC;
-        temp_r20_3 = var_r29 + 0x6C0;
-        temp_r19_3 = var_r29 + 0x6C4;
-        GC_WORD((var_r29 + 0x698)) = 0xFEFEFEFE;
-        temp_r18_3 = var_r29 + 0x6C8;
-        temp_r17_2 = var_r29 + 0x6CC;
-        temp_r16_2 = var_r29 + 0x6D0;
-        temp_r15_3 = var_r29 + 0x6D4;
-        temp_r14_2 = var_r29 + 0x6D8;
-        temp_r12_3 = var_r29 + 0x6DC;
-        GC_WORD((var_r29 + 0x69C)) = 0xFEFEFEFE;
-        temp_r11_3 = var_r29 + 0x6E0;
-        temp_r10_3 = var_r29 + 0x6E4;
-        temp_r9_3 = var_r29 + 0x6E8;
-        temp_r8_3 = var_r29 + 0x6EC;
-        temp_r7_3 = var_r29 + 0x6F0;
-        temp_r6_3 = var_r29 + 0x6F4;
-        GC_WORD((var_r29 + 0x6A0)) = 0xFEFEFEFE;
-        temp_r5_3 = var_r29 + 0x6F8;
-        temp_r4_2 = var_r29 + 0x6FC;
-        temp_r3_2 = var_r29 + 0x700;
-        temp_r0_3 = var_r29 + 0x704;
-        spC = temp_r30_2;
-        var_r29 += 0x80;
-        GC_WORD(temp_r27_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r26_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r25_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r24_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r23_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r22_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r21_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r20_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r19_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r18_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r17_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r16_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r15_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r14_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r12_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r11_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r10_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r9_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r8_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r7_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r6_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r5_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r4_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r3_2) = 0xFEFEFEFE;
-        GC_WORD(temp_r0_3) = 0xFEFEFEFE;
-        GC_WORD(sp14) = 0xFEFEFEFE;
-        GC_WORD(temp_r30_2) = 0xFEFEFEFE;
-        var_ctr_3 -= 1;
-    } while (var_ctr_3 != 0);
-    var_r4_2 = 0;
-    var_ctr_4 = 2;
-    do {
-        GC_WORD((var_r4_2 + 0x790)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x794)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x798)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_2 + 0x79C)) = 0xFE;
-        GC_WORD((var_r4_2 + 0x7A0)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7A4)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7A8)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7AC)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_2 + 0x7B0)) = 0xFE;
-        GC_WORD((var_r4_2 + 0x7B4)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7B8)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7BC)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7C0)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_2 + 0x7C4)) = 0xFE;
-        GC_WORD((var_r4_2 + 0x7C8)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7CC)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7D0)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7D4)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_2 + 0x7D8)) = 0xFE;
-        GC_WORD((var_r4_2 + 0x7DC)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7E0)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_2 + 0x7E4)) = 0xFEFEFEFE;
-        temp_r21_4 = var_r4_2 + 0x7F0;
-        temp_r20_4 = var_r4_2 + 0x7F4;
-        temp_r19_4 = var_r4_2 + 0x7F8;
-        temp_r18_4 = var_r4_2 + 0x7FC;
-        temp_r17_3 = var_r4_2 + 0x800;
-        temp_r16_3 = var_r4_2 + 0x804;
-        GC_WORD((var_r4_2 + 0x7E8)) = 0xFEFEFEFE;
-        temp_r15_4 = var_r4_2 + 0x808;
-        temp_r14_3 = var_r4_2 + 0x80C;
-        temp_r12_4 = var_r4_2 + 0x810;
-        temp_r11_4 = var_r4_2 + 0x814;
-        temp_r10_4 = var_r4_2 + 0x818;
-        temp_r9_4 = var_r4_2 + 0x81C;
-        GC_BYTE((var_r4_2 + 0x7EC)) = 0xFE;
-        temp_r8_4 = var_r4_2 + 0x820;
-        temp_r7_4 = var_r4_2 + 0x824;
-        temp_r6_4 = var_r4_2 + 0x828;
-        temp_r5_4 = var_r4_2 + 0x82C;
-        var_r4_2 += 0xA0;
-        GC_WORD(temp_r21_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r20_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r19_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r18_4) = 0xFEFEFEFE;
-        GC_BYTE(temp_r17_3) = 0xFE;
-        GC_WORD(temp_r16_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r15_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r14_3) = 0xFEFEFEFE;
-        GC_WORD(temp_r12_4) = 0xFEFEFEFE;
-        GC_BYTE(temp_r11_4) = 0xFE;
-        GC_WORD(temp_r10_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r9_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r8_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r7_4) = 0xFEFEFEFE;
-        GC_BYTE(temp_r6_4) = 0xFE;
-        GC_WORD(temp_r5_4) = 0xFEFEFEFE;
-        var_ctr_4 -= 1;
-    } while (var_ctr_4 != 0);
-    var_r4_3 = 0;
-    var_ctr_5 = 2;
-    do {
-        GC_WORD((var_r4_3 + 0x8D0)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8D4)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8D8)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_3 + 0x8DC)) = 0xFE;
-        GC_WORD((var_r4_3 + 0x8E0)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8E4)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8E8)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8EC)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_3 + 0x8F0)) = 0xFE;
-        GC_WORD((var_r4_3 + 0x8F4)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8F8)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x8FC)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x900)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_3 + 0x904)) = 0xFE;
-        GC_WORD((var_r4_3 + 0x908)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x90C)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x910)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x914)) = 0xFEFEFEFE;
-        GC_BYTE((var_r4_3 + 0x918)) = 0xFE;
-        GC_WORD((var_r4_3 + 0x91C)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x920)) = 0xFEFEFEFE;
-        GC_WORD((var_r4_3 + 0x924)) = 0xFEFEFEFE;
-        temp_r21_5 = var_r4_3 + 0x930;
-        temp_r20_5 = var_r4_3 + 0x934;
-        temp_r19_5 = var_r4_3 + 0x938;
-        temp_r18_5 = var_r4_3 + 0x93C;
-        temp_r17_4 = var_r4_3 + 0x940;
-        temp_r16_4 = var_r4_3 + 0x944;
-        GC_WORD((var_r4_3 + 0x928)) = 0xFEFEFEFE;
-        temp_r15_5 = var_r4_3 + 0x948;
-        temp_r14_4 = var_r4_3 + 0x94C;
-        temp_r12_5 = var_r4_3 + 0x950;
-        temp_r11_5 = var_r4_3 + 0x954;
-        temp_r10_5 = var_r4_3 + 0x958;
-        temp_r9_5 = var_r4_3 + 0x95C;
-        GC_BYTE((var_r4_3 + 0x92C)) = 0xFE;
-        temp_r8_5 = var_r4_3 + 0x960;
-        temp_r7_5 = var_r4_3 + 0x964;
-        temp_r6_5 = var_r4_3 + 0x968;
-        temp_r5_5 = var_r4_3 + 0x96C;
-        var_r4_3 += 0xA0;
-        GC_WORD(temp_r21_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r20_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r19_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r18_5) = 0xFEFEFEFE;
-        GC_BYTE(temp_r17_4) = 0xFE;
-        GC_WORD(temp_r16_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r15_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r14_4) = 0xFEFEFEFE;
-        GC_WORD(temp_r12_5) = 0xFEFEFEFE;
-        GC_BYTE(temp_r11_5) = 0xFE;
-        GC_WORD(temp_r10_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r9_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r8_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r7_5) = 0xFEFEFEFE;
-        GC_BYTE(temp_r6_5) = 0xFE;
-        GC_WORD(temp_r5_5) = 0xFEFEFEFE;
-        var_ctr_5 -= 1;
-    } while (var_ctr_5 != 0);
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->colorInputs[i].a = invalid;
+        gsgfxState->colorInputs[i].b = invalid;
+        gsgfxState->colorInputs[i].c = invalid;
+        gsgfxState->colorInputs[i].d = invalid;
+    }
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->alphaInputs[i].a = invalid;
+        gsgfxState->alphaInputs[i].b = invalid;
+        gsgfxState->alphaInputs[i].c = invalid;
+        gsgfxState->alphaInputs[i].d = invalid;
+    }
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->colorOperations[i].operation = invalid;
+        gsgfxState->colorOperations[i].bias = invalid;
+        gsgfxState->colorOperations[i].scale = invalid;
+        gsgfxState->colorOperations[i].clamp = 0xFE;
+        gsgfxState->colorOperations[i].output = invalid;
+    }
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->alphaOperations[i].operation = invalid;
+        gsgfxState->alphaOperations[i].bias = invalid;
+        gsgfxState->alphaOperations[i].scale = invalid;
+        gsgfxState->alphaOperations[i].clamp = 0xFE;
+        gsgfxState->alphaOperations[i].output = invalid;
+    }
     GC_BYTE(0xA10) = 1;
-    var_r3 = 0;
     GC_BYTE(0xA15) = 1;
     GC_BYTE(0xA1A) = 1;
     GC_BYTE(0xA1F) = 1;
-    GC_WORD(0xA24) = 0xFEFEFEFE;
-    GC_WORD(0xA28) = 0xFEFEFEFE;
-    GC_WORD(0xA2C) = 0xFEFEFEFE;
-    GC_WORD(0xA30) = 0xFEFEFEFE;
-    GC_WORD(0xA34) = 0xFEFEFEFE;
-    GC_WORD(0xA38) = 0xFEFEFEFE;
-    GC_WORD(0xA3C) = 0xFEFEFEFE;
-    GC_WORD(0xA40) = 0xFEFEFEFE;
-    GC_WORD(0xA44) = 0xFEFEFEFE;
-    GC_WORD(0xA48) = 0xFEFEFEFE;
-    GC_WORD(0xA4C) = 0xFEFEFEFE;
-    GC_WORD(0xA50) = 0xFEFEFEFE;
-    GC_WORD(0xA54) = 0xFEFEFEFE;
-    GC_WORD(0xA58) = 0xFEFEFEFE;
-    GC_WORD(0xA5C) = 0xFEFEFEFE;
-    GC_WORD(0xA60) = 0xFEFEFEFE;
-    GC_WORD(0xA64) = 0xFEFEFEFE;
-    GC_WORD(0xA68) = 0xFEFEFEFE;
-    GC_WORD(0xA6C) = 0xFEFEFEFE;
-    GC_WORD(0xA70) = 0xFEFEFEFE;
-    GC_WORD(0xA74) = 0xFEFEFEFE;
-    GC_WORD(0xA78) = 0xFEFEFEFE;
-    GC_WORD(0xA7C) = 0xFEFEFEFE;
-    GC_WORD(0xA80) = 0xFEFEFEFE;
-    GC_WORD(0xA84) = 0xFEFEFEFE;
-    GC_WORD(0xA88) = 0xFEFEFEFE;
-    GC_WORD(0xA8C) = 0xFEFEFEFE;
-    GC_WORD(0xA90) = 0xFEFEFEFE;
-    GC_WORD(0xA94) = 0xFEFEFEFE;
-    GC_WORD(0xA98) = 0xFEFEFEFE;
-    GC_WORD(0xA9C) = 0xFEFEFEFE;
-    GC_WORD(0xAA0) = 0xFEFEFEFE;
-    var_ctr_6 = 2;
-    do {
-        GC_WORD((var_r3 + 0xAA4)) = 0xFEFEFEFE;
-        temp_r17_5 = var_r3 + 0xAB0;
-        temp_r16_5 = var_r3 + 0xAB4;
-        temp_r15_6 = var_r3 + 0xAB8;
-        temp_r14_5 = var_r3 + 0xABC;
-        temp_r12_6 = var_r3 + 0xAC0;
-        temp_r11_6 = var_r3 + 0xAC4;
-        GC_WORD((var_r3 + 0xAA8)) = 0xFEFEFEFE;
-        temp_r10_6 = var_r3 + 0xAC8;
-        temp_r9_6 = var_r3 + 0xACC;
-        temp_r8_6 = var_r3 + 0xAD0;
-        temp_r7_6 = var_r3 + 0xAD4;
-        temp_r6_6 = var_r3 + 0xAD8;
-        temp_r5_6 = var_r3 + 0xADC;
-        GC_WORD((var_r3 + 0xAAC)) = 0xFEFEFEFE;
-        temp_r4_3 = var_r3 + 0xAE0;
-        var_r3 += 0x40;
-        GC_WORD(temp_r17_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r16_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r15_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r14_5) = 0xFEFEFEFE;
-        GC_WORD(temp_r12_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r11_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r10_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r9_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r8_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r7_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r6_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r5_6) = 0xFEFEFEFE;
-        GC_WORD(temp_r4_3) = 0xFEFEFEFE;
-        var_ctr_6 -= 1;
-    } while (var_ctr_6 != 0);
-    GC_WORD(0xB24) = 0xFEFEFEFE;
-    GC_WORD(0xB28) = 0xFEFEFEFE;
-    GC_WORD(0xB2C) = 0xFEFEFEFE;
-    GC_WORD(0xB30) = 0xFEFEFEFE;
-    GC_WORD(0xB34) = 0xFEFEFEFE;
-    GC_WORD(0xB38) = 0xFEFEFEFE;
-    GC_WORD(0xB3C) = 0xFEFEFEFE;
-    GC_WORD(0xB40) = 0xFEFEFEFE;
-    GC_WORD(0xB44) = 0xFEFEFEFE;
-    GC_WORD(0xB48) = 0xFEFEFEFE;
-    GC_WORD(0xB4C) = 0xFEFEFEFE;
-    GC_WORD(0xB50) = 0xFEFEFEFE;
-    GC_WORD(0xB54) = 0xFEFEFEFE;
-    GC_WORD(0xB58) = 0xFEFEFEFE;
-    GC_WORD(0xB5C) = 0xFEFEFEFE;
-    GC_WORD(0xB60) = 0xFEFEFEFE;
-    GC_BYTE(0xB64) = 0xFE;
-    GC_BYTE(0xB65) = 0xFE;
-    GC_BYTE(0xB66) = 0xFE;
-    GC_BYTE(0xB67) = 0xFE;
-    GC_BYTE(0xB68) = 0xFE;
-    GC_BYTE(0xB69) = 0xFE;
-    GC_BYTE(0xB6A) = 0xFE;
-    GC_BYTE(0xB6B) = 0xFE;
-    GC_BYTE(0xB6C) = 0xFE;
-    GC_BYTE(0xB6D) = 0xFE;
-    GC_BYTE(0xB6E) = 0xFE;
-    GC_BYTE(0xB6F) = 0xFE;
-    GC_BYTE(0xB70) = 0xFE;
-    GC_BYTE(0xB71) = 0xFE;
-    GC_BYTE(0xB72) = 0xFE;
-    GC_BYTE(0xB73) = 0xFE;
-    GC_WORD(0xB74) = 0xFEFEFEFE;
-    GC_WORD(0xB78) = 0xFEFEFEFE;
-    GC_WORD(0xB7C) = 0xFEFEFEFE;
-    GC_WORD(0xB80) = 0xFEFEFEFE;
-    GC_WORD(0xB84) = 0xFEFEFEFE;
-    GC_WORD(0xB88) = 0xFEFEFEFE;
-    GC_WORD(0xB8C) = 0xFEFEFEFE;
-    GC_WORD(0xB90) = 0xFEFEFEFE;
-    GC_WORD(0xB94) = 0xFEFEFEFE;
-    GC_WORD(0xB98) = 0xFEFEFEFE;
-    GC_WORD(0xB9C) = 0xFEFEFEFE;
-    GC_WORD(0xBA0) = 0xFEFEFEFE;
-    GC_WORD(0xBA4) = 0xFEFEFEFE;
-    GC_WORD(0xBA8) = 0xFEFEFEFE;
-    GC_WORD(0xBAC) = 0xFEFEFEFE;
-    GC_WORD(0xBB0) = 0xFEFEFEFE;
-    GC_WORD(0xBB4) = 0xFEFEFEFE;
-    GC_WORD(0xBB8) = 0xFEFEFEFE;
-    GC_WORD(0xBBC) = 0xFEFEFEFE;
-    GC_WORD(0xBC0) = 0xFEFEFEFE;
+    GC_WORD(0xA24) = invalid;
+    GC_WORD(0xA28) = invalid;
+    GC_WORD(0xA2C) = invalid;
+    GC_WORD(0xA30) = invalid;
+    GC_WORD(0xA34) = invalid;
+    GC_WORD(0xA38) = invalid;
+    GC_WORD(0xA3C) = invalid;
+    GC_WORD(0xA40) = invalid;
+    GC_WORD(0xA44) = invalid;
+    GC_WORD(0xA48) = invalid;
+    GC_WORD(0xA4C) = invalid;
+    GC_WORD(0xA50) = invalid;
+    GC_WORD(0xA54) = invalid;
+    GC_WORD(0xA58) = invalid;
+    GC_WORD(0xA5C) = invalid;
+    GC_WORD(0xA60) = invalid;
+    GC_WORD(0xA64) = invalid;
+    GC_WORD(0xA68) = invalid;
+    GC_WORD(0xA6C) = invalid;
+    GC_WORD(0xA70) = invalid;
+    GC_WORD(0xA74) = invalid;
+    GC_WORD(0xA78) = invalid;
+    GC_WORD(0xA7C) = invalid;
+    GC_WORD(0xA80) = invalid;
+    GC_WORD(0xA84) = invalid;
+    GC_WORD(0xA88) = invalid;
+    GC_WORD(0xA8C) = invalid;
+    GC_WORD(0xA90) = invalid;
+    GC_WORD(0xA94) = invalid;
+    GC_WORD(0xA98) = invalid;
+    GC_WORD(0xA9C) = invalid;
+    GC_WORD(0xAA0) = invalid;
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->stageSwaps[i].raster = invalid;
+        gsgfxState->stageSwaps[i].texture = invalid;
+    }
+    GC_WORD(0xB24) = invalid;
+    GC_WORD(0xB28) = invalid;
+    GC_WORD(0xB2C) = invalid;
+    GC_WORD(0xB30) = invalid;
+    GC_WORD(0xB34) = invalid;
+    GC_WORD(0xB38) = invalid;
+    GC_WORD(0xB3C) = invalid;
+    GC_WORD(0xB40) = invalid;
+    GC_WORD(0xB44) = invalid;
+    GC_WORD(0xB48) = invalid;
+    GC_WORD(0xB4C) = invalid;
+    GC_WORD(0xB50) = invalid;
+    GC_WORD(0xB54) = invalid;
+    GC_WORD(0xB58) = invalid;
+    GC_WORD(0xB5C) = invalid;
+    GC_WORD(0xB60) = invalid;
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->indirectMode[i] = 0xFE;
+    }
+    GC_WORD(0xB74) = invalid;
+    GC_WORD(0xB78) = invalid;
+    GC_WORD(0xB7C) = invalid;
+    GC_WORD(0xB80) = invalid;
+    GC_WORD(0xB84) = invalid;
+    GC_WORD(0xB88) = invalid;
+    GC_WORD(0xB8C) = invalid;
+    GC_WORD(0xB90) = invalid;
+    GC_WORD(0xB94) = invalid;
+    GC_WORD(0xB98) = invalid;
+    GC_WORD(0xB9C) = invalid;
+    GC_WORD(0xBA0) = invalid;
+    GC_WORD(0xBA4) = invalid;
+    GC_WORD(0xBA8) = invalid;
+    GC_WORD(0xBAC) = invalid;
+    GC_WORD(0xBB0) = invalid;
+    GC_WORD(0xBB4) = invalid;
+    GC_WORD(0xBB8) = invalid;
+    GC_WORD(0xBBC) = invalid;
+    GC_WORD(0xBC0) = invalid;
     GC_BYTE(0xBC4) = 0xFE;
     GC_BYTE(0xBC5) = 0xFE;
-    GC_WORD(0xBC8) = 0xFEFEFEFE;
-    GC_WORD(0xBCC) = 0xFEFEFEFE;
-    GC_WORD(0xBD0) = 0xFEFEFEFE;
+    GC_WORD(0xBC8) = invalid;
+    GC_WORD(0xBCC) = invalid;
+    GC_WORD(0xBD0) = invalid;
     GC_BYTE(0xBD4) = 0xFE;
     GC_BYTE(0xBD5) = 0xFE;
-    GC_WORD(0xBD8) = 0xFEFEFEFE;
-    GC_WORD(0xBDC) = 0xFEFEFEFE;
-    GC_WORD(0xBE0) = 0xFEFEFEFE;
+    GC_WORD(0xBD8) = invalid;
+    GC_WORD(0xBDC) = invalid;
+    GC_WORD(0xBE0) = invalid;
     GC_BYTE(0xBE4) = 0xFE;
-    GC_WORD(0xBE8) = 0xFEFEFEFE;
+    GC_WORD(0xBE8) = invalid;
     GC_BYTE(0xBEC) = 0xFE;
     GC_BYTE(0xBF0) = 0xFE;
     GC_BYTE(0xBF1) = 0xFE;
     GC_BYTE(0xBF2) = 0xFE;
     GC_BYTE(0xBF3) = 0xFE;
-    GC_WORD(0xBF4) = 0xFEFEFEFE;
+    GC_WORD(0xBF4) = invalid;
     GC_FLOAT(0xBF8) = 4.2781243e9f;
     GC_FLOAT(0xBFC) = 4.2781243e9f;
     GC_FLOAT(0xC00) = 4.2781243e9f;
@@ -1363,7 +921,7 @@ void GSgfx_GCInvalidateState(void) {
 }
 
 void GSgfx_GCInitState(void) {
-    s32 i = 0;
+    u32 i = 0;
     gsgfxState->bp30[0].value = 0;
     gsgfxState->bp30[0].fields.address = 0x0;
     gsgfxState->bp30[1].value = 0;
@@ -1526,11 +1084,11 @@ void GSgfx_GCInitState(void) {
     gsgfxState->tevConstantSelect[6].fields.address = 0xfc;
     gsgfxState->tevConstantSelect[7].value = 0;
     gsgfxState->tevConstantSelect[7].fields.address = 0xfd;
-    for (i = 0; i < 4; ++i) {
-        gsgfxState->tevConstantSelect[i * 2].swap.selector0 = 0;
-        gsgfxState->tevConstantSelect[i * 2].swap.selector1 = 1;
-        gsgfxState->tevConstantSelect[i * 2 + 1].swap.selector0 = 2;
-        gsgfxState->tevConstantSelect[i * 2 + 1].swap.selector1 = 3;
+    for (i = 0; i < 8; i += 2) {
+        gsgfxState->tevConstantSelect[i].swap.selector0 = 0;
+        gsgfxState->tevConstantSelect[i].swap.selector1 = 1;
+        gsgfxState->tevConstantSelect[i + 1].swap.selector0 = 2;
+        gsgfxState->tevConstantSelect[i + 1].swap.selector1 = 3;
     }
     for (i = 0; i < 16; ++i) {
         gsgfxState->tevColorEnvironment[i].value = 0;
@@ -1593,6 +1151,861 @@ void GSgfx_GCFirstInit(void) {
     _gcGlobalRegState.pixelFormat = 0;
     _gcGlobalRegState.depthFormat = 0;
     _gcGlobalRegState.field4 = 0;
+}
+
+static inline void GCFlushXF(u16 address, u32 value) {
+    GCWriteByte(0x10); GCWriteHalf(0); GCWriteHalf(address); GCWriteWord(value);
+}
+static inline void GCFlushCP(u8 address, u32 value) {
+    GCWriteByte(8); GCWriteByte(address); GCWriteWord(value);
+}
+static inline void GCFlushBP(u32 value) { GCWriteByte(GX_LOAD_BP_REG); GCWriteWord(value); }
+#define GC_FLUSH_BP(value) GCFlushBP(value)
+void GSgfx_GCFlushState(void) {
+    u32 i;
+    gsgfxState->bp1EC.coordinateBias.flag = _gcGlobalRegState.field0;
+    gsgfxState->bp354.mode.enabled = _gcGlobalRegState.field1;
+    gsgfxState->bp30[4].pixel.pixelFormat = _gcGlobalRegState.pixelFormat;
+    gsgfxState->bp30[4].pixel.depthFormat = _gcGlobalRegState.depthFormat;
+    gsgfxState->bp30[3].field.mode = _gcGlobalRegState.field4;
+    if (gsgfxState->dirty & 0x1000) GC_FLUSH_BP(gsgfxState->bp354.value);
+    if (gsgfxState->dirtyGroups[3]) {
+        for (i = 0; i < 8; ++i) {
+            if (gsgfxState->dirtyGroups[3] & (1 << i)) {
+                s32 format = gsgfxState->textureImage0[i].image.format;
+                switch (format) {
+                case 8: case 9: case 10:
+                    GC_FLUSH_BP(gsgfxState->textureTlut[i].value);
+                    break;
+                default: break;
+                }
+                GC_FLUSH_BP(gsgfxState->textureMode0[i].value);
+                GC_FLUSH_BP(gsgfxState->textureMode1[i].value);
+                GC_FLUSH_BP(gsgfxState->textureImage0[i].value);
+                GC_FLUSH_BP(gsgfxState->textureImage1[i].value);
+                GC_FLUSH_BP(gsgfxState->textureImage2[i].value);
+                GC_FLUSH_BP(gsgfxState->textureImage3[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[3] = 0;
+    }
+    if (gsgfxState->dirtyGroups[2]) {
+        for (i = 0; (s32)i < (GC_BYTE(0x31) & 7); ++i) {
+            s32 coordinate = gsgfxState->indirectOrders[i].coordinate;
+            if (gsgfxState->dirtyGroups[2] & (1 << coordinate)) {
+                u32 texture = gsgfxState->indirectOrders[i].texture & 7;
+                gsgfxState->textureSizeS[coordinate].dimension.size = gsgfxState->textureImage0[texture].image.width;
+                gsgfxState->textureSizeT[coordinate].dimension.size = gsgfxState->textureImage0[texture].image.height;
+            }
+        }
+        for (i = 0; (s32)i < ((GC_BYTE(0x32) >> 2) & 15) + 1; ++i) {
+            s32 coordinate = gsgfxState->stageOrders[i].coordinate;
+            if (coordinate != 255 && (gsgfxState->dirtyGroups[2] & (1 << coordinate))) {
+                u32 texture = gsgfxState->stageOrders[i].texture & 7;
+                gsgfxState->textureSizeS[coordinate].dimension.size = gsgfxState->textureImage0[texture].image.width;
+                gsgfxState->textureSizeT[coordinate].dimension.size = gsgfxState->textureImage0[texture].image.height;
+            }
+        }
+        for (i = 0; i < 8; ++i) {
+            if (gsgfxState->dirtyGroups[2] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->textureSizeS[i].value);
+                GC_FLUSH_BP(gsgfxState->textureSizeT[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[2] = 0;
+    }
+    if (gsgfxState->dirtyGroups[4]) {
+        i = 0;
+        GC_FLUSH_BP(gsgfxState->bp350.value);
+        for (; i < 8; ++i) {
+            if (gsgfxState->dirtyGroups[4] & (1 << i)) {
+                gsgfxState->bp1A4[0].tlutSource.source = gsgfxState->tlutUploads[i].source;
+                gsgfxState->bp1A4[1].tlutRegion.count = gsgfxState->tlutUploads[i].count;
+                gsgfxState->bp1A4[1].tlutRegion.region = gsgfxState->tlutUploads[i].region;
+                GC_FLUSH_BP(gsgfxState->bp1A4[0].value);
+                GC_FLUSH_BP(gsgfxState->bp1A4[1].value);
+                GC_FLUSH_BP(gsgfxState->bp350.value);
+            }
+        }
+        gsgfxState->dirty &= ~0x800;
+        gsgfxState->dirtyGroups[4] = 0;
+    }
+    if (gsgfxState->dirty & 0x1) {
+        GC_FLUSH_BP(GC_WORD(0x30));
+    }
+    if (gsgfxState->dirty & 0x2) {
+        GC_FLUSH_BP(GC_WORD(0x34));
+    }
+    if (gsgfxState->dirty & 0x4) {
+        GC_FLUSH_BP(GC_WORD(0x38));
+    }
+    if (gsgfxState->dirty & 0x8) {
+        GC_FLUSH_BP(GC_WORD(0x3c));
+    }
+    if (gsgfxState->dirty & 0x10) {
+        GC_FLUSH_BP(GC_WORD(0x40));
+    }
+    if (gsgfxState->dirty & 0x20) {
+        GC_FLUSH_BP(GC_WORD(0x48));
+        GC_FLUSH_BP(GC_WORD(0x44));
+    }
+    if (gsgfxState->dirty & 0x100) {
+        GC_FLUSH_BP(GC_WORD(0x1f8));
+    }
+    if (gsgfxState->dirty & 0x200) {
+        GC_FLUSH_BP(GC_WORD(0x1fc));
+        GC_FLUSH_BP(GC_WORD(0x200));
+    }
+    if (gsgfxState->dirty & 0x400) {
+        GC_FLUSH_BP(GC_WORD(0x1ec));
+    }
+    if (gsgfxState->dirtyGroups[0]) {
+        for (i = 0; i < 8; ++i) {
+            if (gsgfxState->dirtyGroups[0] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevOrder[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[0] = 0;
+    }
+    if (gsgfxState->dirty & 0x2000) GC_FLUSH_BP(gsgfxState->indirectReference.value);
+    if (gsgfxState->dirtyGroups[1]) {
+        for (i = 0; i < 2; ++i) {
+            if (gsgfxState->dirtyGroups[1] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->indirectScale[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[1] = 0;
+    }
+    if (gsgfxState->dirtyGroups[6]) {
+        for (i = 0; i < 16; ++i) {
+            if (gsgfxState->dirtyGroups[6] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevColorEnvironment[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[6] = 0;
+    }
+    if (gsgfxState->dirtyGroups[7]) {
+        for (i = 0; i < 16; ++i) {
+            if (gsgfxState->dirtyGroups[7] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevAlphaEnvironment[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[7] = 0;
+    }
+    if (gsgfxState->dirtyGroups[8]) {
+        for (i = 0; i < 4; ++i) {
+            if (gsgfxState->dirtyGroups[8] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevColorA[i].value);
+                GC_FLUSH_BP(gsgfxState->tevColorB[i].value);
+                GC_FLUSH_BP(gsgfxState->tevColorB[i].value);
+                GC_FLUSH_BP(gsgfxState->tevColorB[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[8] = 0;
+    }
+    if (gsgfxState->dirtyGroups[9]) {
+        for (i = 0; i < 4; ++i) {
+            if (gsgfxState->dirtyGroups[9] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevConstantColorA[i].value);
+                GC_FLUSH_BP(gsgfxState->tevConstantColorB[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[9] = 0;
+    }
+    if (gsgfxState->dirtyGroups[5]) {
+        for (i = 0; i < 8; ++i) {
+            if (gsgfxState->dirtyGroups[5] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevConstantSelect[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[5] = 0;
+    }
+    if (gsgfxState->dirtyGroups[10]) {
+        for (i = 0; i < 16; ++i) {
+            if (gsgfxState->dirtyGroups[10] & (1 << i)) {
+                GC_FLUSH_BP(gsgfxState->tevIndirect[i].value);
+            }
+        }
+        gsgfxState->dirtyGroups[10] = 0;
+    }
+    if (gsgfxState->dirty & 0x8000) {
+        GC_FLUSH_BP(GC_WORD(0x2e4));
+        GC_FLUSH_BP(GC_WORD(0x2e8));
+        GC_FLUSH_BP(GC_WORD(0x2ec));
+    }
+    if (gsgfxState->dirty & 0x10000) {
+        GC_FLUSH_BP(GC_WORD(0x2f0));
+    }
+    if (gsgfxState->dirty & 0x20000) {
+        GC_FLUSH_BP(GC_WORD(0x2f4));
+    }
+    if (gsgfxState->dirty & 0x80000) {
+        GC_FLUSH_BP(GC_WORD(0x2fc));
+        GC_FLUSH_BP(GC_WORD(0x300));
+        GC_FLUSH_BP(GC_WORD(0x304));
+        GC_FLUSH_BP(GC_WORD(0x308));
+        GC_FLUSH_BP(GC_WORD(0x30c));
+    }
+    if (gsgfxState->dirty & 0x40000) {
+        GC_FLUSH_BP(GC_WORD(0x2f8));
+    }
+    if (gsgfxState->dirty & 0x4000) {
+        GC_FLUSH_BP(GC_WORD(0x4c));
+        GC_FLUSH_BP(GC_WORD(0x50));
+    }
+    if (gsgfxState->dirty & 0x800) {
+        GC_FLUSH_BP(GC_WORD(0x350));
+    }
+    if (gsgfxState->dirty & 0x1000000) {
+        GCFlushXF(0x1009, (GC_BYTE(0x33) >> 4) & 3);
+    }
+    if (gsgfxState->dirty & 0x2000000) {
+        GCFlushXF(0x103f, GC_BYTE(0x33) & 15);
+    }
+    if (gsgfxState->dirty & 0x4000000) {
+        GCFlushXF(0x1005, GC_WORD(0x54));
+    }
+    if (gsgfxState->dirty & 0xc0) {
+        if (gsgfxState->dirty & 0x40) {
+            GCFlushCP(0x30, gsgfxState->matrixIndices[0]);
+        }
+        if (gsgfxState->dirty & 0x80) {
+            GCFlushCP(0x40, gsgfxState->matrixIndices[1]);
+        }
+        if ((gsgfxState->dirty & 0xc0) == 0xc0) {
+            GCWriteByte(0x10);
+            GCWriteHalf(1);
+            GCWriteHalf(0x1018);
+            GCWriteWord(gsgfxState->matrixIndices[0]);
+            GCWriteWord(gsgfxState->matrixIndices[1]);
+        } else if (gsgfxState->dirty & 0x40) {
+            GCFlushXF(0x1018, gsgfxState->matrixIndices[0]);
+        } else {
+            GCFlushXF(0x1019, gsgfxState->matrixIndices[1]);
+        }
+    }
+    gsgfxState->dirty = 0;
+}
+#undef GC_FLUSH_BP
+
+void GSgfx_GCWriteLoadTexObj(const GXTexObj* object, s32 map) {
+    gsgfxState->textureMode0[map].fields.payload = object->dummy[0];
+    gsgfxState->textureMode1[map].fields.payload = object->dummy[1];
+    gsgfxState->textureImage0[map].fields.payload = object->dummy[2];
+    gsgfxState->textureImage1[map].imageCache.type = 0;
+    gsgfxState->textureImage1[map].imageCache.base = GSgfx_GCTmemRegions[map].even >> 5;
+    gsgfxState->textureImage1[map].imageCache.width = 3;
+    gsgfxState->textureImage1[map].imageCache.height = 3;
+    gsgfxState->textureImage2[map].imageCache.base = GSgfx_GCTmemRegions[map].odd >> 5;
+    gsgfxState->textureImage2[map].imageCache.width = 3;
+    gsgfxState->textureImage2[map].imageCache.height = 3;
+    gsgfxState->textureImage3[map].fields.payload = object->dummy[3];
+    switch (gsgfxState->textureImage0[map].image.format) {
+    case 8: case 9: case 10: {
+        u16 region = (GSgfx_GCTlutRegions[_gcLastTlutName] - 0x80000) >> 9;
+        gsgfxState->textureTlut[map].fields.payload = _gcLastTlutObj->dummy[0];
+        gsgfxState->textureTlut[map].texturePalette.region = region;
+        gsgfxState->tlutUploads[map].source = _gcLastTlutObj->dummy[1] & 0xffffff;
+        gsgfxState->tlutUploads[map].count = (s32)*reinterpret_cast<u16 *>(reinterpret_cast<u8 *>(_gcLastTlutObj) + 8) >> 4;
+        gsgfxState->tlutUploads[map].region = region;
+        gsgfxState->dirtyGroups[4] |= 1 << map;
+        break;
+    }
+    default: break;
+    }
+    switch (GC_BYTE(0x31) & 7) {
+    case 4:
+        if (gsgfxState->indirectReference.indirectOrder.texture3 == map)
+            gsgfxState->dirtyGroups[2] |= 1 << gsgfxState->indirectReference.indirectOrder.coordinate3;
+    case 3:
+        if (gsgfxState->indirectReference.indirectOrder.texture2 == map)
+            gsgfxState->dirtyGroups[2] |= 1 << gsgfxState->indirectReference.indirectOrder.coordinate2;
+    case 2:
+        if (gsgfxState->indirectReference.indirectOrder.texture1 == map)
+            gsgfxState->dirtyGroups[2] |= 1 << gsgfxState->indirectReference.indirectOrder.coordinate1;
+    case 1:
+        if (gsgfxState->indirectReference.indirectOrder.texture0 == map)
+            gsgfxState->dirtyGroups[2] |= 1 << gsgfxState->indirectReference.indirectOrder.coordinate0;
+        break;
+    }
+    for (u32 i = 0; (s32)i <= ((s32)((GC_BYTE(0x32) >> 2) & 15) >> 1); ++i) {
+        if (gsgfxState->tevOrder[i].order.texture0 == map)
+            gsgfxState->dirtyGroups[2] |= 1 << gsgfxState->tevOrder[i].order.coordinate0;
+        if (gsgfxState->tevOrder[i].order.texture1 == map)
+            gsgfxState->dirtyGroups[2] |= 1 << gsgfxState->tevOrder[i].order.coordinate1;
+    }
+    gsgfxState->dirtyGroups[3] |= 1 << map;
+}
+
+static inline void GCFlushRegister(const GCBPRegister* reg) {
+    GCWriteByte(GX_LOAD_BP_REG);
+    GCWriteWord(reg->value);
+}
+u8* GSgfx_GCWriteCopyDispDirect(u8* output, const GCCopyDisplayInfo* info, u32 destination, u32 colorUpdate, u32 alphaUpdate, u32 depthUpdate) {
+    GCBPRegister clearColor, clearDepth, blend, depth, pixel, scale, source, size, stride, address, control;
+    if (info->clear == 1) {
+        pixel.value = 0;
+        blend.value = 0;
+        pixel.copyPixel.pixelFormat = _gcGlobalRegState.pixelFormat;
+        blend.copyBlend.blend = 0;
+        pixel.copyPixel.depthFormat = _gcGlobalRegState.depthFormat;
+        blend.copyBlend.color = (u8)colorUpdate;
+        depth.value = 0;
+        blend.fields.address = 0x41;
+        depth.fields.address = 0x40;
+        pixel.fields.address = 0x43;
+        pixel.copyPixel.compare = 0;
+        blend.copyBlend.alpha = (u8)alphaUpdate;
+        if ((u8)depthUpdate == 1) {
+            depth.copyDepth.test = 1;
+            depth.copyDepth.function = 7;
+            depth.copyDepth.update = 1;
+        } else {
+            depth.copyDepth.test = 0;
+            depth.copyDepth.update = 0;
+        }
+        output = GCAppendBP(output, &blend);
+        output = GCAppendBP(output, &depth);
+        output = GCAppendBP(output, &pixel);
+    }
+    clearColor.value = 0;
+    clearColor.fields.address = 0x4f;
+    clearColor.bytes.payload[1] = info->alpha;
+    clearColor.bytes.payload[2] = info->red;
+    output = GCAppendBP(output, &clearColor);
+    clearDepth.fields.address = 0x51;
+    clearColor.fields.address = 0x50;
+    clearColor.bytes.payload[1] = info->green;
+    clearColor.bytes.payload[2] = info->blue;
+    output = GCAppendBP(output, &clearColor);
+    scale.value = 0;
+    source.value = 0;
+    clearDepth.fields.payload = info->depth;
+    output = GCAppendBP(output, &clearDepth);
+    size.value = 0;
+    stride.value = 0;
+    address.value = 0;
+    control.value = 0;
+    scale.fields.address = 0x4e;
+    source.fields.address = 0x49;
+    size.fields.address = 0x4a;
+    stride.fields.address = 0x4d;
+    address.fields.address = 0x4b;
+    control.fields.address = 0x52;
+    control.copyControl.display = 1;
+    control.copyControl.clamp = info->clamp;
+    control.copyControl.fieldMode = info->fieldMode;
+    source.copyRectangle.x = info->x;
+    scale.copyScale.scale = (u16)(u32)(256.0f / info->scale);
+    size.copyRectangle.x = info->width - 1;
+    control.copyControl.gamma = info->gamma;
+    control.copyControl.clear = info->clear;
+    source.copyRectangle.y = info->y;
+    size.copyRectangle.y = info->height - 1;
+    stride.copyStride.stride = (s32)info->stride >> 4;
+    address.tlutSource.source = destination >> 5;
+    if (scale.copyScale.scale == 256) control.copyControl.scale = 0;
+    else control.copyControl.scale = 1;
+    output = GCAppendBP(output, &scale);
+    output = GCAppendBP(output, &source);
+    output = GCAppendBP(output, &size);
+    output = GCAppendBP(output, &stride);
+    output = GCAppendBP(output, &address);
+    output = GCAppendBP(output, &control);
+    return output;
+}
+
+void GSgfx_GCWriteCopyDisp(const GCCopyDisplayInfo* info, u32 destination, u32 colorUpdate, u32 alphaUpdate, u32 depthUpdate) {
+    GCBPRegister clearColor, clearDepth, blend, depth, pixel, scale, source, size, stride, address, control;
+    if (info->clear == 1) {
+        blend.value = 0;
+        pixel.value = 0;
+        pixel.copyPixel.pixelFormat = _gcGlobalRegState.pixelFormat;
+        blend.copyBlend.blend = 0;
+        pixel.copyPixel.depthFormat = _gcGlobalRegState.depthFormat;
+        blend.copyBlend.color = (u8)colorUpdate;
+        depth.value = 0;
+        blend.fields.address = 0x41;
+        depth.fields.address = 0x40;
+        pixel.fields.address = 0x43;
+        pixel.copyPixel.compare = 0;
+        blend.copyBlend.alpha = (u8)alphaUpdate;
+        if ((u8)depthUpdate == 1) {
+            depth.copyDepth.test = 1;
+            depth.copyDepth.function = 7;
+            depth.copyDepth.update = 1;
+        } else {
+            depth.copyDepth.test = 0;
+            depth.copyDepth.update = 0;
+        }
+        GCFlushRegister(&blend);
+        GCFlushRegister(&depth);
+        GCFlushRegister(&pixel);
+    }
+    clearColor.value = 0;
+    clearColor.fields.address = 0x4f;
+    clearColor.bytes.payload[1] = info->alpha;
+    clearColor.bytes.payload[2] = info->red;
+    GCFlushRegister(&clearColor);
+    clearDepth.fields.address = 0x51;
+    clearColor.fields.address = 0x50;
+    clearColor.bytes.payload[1] = info->green;
+    clearColor.bytes.payload[2] = info->blue;
+    GCFlushRegister(&clearColor);
+    scale.value = 0;
+    source.value = 0;
+    clearDepth.fields.payload = info->depth;
+    GCFlushRegister(&clearDepth);
+    size.value = 0;
+    stride.value = 0;
+    address.value = 0;
+    control.value = 0;
+    scale.fields.address = 0x4e;
+    source.fields.address = 0x49;
+    size.fields.address = 0x4a;
+    stride.fields.address = 0x4d;
+    address.fields.address = 0x4b;
+    control.fields.address = 0x52;
+    scale.copyScale.scale = (u32)(256.0f / info->scale);
+    size.copyRectangle.x = info->width - 1;
+    source.copyRectangle.x = info->x;
+    size.copyRectangle.y = info->height - 1;
+    stride.copyStride.stride = (s32)info->stride >> 4;
+    source.copyRectangle.y = info->y;
+    address.tlutSource.source = destination >> 5;
+    GCFlushRegister(&scale);
+    GCFlushRegister(&source);
+    GCFlushRegister(&size);
+    GCFlushRegister(&stride);
+    GCFlushRegister(&address);
+    control.copyControl.display = 1;
+    control.copyControl.clamp = info->clamp;
+    control.copyControl.fieldMode = info->fieldMode;
+    control.copyControl.gamma = info->gamma;
+    control.copyControl.clear = info->clear;
+    GCFlushRegister(&control);
+}
+
+void GSgfx_GCWriteCopyTex(const GCCopyTextureInfo* info, u32 destination) {
+    s32 savedBlend = 0xfefefefe;
+    u8 savedCompare = 0xfe;
+    u32 savedFormat;
+    if (info->format & 0x10) {
+        savedFormat = gsgfxState->bp30[4].pixel.pixelFormat;
+        gsgfxState->bp30[4].pixel.pixelFormat = 3;
+        gsgfxState->dirty |= 0x10;
+    }
+    if (info->clear == 1) {
+        u8 compare = GC_BYTE(0xbf0);
+        if (compare != 0) {
+            savedCompare = compare;
+            gsgfxState->bp30[4].copyPixel.compare = 0;
+            gsgfxState->dirty |= 0x10;
+        }
+        s32 blend = GC_WORD(0xbb4);
+        if (blend != 0) {
+            savedBlend = blend;
+            gsgfxState->bp30[2].copyBlend.blend = 0;
+            gsgfxState->dirty |= 4;
+        }
+        if (gsgfxState->dirty & 0x10) GCFlushBP(gsgfxState->bp30[4].value);
+        if (gsgfxState->dirty & 4) GCFlushBP(gsgfxState->bp30[2].value);
+        gsgfxState->dirty &= ~0x14;
+    }
+    GCBPRegister source, size, stride, address, control;
+    source.value = 0;
+    size.value = 0;
+    source.fields.address = 0x49;
+    s32 format = info->format;
+    source.copyRectangle.x = info->x;
+    stride.value = 0;
+    address.value = 0;
+    control.value = 0;
+    size.fields.address = 0x4a;
+    size.copyRectangle.x = info->width - 1;
+    stride.fields.address = 0x4d;
+    address.fields.address = 0x4b;
+    control.fields.address = 0x52;
+    source.copyRectangle.y = info->y;
+    size.copyRectangle.y = info->height - 1;
+    s32 blockWidth;
+    switch (format) {
+    case 0: case 1: case 2: case 0xe: case 0x11: case 0x20: case 0x22:
+    case 0x27: case 0x28: case 0x29: case 0x2a: case 0x30: case 0x39: case 0x3a:
+        blockWidth = 8; break;
+    case 3: case 4: case 5: case 0x13: case 0x23: case 0x2b: case 0x2c: case 0x3c:
+        blockWidth = 4; break;
+    case 6: case 0x16: case 0x26:
+        blockWidth = 2; break;
+    default: blockWidth = 0; break;
+    }
+    switch (blockWidth) {
+    case 2: stride.copyStride.stride = info->stride >> 1; break;
+    case 4: stride.copyStride.stride = info->stride >> 2; break;
+    case 8: stride.copyStride.stride = info->stride >> 3; break;
+    }
+    control.copyControl.clamp = info->clamp;
+    format = info->format;
+    control.copyControl.depth = (format >> 3) & 1;
+    control.copyControl.mipmap = info->mipmap;
+    control.copyControl.clear = info->clear;
+    address.tlutSource.source = destination >> 5;
+    control.copyControl.conversion = 1;
+    control.copyControl.format = format;
+    if (format >= 0 && format < 4) control.copyControl.intensity = 1;
+    else control.copyControl.intensity = 0;
+    GCFlushBP(source.value);
+    GCFlushBP(size.value);
+    GCFlushBP(stride.value);
+    GCFlushBP(address.value);
+    GCFlushBP(control.value);
+    if (info->format & 0x10) {
+        gsgfxState->bp30[4].pixel.pixelFormat = savedFormat;
+        gsgfxState->dirty |= 0x10;
+    }
+    if (info->clear == 1) {
+        if (savedCompare != 0xfe) {
+            gsgfxState->bp30[4].copyPixel.compare = savedCompare;
+            gsgfxState->dirty |= 0x10;
+        }
+        if (savedBlend != (s32)0xfefefefe) {
+            gsgfxState->bp30[2].copyBlend.blend = 1;
+            gsgfxState->dirty |= 4;
+        }
+        if (gsgfxState->dirty & 0x10) GCFlushBP(gsgfxState->bp30[4].value);
+        if (gsgfxState->dirty & 4) GCFlushBP(gsgfxState->bp30[2].value);
+        gsgfxState->dirty &= ~0x14;
+    }
+}
+
+
+extern void GSgfxVideoGetEFBSize(u16 *width, u16 *height);
+
+void GSgfx_GCReset(void) {
+    for (u32 i = 0; i < 8; ++i) {
+        gsgfxState->textureGenerators[i].type = 1;
+        gsgfxState->textureGenerators[i].source = i + 4;
+        gsgfxState->textureGenerators[i].matrix = 60;
+        gsgfxState->textureGenerators[i].normalize = 0;
+        gsgfxState->textureGenerators[i].postMatrix = 125;
+        GSgfx_GCWriteTexCoordGen(i, 1, i + 4, 60, 0, 125);
+    }
+    GC_BYTE(0x3f8) = 1;
+    GC_BYTE(0x33) = (GC_BYTE(0x33) & ~15) | 1;
+    gsgfxState->dirty |= 0x02000001;
+    GC_BYTE(0x3f8) = 1;
+    GC_BYTE(0x3fc) = 6; GC_WORD(0x400) = 0;
+    GC_BYTE(0x1ef) = 6; GC_BYTE(0x1ed) &= ~7;
+    gsgfxState->dirty |= 0x400;
+    GC_BYTE(0x3fc) = 6; GC_WORD(0x400) = 0;
+    GC_BYTE(0x404) = 6; GC_WORD(0x408) = 0;
+    GC_BYTE(0x1ee) = 6; GC_BYTE(0x1ed) &= ~0x38;
+    gsgfxState->dirty |= 0x400;
+    GC_BYTE(0x404) = 6; GC_WORD(0x408) = 0;
+    for (u32 i = 0; i < 8; ++i) {
+        GC_BYTE(0x40c + i * 2) = 0; GC_BYTE(0x40d + i * 2) = 0;
+        GC_BYTE(0x1ad + i * 4) &= ~4;
+        GC_BYTE(0x1ad + i * 4) &= ~8;
+        gsgfxState->dirtyGroups[2] |= 1 << i;
+        GC_BYTE(0x40c + i * 2) = 0; GC_BYTE(0x40d + i * 2) = 0;
+    }
+    GC_BYTE(0x438) = 0; GC_BYTE(0x31) &= ~8;
+    gsgfxState->dirty |= 1; GC_BYTE(0x438) = 0;
+    GC_WORD(0x43c) = 2; GC_BYTE(0x32) = (GC_BYTE(0x32) & ~0xc0) | 0x40;
+    gsgfxState->dirty |= 1; GC_WORD(0x43c) = 2;
+    GC_WORD(0x440) = 0; GC_WORD(0x54) = 0;
+    gsgfxState->dirty |= 0x04000000; GC_WORD(0x440) = 0;
+    GC_HALF(0x444) = 0; GC_HALF(0x446) = 0;
+    GC_WORD(0x44c) = 0; GC_WORD(0x450) = 0;
+    GSgfxVideoGetEFBSize(&GC_HALF(0x448), &GC_HALF(0x44a));
+    u16 width = GC_HALF(0x448), height = GC_HALF(0x44a);
+    GC_WORD(0x4c) = (GC_WORD(0x4c) & ~0xfff000) | 0x156000;
+    GC_HALF(0x4e) = (GC_HALF(0x4e) & ~0xfff) | 342;
+    GC_WORD(0x50) = (GC_WORD(0x50) & ~0xfff000) | (((((GC_WORD(0x4c) >> 12) & 0xfff) + width - 1) << 12) & 0xfff000);
+    GC_HALF(0x52) = (GC_HALF(0x52) & ~0xfff) | (((GC_HALF(0x4e) & 0xfff) + height - 1) & 0xfff);
+    gsgfxState->dirty |= 0x4000;
+    GC_HALF(0x444) = 0; GC_HALF(0x446) = 0;
+    GC_HALF(0x448) = width; GC_HALF(0x44a) = height;
+    GC_WORD(0x44c) = 0; GC_WORD(0x450) = 0;
+    GC_FLOAT(0xc24) = 0.0f; GC_FLOAT(0xc28) = 0.0f;
+    GC_FLOAT(0xc2c) = (f32)GC_HALF(0x448);
+    GC_FLOAT(0xc30) = (f32)GC_HALF(0x44a);
+    GC_FLOAT(0xc34) = 0.0f; GC_FLOAT(0xc38) = 1.0f;
+    GC_WORD(0xc3c) = 1;
+    u32 viewportMode = GC_WORD(0xc3c);
+    f32 farPlane = GC_FLOAT(0xc38), nearPlane = GC_FLOAT(0xc34);
+    f32 viewportHeight = GC_FLOAT(0xc30), viewportWidth = GC_FLOAT(0xc2c);
+    f32 y = GC_FLOAT(0xc28), x = GC_FLOAT(0xc24);
+    if (viewportMode == 0) y -= 0.5f;
+    f32 halfHeight = viewportHeight * 0.5f, halfWidth = viewportWidth * 0.5f;
+    f32 farDepth = farPlane * 16777216.0f;
+    GCWriteByte(0x10); GCWriteHalf(5); GCWriteHalf(0x101a);
+    GXWGFifo.f32 = halfWidth;
+    GXWGFifo.f32 = -halfHeight;
+    GXWGFifo.f32 = -((nearPlane * 16777216.0f) - farDepth);
+    GXWGFifo.f32 = 342.0f + (x + halfWidth);
+    GXWGFifo.f32 = 342.0f + (y + halfHeight);
+    GXWGFifo.f32 = farDepth + 0.0f;
+    GC_FLOAT(0xc24) = x; GC_FLOAT(0xc28) = y;
+    GC_FLOAT(0xc2c) = viewportWidth; GC_FLOAT(0xc30) = viewportHeight;
+    GC_FLOAT(0xc34) = nearPlane; GC_FLOAT(0xc38) = farPlane;
+    GC_WORD(0xc3c) = viewportMode;
+    GC_BYTE(0x454) = 0; GC_BYTE(0x33) &= ~0x30;
+    gsgfxState->dirty |= 0x01000001; GC_BYTE(0x454) = 0;
+    for (u32 i = 0; i < 4; ++i) {
+        GC_BYTE(0x458 + i * 24) = 0; GC_WORD(0x45c + i * 24) = 0;
+        GC_WORD(0x460 + i * 24) = 1; GC_WORD(0x464 + i * 24) = 0;
+        GC_WORD(0x468 + i * 24) = 0; GC_WORD(0x46c + i * 24) = 2;
+        GCFlushXF(0x100e + (i & 3), 0x401);
+        GC_BYTE(0x458 + i * 24) = 0; GC_WORD(0x45c + i * 24) = 0;
+        GC_WORD(0x460 + i * 24) = 1; GC_WORD(0x464 + i * 24) = 0;
+        GC_WORD(0x468 + i * 24) = 0; GC_WORD(0x46c + i * 24) = 2;
+    }
+    for (u32 i = 0; i < 4; ++i) {
+        GC_WORD(0x4b9 + i * 5) = 0;
+        GCFlushXF(0x100a + ((i + 4) & 1), 0);
+        GC_WORD(0x4b9 + i * 5) = 0; GC_BYTE(0x4b8 + i * 5) = 0;
+    }
+    for (u32 i = 0; i < 4; ++i) {
+        GC_WORD(0x4c3 + i * 5) = 0xffffffff;
+        GCFlushXF(0x100c + ((i + 4) & 1), 0xffffffff);
+        GC_WORD(0x4c3 + i * 5) = 0xffffffff; GC_BYTE(0x4c2 + i * 5) = 0;
+    }
+    for (u32 i = 0; i < 16; ++i) {
+        s32 coordinate = i < 8 ? i : 255;
+        s32 texture = i < 8 ? i : 255;
+        s32 channel = i < 8 ? 4 : 255;
+        gsgfxState->stageOrders[i].coordinate = coordinate;
+        gsgfxState->stageOrders[i].texture = texture;
+        gsgfxState->stageOrders[i].channel = channel;
+        if (i & 1) {
+            gsgfxState->tevOrder[i >> 1].order.texture1 = texture & 7;
+            gsgfxState->tevOrder[i >> 1].order.coordinate1 = coordinate & 7;
+            gsgfxState->tevOrder[i >> 1].order.enabled1 = texture != 255 && !(texture & 0x100);
+            gsgfxState->tevOrder[i >> 1].order.channel1 = i < 8 ? 0 : 7;
+        } else {
+            gsgfxState->tevOrder[i >> 1].order.texture0 = texture & 7;
+            gsgfxState->tevOrder[i >> 1].order.coordinate0 = coordinate & 7;
+            gsgfxState->tevOrder[i >> 1].order.enabled0 = texture != 255 && !(texture & 0x100);
+            gsgfxState->tevOrder[i >> 1].order.channel0 = i < 8 ? 0 : 7;
+        }
+        gsgfxState->dirtyGroups[0] |= 1 << (i >> 1);
+        if (coordinate != 255) gsgfxState->dirtyGroups[2] |= 1 << coordinate;
+        gsgfxState->stageOrders[i].coordinate = coordinate;
+        gsgfxState->stageOrders[i].texture = texture;
+        gsgfxState->stageOrders[i].channel = channel;
+    }
+    GC_BYTE(0x58c) = 1; GC_BYTE(0x32) &= ~0x3c;
+    gsgfxState->dirty |= 1; GC_BYTE(0x58c) = 1;
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->colorInputs[i].a = 15; gsgfxState->colorInputs[i].b = 10;
+        gsgfxState->colorInputs[i].c = 8; gsgfxState->colorInputs[i].d = 15;
+        GC_BYTE(0x226 + i * 4) |= 0xf0;
+        GC_BYTE(0x226 + i * 4) = (GC_BYTE(0x226 + i * 4) & ~15) | 10;
+        GC_BYTE(0x227 + i * 4) = (GC_BYTE(0x227 + i * 4) & ~0xf0) | 0x80;
+        GC_BYTE(0x227 + i * 4) |= 15;
+        gsgfxState->dirtyGroups[6] |= 1 << i;
+        gsgfxState->colorInputs[i].a = 15; gsgfxState->colorInputs[i].b = 10;
+        gsgfxState->colorInputs[i].c = 8; gsgfxState->colorInputs[i].d = 15;
+        gsgfxState->alphaInputs[i].a = 7; gsgfxState->alphaInputs[i].b = 5;
+        gsgfxState->alphaInputs[i].c = 4; gsgfxState->alphaInputs[i].d = 7;
+        GC_BYTE(0x266 + i * 4) |= 0xe0;
+        GC_BYTE(0x266 + i * 4) = (GC_BYTE(0x266 + i * 4) & ~0x1c) | 0x14;
+        GC_HALF(0x266 + i * 4) = (GC_HALF(0x266 + i * 4) & ~0x380) | 0x200;
+        GC_BYTE(0x267 + i * 4) |= 0x70;
+        gsgfxState->dirtyGroups[7] |= 1 << i;
+        gsgfxState->alphaInputs[i].a = 7; gsgfxState->alphaInputs[i].b = 5;
+        gsgfxState->alphaInputs[i].c = 4; gsgfxState->alphaInputs[i].d = 7;
+        gsgfxState->colorOperations[i].operation = 0; gsgfxState->colorOperations[i].bias = 0;
+        gsgfxState->colorOperations[i].scale = 0; gsgfxState->colorOperations[i].clamp = 1;
+        gsgfxState->colorOperations[i].output = 0;
+        GC_BYTE(0x225 + i * 4) &= ~3; GC_BYTE(0x225 + i * 4) &= ~4;
+        GC_BYTE(0x225 + i * 4) |= 8; GC_BYTE(0x225 + i * 4) &= ~0x30;
+        GC_BYTE(0x225 + i * 4) &= ~0xc0;
+        gsgfxState->dirtyGroups[6] |= 1 << i;
+        gsgfxState->colorOperations[i].operation = 0; gsgfxState->colorOperations[i].bias = 0;
+        gsgfxState->colorOperations[i].scale = 0; gsgfxState->colorOperations[i].clamp = 1;
+        gsgfxState->colorOperations[i].output = 0;
+        gsgfxState->alphaOperations[i].operation = 0; gsgfxState->alphaOperations[i].bias = 0;
+        gsgfxState->alphaOperations[i].scale = 0; gsgfxState->alphaOperations[i].clamp = 1;
+        gsgfxState->alphaOperations[i].output = 0;
+        GC_BYTE(0x265 + i * 4) &= ~3; GC_BYTE(0x265 + i * 4) &= ~4;
+        GC_BYTE(0x265 + i * 4) |= 8; GC_BYTE(0x265 + i * 4) &= ~0x30;
+        GC_BYTE(0x265 + i * 4) &= ~0xc0;
+        gsgfxState->dirtyGroups[7] |= 1 << i;
+        gsgfxState->alphaOperations[i].operation = 0; gsgfxState->alphaOperations[i].bias = 0;
+        gsgfxState->alphaOperations[i].scale = 0; gsgfxState->alphaOperations[i].clamp = 1;
+        gsgfxState->alphaOperations[i].output = 0;
+    }
+    for (u32 i = 0; i < 4; ++i) {
+        GC_WORD(0xa11 + i * 5) = 0;
+        gsgfxState->tevConstantColorA[i].value &= ~0x7ff;
+        gsgfxState->tevConstantColorA[i].value &= ~0x7ff000;
+        gsgfxState->tevConstantColorB[i].value &= ~0x7ff;
+        gsgfxState->tevConstantColorB[i].value &= ~0x7ff000;
+        gsgfxState->dirtyGroups[9] |= 1 << i;
+        GC_WORD(0xa11 + i * 5) = 0; GC_BYTE(0xa10 + i * 5) = 0;
+    }
+    for (u32 i = 0; i < 16; ++i) {
+        GC_WORD(0xa24 + i * 4) = 12;
+        if (i & 1) gsgfxState->tevConstantSelect[i >> 1].value = (gsgfxState->tevConstantSelect[i >> 1].value & ~0x7c000) | 0x30000;
+        else GC_HALF(0x206 + (i >> 1) * 4) = (GC_HALF(0x206 + (i >> 1) * 4) & ~0x1f0) | 0xc0;
+        gsgfxState->dirtyGroups[5] |= 1 << (i >> 1);
+        GC_WORD(0xa24 + i * 4) = 12;
+        GC_WORD(0xa64 + i * 4) = 28;
+        if (i & 1) GC_BYTE(0x205 + (i >> 1) * 4) = (GC_BYTE(0x205 + (i >> 1) * 4) & ~0xf8) | 0xe0;
+        else GC_BYTE(0x206 + (i >> 1) * 4) = (GC_BYTE(0x206 + (i >> 1) * 4) & ~0x3e) | 0x38;
+        gsgfxState->dirtyGroups[5] |= 1 << (i >> 1);
+        GC_WORD(0xa64 + i * 4) = 28;
+        gsgfxState->stageSwaps[i].raster = 0; gsgfxState->stageSwaps[i].texture = 0;
+        GC_BYTE(0x267 + i * 4) &= ~3; GC_BYTE(0x267 + i * 4) &= ~12;
+        gsgfxState->dirtyGroups[7] |= 1 << i;
+        gsgfxState->stageSwaps[i].raster = 0; gsgfxState->stageSwaps[i].texture = 0;
+    }
+    for (u32 i = 0; i < 4; ++i) {
+        GC_WORD(0xb24 + i * 16) = 0; GC_WORD(0xb28 + i * 16) = 1;
+        GC_WORD(0xb2c + i * 16) = 2; GC_WORD(0xb30 + i * 16) = 3;
+        gsgfxState->tevConstantSelect[i * 2].swap.selector0 = 0;
+        gsgfxState->tevConstantSelect[i * 2].swap.selector1 = 1;
+        gsgfxState->tevConstantSelect[i * 2 + 1].swap.selector0 = 2;
+        gsgfxState->tevConstantSelect[i * 2 + 1].swap.selector1 = 3;
+        gsgfxState->dirtyGroups[5] |= 1 << (i * 2);
+        gsgfxState->dirtyGroups[5] |= 1 << (i * 2 + 1);
+        GC_WORD(0xb24 + i * 16) = 0; GC_WORD(0xb28 + i * 16) = 1;
+        GC_WORD(0xb2c + i * 16) = 2; GC_WORD(0xb30 + i * 16) = 3;
+    }
+    for (u32 i = 0; i < 16; ++i) {
+        gsgfxState->indirectMode[i] = 1;
+        gsgfxState->tevIndirect[i].indirect.stage = 0;
+        gsgfxState->tevIndirect[i].indirect.format = 0;
+        gsgfxState->tevIndirect[i].indirect.bias = 0;
+        gsgfxState->tevIndirect[i].indirect.alpha = 0;
+        gsgfxState->tevIndirect[i].indirect.matrix = 0;
+        gsgfxState->tevIndirect[i].indirect.wrapS = 0;
+        gsgfxState->tevIndirect[i].indirect.wrapT = 0;
+        gsgfxState->tevIndirect[i].indirect.originalLod = 0;
+        gsgfxState->tevIndirect[i].indirect.addPrevious = 0;
+        gsgfxState->dirtyGroups[10] |= 1 << i;
+        gsgfxState->indirectMode[i] = 2; gsgfxState->indirectMode[i] = 1;
+    }
+    GC_BYTE(0x58d) = 0; GC_BYTE(0x31) &= ~7;
+    gsgfxState->dirty |= 1; GC_BYTE(0x58d) = 0;
+    for (u32 i = 0; i < 4; ++i) {
+        gsgfxState->indirectOrders[i].coordinate = i; gsgfxState->indirectOrders[i].texture = i;
+        switch (i) {
+        case 0: gsgfxState->indirectReference.indirectOrder.texture0 = i; gsgfxState->indirectReference.indirectOrder.coordinate0 = i; break;
+        case 1: gsgfxState->indirectReference.indirectOrder.texture1 = i; gsgfxState->indirectReference.indirectOrder.coordinate1 = i; break;
+        case 2: gsgfxState->indirectReference.indirectOrder.texture2 = i; gsgfxState->indirectReference.indirectOrder.coordinate2 = i; break;
+        case 3: gsgfxState->indirectReference.indirectOrder.texture3 = i; gsgfxState->indirectReference.indirectOrder.coordinate3 = i; break;
+        }
+        gsgfxState->dirty |= 0x2000; gsgfxState->dirtyGroups[2] |= 1 << i;
+        gsgfxState->indirectOrders[i].coordinate = i; gsgfxState->indirectOrders[i].texture = i;
+        GC_WORD(0xb94 + i * 8) = 0; GC_WORD(0xb98 + i * 8) = 0;
+        if (i & 1) {
+            GC_BYTE(0x7e + (i >> 1) * 4) &= ~15;
+            GC_BYTE(0x7e + (i >> 1) * 4) &= ~0xf0;
+        } else {
+            GC_BYTE(0x7f + (i >> 1) * 4) &= ~15;
+            GC_BYTE(0x7e + (i >> 1) * 4) &= ~0xf0;
+        }
+        gsgfxState->dirtyGroups[1] |= 1 << (i >> 1);
+        GC_WORD(0xb94 + i * 8) = 0; GC_WORD(0xb98 + i * 8) = 0;
+    }
+    GC_WORD(0xbb4) = 0;
+    GC_WORD(0xbb8) = 4;
+    GC_WORD(0xbbc) = 5;
+    GC_WORD(0xbc0) = 0;
+    GC_BYTE(0x3b) = (u8) (GC_BYTE(0x3b) & ~1);
+    GC_BYTE(0x3b) = (u8) (GC_BYTE(0x3b) & ~2);
+    GC_BYTE(0x3a) = (u8) ((GC_BYTE(0x3a) & ~7) | 4);
+    GC_BYTE(0x3b) = (u8) ((GC_BYTE(0x3b) & ~0xE0) | 0xA0);
+    GC_BYTE(0x3a) = (u8) (GC_BYTE(0x3a) & ~8);
+    GC_BYTE(0x3a) = (u8) (GC_BYTE(0x3a) & ~0x10);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 4);
+    GC_WORD(0xbb4) = 0;
+    GC_WORD(0xbb8) = 4;
+    GC_WORD(0xbbc) = 5;
+    GC_WORD(0xbc0) = 0;
+    GC_BYTE(0xbc4) = 1;
+    GC_BYTE(0x3b) = (u8) (GC_BYTE(0x3b) | 8);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 4);
+    GC_BYTE(0xbc4) = 1;
+    GC_BYTE(0xbc5) = 1;
+    GC_BYTE(0x3b) = (u8) (GC_BYTE(0x3b) | 0x10);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 4);
+    GC_BYTE(0xbc5) = 1;
+    GC_BYTE(0xbe4) = 1;
+    GC_WORD(0xbe8) = 3;
+    GC_BYTE(0xbec) = 1;
+    GC_BYTE(0x37) = (u8) (GC_BYTE(0x37) | 1);
+    GC_BYTE(0x37) = (u8) ((GC_BYTE(0x37) & ~0xE) | 6);
+    GC_BYTE(0x37) = (u8) (GC_BYTE(0x37) | 0x10);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 2);
+    GC_BYTE(0xbe4) = 1;
+    GC_WORD(0xbe8) = 3;
+    GC_BYTE(0xbec) = 1;
+    GC_BYTE(0xbf0) = 1;
+    GC_BYTE(0x43) = (u8) (GC_BYTE(0x43) | 0x40);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 0x10);
+    GC_BYTE(0xbf0) = 1;
+    GC_BYTE(0xbf1) = 1;
+    GC_BYTE(0x3b) = (u8) (GC_BYTE(0x3b) | 4);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 4);
+    GC_BYTE(0xbf1) = 1;
+    GC_BYTE(0xbf2) = 0;
+    GC_BYTE(0xbf3) = 0;
+    GC_BYTE(0x3e) = (u8) (GC_BYTE(0x3e) & ~1);
+    GC_BYTE(0x3f) = 0;
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 8);
+    GC_BYTE(0xbf2) = 0;
+    GC_BYTE(0xbf3) = 0;
+    GC_WORD(0xbc8) = 7;
+    GC_BYTE(0xbd4) = 0;
+    GC_WORD(0xbcc) = 0;
+    GC_WORD(0xbd0) = 7;
+    GC_BYTE(0xbd5) = 0;
+    GC_BYTE(0x1fb) = 0;
+    GC_BYTE(0x1fa) = 0;
+    GC_BYTE(0x1f9) = (u8) (GC_BYTE(0x1f9) | 7);
+    GC_BYTE(0x1f9) = (u8) (GC_BYTE(0x1f9) | 0x38);
+    GC_BYTE(0x1f9) = (u8) (GC_BYTE(0x1f9) & ~0xC0);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 0x100);
+    GC_WORD(0xbc8) = 7;
+    GC_BYTE(0xbd4) = 0;
+    GC_WORD(0xbcc) = 0;
+    GC_WORD(0xbd0) = 7;
+    GC_BYTE(0xbd5) = 0;
+    GC_WORD(0xbd8) = 0;
+    GC_WORD(0xbdc) = 0x11;
+    GC_WORD(0xbe0) = 0;
+    GC_WORD(0x1fc) = (s32) (GC_WORD(0x1fc) & ~0xFFFFFF);
+    GC_BYTE(0x203) = (u8) (GC_BYTE(0x203) & ~3);
+    GC_BYTE(0x203) = (u8) (GC_BYTE(0x203) & ~0xC);
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 0x200);
+    GC_WORD(0xbd8) = 0;
+    GC_WORD(0xbdc) = 0x11;
+    GC_WORD(0xbe0) = 0;
+    GC_WORD(0xbf4) = 0;
+    GC_FLOAT(0xbf8) = 0.0f;
+    GC_FLOAT(0xbfc) = 1000.0f;
+    GC_FLOAT(0xc00) = 0.0f;
+    GC_FLOAT(0xc04) = 1000.0f;
+    GC_WORD(0xc09) = 0;
+    GSgfx_GCWriteFog(0, 0.0f, 1000.0f, 0.0f, 1000.0f);
+    GC_BYTE(0x2f5) = 0;
+    GC_BYTE(0x2f6) = 0;
+    GC_BYTE(0x2f7) = 0;
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 0x20000);
+    GC_WORD(0xc09) = 0;
+    GC_BYTE(0xc08) = 0;
+    GC_HALF(0xc0e) = 0;
+    GC_BYTE(0xc0d) = 0;
+    GC_BYTE(0x2fa) = (u8) (GC_BYTE(0x2fa) & ~4);
+    GC_HALF(0x2fa) = (GC_HALF(0x2fa) & ~0x3ff) | 0x156;
+    GC_WORD(0x0) = (s32) (GC_WORD(0x0) | 0x40000);
+    GC_BYTE(0xc0d) = 0;
+    GC_HALF(0xc0e) = 0;
+    GSgfx_GCFlushState();
 }
 
 }

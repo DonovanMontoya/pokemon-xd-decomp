@@ -34,7 +34,7 @@ s32 fightFloorGetStatus(s32, s32, s32, s32);
 u16 fightFloorGetValidFightOutPokemonCount(void *,u8,void*,u8);
 u8 fightFloorIsLastActionFightOutPokemon(void*);
 u8 fightFloorIsNowEncountOpeningVirtualBattle(s32);
-void fightFloorLoopValidFightOutPokemon(void *,s32 (*)(void *,u16,void *),void *,u8);
+u8 fightFloorLoopValidFightOutPokemon(void *,s32 (*)(void *,u16,void *),void *,u8);
 s32 fightFloorSetFightResultId(s32, s32);
 void fightFloorWriteJoutaiDataId(void *, s32, s32);
 u32 fightFloor_GetEncountDataId(void*);

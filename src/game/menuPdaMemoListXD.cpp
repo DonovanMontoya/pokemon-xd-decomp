@@ -19,7 +19,7 @@ u32 pokemonDataBiosGetName(void *);
 void *pokemonDataBiosGetPtr(u16);
 s32 pokecoloGetCountryCode(void);
 void pokemonCreate(MemoPokemon *, u16, s32, s32);
-u16 pokemonGetStatus(MemoPokemon *, u16, s32, s32);
+u32 pokemonGetStatus(MemoPokemon *, u32, u16, u16);
 void pokemonBiosSetRnd(MemoPokemon *, u32);
 void pokemonBiosSetCatchTrainerRnd(MemoPokemon *, u32);
 s32 gamedataGetStatus(s32, s32);
@@ -43,7 +43,7 @@ u32 GSthreadCreate(s32, s32, u32, s32, s32, s32 (*)(MemoModel *));
 u32 GSthreadGetCurrentThread(void);
 u8 GSthreadIsRunning(u32);
 void GSthreadClose(u32);
-void GSthreadSetArgs(u32, s32, void *);
+void GSthreadSetArgs(u32, s32, ...);
 void GSthreadSwitch(void);
 s32 GSfloorGetCurrentFloorGroupID(void);
 u32 heroGetObjID(s32);
@@ -73,8 +73,8 @@ void spriteSetScissor(s32, s32, s32, s16, s16);
 void spriteClearScissor(s32);
 void msgctrlSetValue(s32, const void *);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
-u32 zokuseiBiosGetSmallSpriteID(u16);
-void windowDrawSprite2(s16, s32, s16, s16, u32, MemoWindow *, u32, s32, s32);
+u16 zokuseiBiosGetSmallSpriteID(u16);
+void windowDrawSprite2(s16, s16, s16, s16, u32, MemoWindow *, u16, s32, s32);
 void *GSgfxLayerFindByID(s32);
 
 extern u16 *pdapokemonsortdata;
@@ -82,9 +82,6 @@ extern u32 *pdapokemonsortdata_number;
 MemoWork *pMemoList;
 static f32 _defaultAngle[3] = {0.0f, -0.3f, 0.0f};
 static s32 _testMotion = 3;
-struct MemoCursorIds {
-    s32 a, b, c, d, e, f, g, h;
-};
 static s32 _menuPdaMemoListThread__FP10MENU_MODEL(MemoModel *arg0);
 void menuPdaMemoListSetHeroMotion(void);
 u8 menuPdaMemoListIsLoadHero(void);
@@ -329,19 +326,22 @@ s32 menuPdaMemoListCtrl(MemoWindow *arg0) {
 }
 
 void Sort__11pdaMemoListF15menuPdaMemoSort(MemoWork *arg0, s32 arg1) {
-    if (arg1 != 1) {
-        if (arg1 < 1) {
-        }
+    switch (arg1) {
+    case 0:
+    default:
         SortGojyuon__11pdaMemoListFv(arg0);
-        return;
+        break;
+    case 1:
+        SortPokemonID__11pdaMemoListFv(arg0);
+        break;
     }
-    SortPokemonID__11pdaMemoListFv(arg0);
 }
 
 void SortPokemonID__11pdaMemoListFv(MemoWork *arg0) {
+    s32 count;
     MemoSortBuff *records;
     u16 *copy, id;
-    u32 count, i;
+    u32 i;
     count = (u16)memoDataGetCount(0);
     records = (MemoSortBuff *)__nwa__FUl(0x2bc0);
     copy = (u16 *)__nwa__FUl(0x320);
@@ -361,9 +361,10 @@ void SortPokemonID__11pdaMemoListFv(MemoWork *arg0) {
 }
 
 void SortGojyuon__11pdaMemoListFv(MemoWork *arg0) {
+    s32 count;
     MemoSortBuff *records;
     u16 *copy, id;
-    u32 count, i;
+    u32 i;
     count = (u16)memoDataGetCount(0);
     records = (MemoSortBuff *)__nwa__FUl(0x2bc0);
     copy = (u16 *)__nwa__FUl(0x320);
@@ -424,9 +425,10 @@ void fn_80055C94(MemoWork *arg0, MemoSortBuff *arg1, s32 arg2) {
 
 u16 SortGojyuonDataSet__11pdaMemoListFUs(MemoWork *arg0, u16 arg1) {
     u16 *entry = pdapokemonsortdata;
-    u16 index = 0;
+    u16 index;
     if (arg1 >= 0x8000U)
         arg1 &= 0x3fff;
+    index = 0;
     while (index < *pdapokemonsortdata_number) {
         if (*entry == 0)
             return 0;
@@ -443,11 +445,12 @@ void DispList__11pdaMemoListFP14tagWINDOW_WORKP14tagSPRITE_WORK(MemoWork *arg0, 
     MemoCursor sp10;
     s32 sp8;
     f32 var_f30;
+    f32 textOffset;
     u16 *temp_r19_2;
     MemoPokemon *temp_r20;
     s32 temp_r31;
-    s32 temp_r3_3;
-    s32 temp_r3_5;
+    u16 temp_r3_3;
+    u16 temp_r3_5;
     s32 var_r22;
     u16 temp_r21;
     u16 temp_r3_2;
@@ -470,24 +473,27 @@ void DispList__11pdaMemoListFP14tagWINDOW_WORKP14tagSPRITE_WORK(MemoWork *arg0, 
                      temp_r19->height);
     var_f30 = arg0->y;
     if (pokecoloGetCountryCode() != 0) {
+        textOffset = 0.0f;
+    } else {
+        textOffset = 0.0f;
     }
     var_r22 = 0;
     for (var_r22 = 0; var_r22 < (s32)temp_r21; var_r22++) {
         if ((var_r22 >= (s32)(sp10.pos.first - 1)) && (var_r22 < (s32)(sp10.pos.first + 9))) {
-            temp_r19_2 = GetPokemonName__11pdaMemoListFl(arg0, (u16)var_r22);
+            temp_r19_2 = GetPokemonName__11pdaMemoListFl(arg0, var_r22);
             temp_r20 = GetPokemonPointer__11pdaMemoListFl(arg0, var_r22);
             msgctrlSetValue(0x37, temp_r19_2);
-            GSmsgPrint2(temp_r31, 0, (s32)(var_f30 + 0.0f), arg1->alpha | ~0xFF, 0x4277);
-            temp_r3_2 = pokemonGetStatus(0, pokemonGetStatus(temp_r20, 0U, 0x6E, 0), 0x16, 0);
+            GSmsgPrint2(temp_r31, 0, (s32)(var_f30 + textOffset), arg1->alpha | ~0xFF, 0x4277);
+            temp_r3_2 = pokemonGetStatus(0, (u16)pokemonGetStatus(temp_r20, 0U, 0x6E, 0), 0x16, 0);
             temp_r3_3 = zokuseiBiosGetSmallSpriteID(temp_r3_2);
             sp8 = temp_r31;
-            windowDrawSprite2((s16)(temp_r27->x - temp_r26->x), (s32)var_f30, temp_r27->width,
+            windowDrawSprite2((s16)(temp_r27->x - temp_r26->x), (s16)var_f30, temp_r27->width,
                               temp_r27->height, arg1->alpha | ~0xFF, arg1, temp_r3_3, 0, sp8);
-            temp_r3_4 = pokemonGetStatus(0, pokemonGetStatus(temp_r20, 0U, 0x6E, 0), 0x16, 1);
+            temp_r3_4 = pokemonGetStatus(0, (u16)pokemonGetStatus(temp_r20, 0U, 0x6E, 0), 0x16, 1);
             if ((temp_r3_4 != 0) && (temp_r3_4 != temp_r3_2)) {
                 temp_r3_5 = zokuseiBiosGetSmallSpriteID(temp_r3_4);
                 sp8 = temp_r31;
-                windowDrawSprite2((s16)(temp_r28->x - temp_r26->x), (s32)var_f30, temp_r28->width,
+                windowDrawSprite2((s16)(temp_r28->x - temp_r26->x), (s16)var_f30, temp_r28->width,
                                   temp_r28->height, arg1->alpha | ~0xFF, arg1, temp_r3_5, 0, sp8);
             }
         }
@@ -607,10 +613,10 @@ void LoadPokemon__11pdaMemoListFl(MemoWork *arg0, s32 arg1) {
 }
 
 MemoPokemon *GetPokemonPointer__11pdaMemoListFl(MemoWork *arg0, s32 arg1) {
-    s32 temp_r29;
-    MemoPokemon *temp_r30;
-    s32 temp_r31;
     u16 var_r31;
+    s32 temp_r31;
+    MemoPokemon *temp_r30;
+    s32 temp_r29;
 
     if ((arg1 <= (s32)(u16)memoDataGetCount(0)) && (arg1 >= 0)) {
         var_r31 = arg0->ids[arg1];
@@ -649,37 +655,14 @@ void ListCursor__11pdaMemoListFP14tagWINDOW_WORKP14tagSPRITE_WORK(MemoWork *arg0
 }
 
 s32 GetMenuItemNumber__11pdaMemoListFP14tagSPRITE_WORK(MemoWork *arg0, MemoSprite *arg1) {
-    struct MemoCursorIds ids = {0xde, 0xe0, 0xe2, 0xe4, 0xe6, 0xe8, 0xea, 0xec};
-    s32 i0 = ids.a, i1 = ids.b, i2 = ids.c, i3 = ids.d, i4 = ids.e, i5 = ids.f, i6 = ids.g,
-        i7 = ids.h;
-    s32 result = 0;
-    s16 id;
-    (u16) memoDataGetCount(0);
-    id = arg1->id;
-    if (id != i0) {
-        result = 1;
-        if (id != i1) {
-            result = 2;
-            if (id != i2) {
-                result = 3;
-                if (id != i3) {
-                    result = 4;
-                    if (id != i4) {
-                        result = 5;
-                        if (id != i5) {
-                            result = 6;
-                            if (id != i6) {
-                                result = 7;
-                                if (id != i7)
-                                    result = 8;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    s32 ids[8] = {0xde, 0xe0, 0xe2, 0xe4, 0xe6, 0xe8, 0xea, 0xec};
+    s32 index;
+    memoDataGetCount(0);
+    for (index = 0; index < 8; index++) {
+        if (arg1->id == ids[index])
+            break;
     }
-    return result;
+    return index;
 }
 
 void DownCursor__11pdaMemoListFP14tagWINDOW_WORKP14tagSPRITE_WORK(MemoWork *arg0, MemoWindow *arg1,
@@ -710,7 +693,7 @@ void Release__11pdaMemoListFv(MemoWork *arg0) {
 }
 
 void InitWork__11pdaMemoListFv(MemoWork *arg0) {
-    u16 count = (u16)memoDataGetCount(0);
+    s32 count = (u16)memoDataGetCount(0);
     s32 index;
     MemoItem *item;
     arg0->cursor.pos.selected = 0;
@@ -747,7 +730,7 @@ void InitWork__11pdaMemoListFv(MemoWork *arg0) {
 s32 Main__11pdaMemoListFP6CURSOR(MemoWork *arg0, MemoCursor *arg1) {
     MemoCursor cursor, copy, returned;
     s32 result;
-    u16 count = (u16)memoDataGetCount(0);
+    s32 count = (u16)memoDataGetCount(0);
     cursor.pos.first = arg1->pos.first;
     cursor.pos.selected = arg1->pos.selected;
     copy.packed = cursor.packed;

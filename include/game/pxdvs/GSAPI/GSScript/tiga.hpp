@@ -36,6 +36,13 @@ struct GSBinWriteStream {
         size = 0;
         writing = 0;
     }
+    GSBinWriteStream(void* data, u32 length) {
+        buffer = 0;
+        cur = (u8*)data;
+        start = (u8*)data;
+        size = length;
+        writing = 1;
+    }
     ~GSBinWriteStream() {
         if (buffer != 0) {
             GSmemFree(buffer);
@@ -135,7 +142,7 @@ public:
     CChank();
     virtual ~CChank() {}
     u32 chankD;
-    static CChank* searchChankID(const char*, s32);
+    CChank* searchChankID(const char*, s32);
 };
 
 class CChankBlock : public CChank {
@@ -220,6 +227,14 @@ public:
     void clear();
 };
 
+struct TigaWorkPrefix {
+    u8 reserved0[0x10];
+    tigaVariant result;
+    u8 reserved18[0x20];
+    char string[256];
+};
+typedef char TigaWorkPrefixSize[sizeof(TigaWorkPrefix)==0x138?1:-1];
+
 class Tiga {
 public:
     CChankBlock chunk;              // 0x00
@@ -229,7 +244,7 @@ public:
     f32 timers[4];                  // 0x8e0
     TigaThread* threads[8];         // 0x8f0
     tigaCellMemory* cellMemory;     // 0x910
-    u8 pad914[4];
+    TigaWorkPrefix* workBuffer;
     u8 flags[16];                   // 0x918
     s32 nextHandle;                 // 0x928
     u8 hitFlag;                     // 0x92c
@@ -290,8 +305,11 @@ public:
     void getPresetVar(tigaVariant*, int, int);
     int execMethod(int, int, tigaVariant*, tigaVariant*);
     int execute(TigaThread*);
-    int calcExpr2(int, tigaVariant*, tigaVariant*, tigaVariant*);
-    int calcExpr1(int, tigaVariant*, tigaVariant*);
+    int cmpArray(int,tigaVariant*,tigaVariant*);
+    int cmpThread(int,tigaVariant*,tigaVariant*);
+    int cmpVector(int,tigaVariant*,tigaVariant*);
+    void calcExpr2(int, tigaVariant*, tigaVariant*, tigaVariant*);
+    void calcExpr1(int, tigaVariant*, tigaVariant*);
     int executeOneThread(float, long);
     int executeThread(float);
     void unblockThread(long);

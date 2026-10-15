@@ -6904,357 +6904,578 @@ void menuTool_GBAConnect_Ctrl(MenuDBWindow *arg0) {
     }
 }
 
-void menuCB_Tunaide02_Disp(MenuDBWindow *arg0, MenuDBSprite *arg1) {
-    s16 temp_r0;
-    s32 var_r30;
-    s32 var_r30_2;
-    s32 var_r30_3;
-    s32 var_r30_4;
-    s32 var_r4;
-    s32 var_r4_2;
+void menuCB_Tunaide02_Disp(MenuDBWindow*arg0,MenuDBSprite*arg1){
+s32 var_r30,var_r30_2,var_r30_3,var_r30_4,var_r4,var_r4_2;
+switch(arg1->unk6){
+case 0xC6:
+{
+  if (((s32) tunaide02_last_kakunin_flag) == 0)
+  {
+    arg1->unk4C = 0x43C9;
+    return;
+  }
+  arg1->unk4C = 0x43CA;
+  return;
+}
 
-    temp_r0 = arg1->unk6;
-    if (temp_r0 != 0xB6) {
-        if (temp_r0 < 0xB6) {
-            if (temp_r0 != 0xA6) {
-                if (temp_r0 < 0xA6) {
-                    switch (temp_r0) {              /* switch 1; irregular */
-                    default:                        /* switch 1 */
-                        menuCB_SpriteDispCheckONorOFF(arg1, (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) == 0)));
-                        return;
-                    case 0xA2:                      /* switch 1 */
-                        if (toolbattle_trainerFace(0) == 0) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Port_Icon_Char[1]));
-                            return;
-                        }
-                        if ((s32) _CB.unk8 == 2) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Port_Icon_Char[0]));
-                            return;
-                        }
-                        menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Port_Icon_Char[1]));
-                        return;
-                    case 0x9E:                      /* switch 1 */
-                        if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)]));
-                            return;
-                        }
-                        winSpriteSetDisp(arg1, 0);
-                        return;
-                    case 0x9F:                      /* switch 1 */
-                        if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)]));
-                            return;
-                        }
-                        menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)]));
-                        return;
-                    case 0xA4:                      /* switch 1 */
-                        menuCB_SpriteDispCheckONorOFF(arg1, (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) != 0)));
-                        return;
-                    case 0xA0:                      /* switch 1 */
-                        if ((s32) _CB.unk8 == 2) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(2)]));
-                            return;
-                        }
-                        if (toolbattle_trainerFace(0) != 0) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)]));
-                            return;
-                        }
-                        winSpriteSetDisp(arg1, 0);
-                        return;
-                    case 0xA1:                      /* switch 1 */
-                        if ((s32) _CB.unk8 == 2) {
-                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(3)]));
-                            return;
-                        }
-                        winSpriteSetDisp(arg1, 0);
-                        return;
-                    }
-                } else {
-                    if (temp_r0 != 0xAF) {
-                        if (temp_r0 < 0xAF) {
-                            if (temp_r0 != 0xA9) {
-                                if (temp_r0 < 0xA9) {
-                                    if (temp_r0 < 0xA8) {
-                                        if (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) == 0)) {
-                                            menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 1) == 0);
-                                            return;
-                                        }
-                                        winSpriteSetDisp(arg1, 0);
-                                        return;
-                                    }
-                                    if ((s32) tunaide02_last_kakunin_flag == 2) {
-                                        winSpriteSetDisp(arg1, 1);
-                                        return;
-                                    }
-                                    menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 2) == 0);
-                                    return;
-                                }
-                                if (temp_r0 < 0xAE) {
-                                    if (temp_r0 < 0xAC) {
-                                        if (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) != 0)) {
-                                            menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 4) == 0);
-                                            return;
-                                        }
-                                        winSpriteSetDisp(arg1, 0);
-                                        return;
-                                    }
-                                    if ((s32) _CB.unk8 == 2) {
-                                        menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 8) == 0);
-                                        return;
-                                    }
-                                    winSpriteSetDisp(arg1, 0);
-                                    return;
-                                }
-                                menuCB_SpriteDispCheckONorOFF(arg1, ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)));
-                                return;
-                            }
-                            menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 2) == 0);
-                            return;
-                        }
-                        if (temp_r0 != 0xB3) {
-                            if (temp_r0 < 0xB3) {
-                                if (temp_r0 != 0xB1) {
-                                    if (temp_r0 < 0xB1) {
-                                        if ((s32) _CB.unk8 == 2) {
-                                            winSpriteSetDisp(arg1, 1);
-                                            return;
-                                        }
-                                        if (toolbattle_trainerFace(0) != 0) {
-                                            menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PlayerNumber[1]));
-                                            return;
-                                        }
-                                        winSpriteSetDisp(arg1, 0);
-                                        return;
-                                    }
-                                    if ((s32) tunaide02_last_kakunin_flag == 1) {
-                                        arg1->unk4C = 0x43C8;
-                                        return;
-                                    }
-                                    if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                                        if ((s32) (_CB.unkB0D4 & 1) != 0) {
-                                            arg1->unk4C = 0;
-                                            return;
-                                        }
-                                        arg1->unk4C = 0x43C6;
-                                        return;
-                                    }
-                                    arg1->unk4C = 0;
-                                    return;
-                                }
-                                menuCB_SpriteDispCheckONorOFF(arg1, _CB.unk8 == 2);
-                                return;
-                            }
-                            if (temp_r0 < 0xB5) {
-                                if (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) != 0)) {
-                                    if ((s32) (_CB.unkB0D4 & 4) != 0) {
-                                        arg1->unk4C = 0;
-                                        return;
-                                    }
-                                    arg1->unk4C = 0x43C6;
-                                    return;
-                                }
-                                arg1->unk4C = 0;
-                                return;
-                            }
-                            if ((s32) _CB.unk8 == 2) {
-                                if ((s32) (_CB.unkB0D4 & 8) != 0) {
-                                    arg1->unk4C = 0;
-                                    return;
-                                }
-                                arg1->unk4C = 0x43C6;
-                                return;
-                            }
-                            arg1->unk4C = 0;
-                            return;
-                        }
-                        if ((s32) tunaide02_last_kakunin_flag == 2) {
-                            arg1->unk4C = 0x43C8;
-                            return;
-                        }
-                        if ((s32) (_CB.unkB0D4 & 2) != 0) {
-                            arg1->unk4C = 0;
-                            return;
-                        }
-                        arg1->unk4C = 0x43C6;
-                        return;
-                    }
-                    if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                        winSpriteSetDisp(arg1, 1);
-                        return;
-                    }
-                    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PlayerNumber[0]));
-                }
-            } else {
-                if (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) == 0)) {
-                    if ((s32) tunaide02_last_kakunin_flag == 1) {
-                        winSpriteSetDisp(arg1, 1);
-                        return;
-                    }
-                    menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 1) == 0);
-                    return;
-                }
-                winSpriteSetDisp(arg1, 0);
-            }
-        } else if (temp_r0 != 0xC4) {
-            if (temp_r0 < 0xC4) {
-                if (temp_r0 != 0xBD) {
-                    if (temp_r0 < 0xBD) {
-                        if (temp_r0 != 0xBA) {
-                            if (temp_r0 < 0xBA) {
-                                if (temp_r0 != 0xB8) {
-                                    if (temp_r0 < 0xB8) {
-                                        if ((s32) tunaide02_last_kakunin_flag == 2) {
-                                            arg1->unk4C = 0x43C7;
-                                            return;
-                                        }
-                                        if ((s32) (_CB.unkB0D4 & 2) != 0) {
-                                            arg1->unk4C = 0;
-                                            return;
-                                        }
-                                        arg1->unk4C = 0x43C5;
-                                        return;
-                                    }
-                                    if ((s32) _CB.unk8 == 2) {
-                                        if ((s32) (_CB.unkB0D4 & 8) != 0) {
-                                            arg1->unk4C = 0;
-                                            return;
-                                        }
-                                        arg1->unk4C = 0x43C5;
-                                        return;
-                                    }
-                                    arg1->unk4C = 0;
-                                    return;
-                                }
-                                if (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) != 0)) {
-                                    if ((s32) (_CB.unkB0D4 & 4) != 0) {
-                                        arg1->unk4C = 0;
-                                        return;
-                                    }
-                                    arg1->unk4C = 0x43C5;
-                                    return;
-                                }
-                                arg1->unk4C = 0;
-                                return;
-                            }
-                            if (temp_r0 < 0xBC) {
-                                if ((s32) _CB.unk8 == 2) {
-                                    toolbattle_drawHeroID(arg0, 2);
-                                    return;
-                                }
-                                if (toolbattle_trainerFace(0) != 0) {
-                                    toolbattle_drawHeroID(arg0, 1);
-                                }
-                            } else {
-                                if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                                    toolbattle_drawHeroID(arg0, 1);
-                                    return;
-                                }
-                                toolbattle_drawHeroID(arg0, 0);
-                            }
-                        } else if ((s32) _CB.unk8 == 2) {
-                            toolbattle_drawHeroID(arg0, 3);
-                        }
-                    } else if (temp_r0 != 0xC1) {
-                        if (temp_r0 < 0xC1) {
-                            if (temp_r0 != 0xBF) {
-                                if (temp_r0 < 0xBF) {
-                                    if ((s32) _CB.unk8 == 2) {
-                                        toobattle_drawHeroName(arg0, 3);
-                                    }
-                                } else {
-                                    if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                                        toobattle_drawHeroName(arg0, 1);
-                                        return;
-                                    }
-                                    toobattle_drawHeroName(arg0, 0);
-                                }
-                            } else {
-                                if ((s32) _CB.unk8 == 2) {
-                                    toobattle_drawHeroName(arg0, 2);
-                                    return;
-                                }
-                                if (toolbattle_trainerFace(0) != 0) {
-                                    toobattle_drawHeroName(arg0, 1);
-                                }
-                            }
-                        } else {
-                            if (temp_r0 < 0xC3) {
-                                arg1->unk4C = 0x440A;
-                                return;
-                            }
-                            arg1->unk4C = 0x440B;
-                        }
-                    } else if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                        toobattle_drawHeroName(arg0, 0);
-                    }
-                } else if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-                    toolbattle_drawHeroID(arg0, 0);
-                }
-            } else if (temp_r0 != 0xCA) {
-                if (temp_r0 < 0xCA) {
-                    if (temp_r0 != 0xC7) {
-                        if (temp_r0 < 0xC7) {
-                            if (temp_r0 < 0xC6) {
-                                if ((s32) _CB.unk8 == 2) {
-                                    arg1->unk4C = 0x440D;
-                                    return;
-                                }
-                                arg1->unk4C = 0;
-                                return;
-                            }
-                            if ((s32) tunaide02_last_kakunin_flag == 0) {
-                                arg1->unk4C = 0x43C9;
-                                return;
-                            }
-                            arg1->unk4C = 0x43CA;
-                            return;
-                        }
-                        if (temp_r0 < 0xC9) {
-                            menuCB_SpriteDispCheckONorOFF(arg1, (((s32) (_CB.unkB0D4 & 2) != 0) && ((s32) tunaide02_last_kakunin_flag != 2)));
-                            return;
-                        }
-                        menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 4) != 0);
-                        return;
-                    }
-                    menuCB_SpriteDispCheckONorOFF(arg1, (((s32) (_CB.unkB0D4 & 1) != 0) && ((s32) tunaide02_last_kakunin_flag != 1)));
-                    return;
-                }
-                switch (temp_r0) {                  /* switch 2; irregular */
-                case 0x2DA:                         /* switch 2 */
-                    menuCB_SpriteDispCheckONorOFF(arg1, tunaide02_last_kakunin_flag == 1);
-                    return;
-                case 0x2DB:                         /* switch 2 */
-                    menuCB_SpriteDispCheckONorOFF(arg1, tunaide02_last_kakunin_flag == 2);
-                    return;
-                default:                            /* switch 2 */
-                    menuCB_SpriteDispCheckONorOFF(arg1, (((s32) _CB.unk8 != 2) && (toolbattle_trainerFace(0) != 0)));
-                    return;
-                }
-            } else {
-                menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 8) != 0);
-            }
-        } else {
-            if (((s32) _CB.unk8 == 2) || (toolbattle_trainerFace(0) != 0)) {
-                arg1->unk4C = 0x440C;
-                return;
-            }
-            arg1->unk4C = 0;
-        }
-    } else {
-        if ((s32) tunaide02_last_kakunin_flag == 1) {
-            arg1->unk4C = 0x43C7;
-            return;
-        }
-        if ((toolbattle_trainerFace(0) == 0) || ((s32) _CB.unk8 == 2)) {
-            if ((s32) (_CB.unkB0D4 & 1) != 0) {
-                arg1->unk4C = 0;
-                return;
-            }
-            arg1->unk4C = 0x43C5;
-            return;
-        }
-        arg1->unk4C = 0;
+break;
+case 0x2DA:
+{
+  menuCB_SpriteDispCheckONorOFF(arg1, tunaide02_last_kakunin_flag == 1);
+}
+
+break;
+case 0x2DB:
+{
+  menuCB_SpriteDispCheckONorOFF(arg1, tunaide02_last_kakunin_flag == 2);
+}
+
+break;
+case 0xC7:
+{
+  var_r4_2 = 0;
+  if ((((s32) (_CB.unkB0D4 & 1)) != 0) && (((s32) tunaide02_last_kakunin_flag) != 1))
+  {
+    var_r4_2 = 1;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, var_r4_2);
+  return;
+}
+
+break;
+case 0xD0:
+case 0xD1:
+case 0xD2:
+{
+  var_r30_4 = 0;
+  if ((((s32) _CB.unk8) != 2) && (toolbattle_trainerFace(0) != 0))
+  {
+    var_r30_4 = 1;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, var_r30_4);
+}
+
+break;
+case 0x8A:
+case 0x8B:
+case 0x8C:
+case 0x8D:
+case 0x8E:
+{
+  var_r30 = 0;
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) == 0))
+  {
+    var_r30 = 1;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, var_r30);
+}
+
+break;
+case 0xA6:
+{
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) == 0))
+  {
+    if (((s32) tunaide02_last_kakunin_flag) == 1)
+    {
+      winSpriteSetDisp(arg1, 1);
+      return;
     }
+    menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 1) == 0);
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+}
+
+break;
+case 0xA7:
+{
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) == 0))
+  {
+    menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 1) == 0);
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+  return;
+}
+
+break;
+case 0xB2:
+{
+  if (((s32) tunaide02_last_kakunin_flag) == 1)
+  {
+    arg1->unk4C = 0x43C8;
+    return;
+  }
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    if (((s32) (_CB.unkB0D4 & 1)) != 0)
+    {
+      arg1->unk4C = 0;
+      return;
+    }
+    arg1->unk4C = 0x43C6;
+    return;
+  }
+  arg1->unk4C = 0;
+  return;
+}
+
+break;
+case 0xB6:
+{
+  if (((s32) tunaide02_last_kakunin_flag) == 1)
+  {
+    arg1->unk4C = 0x43C7;
+    return;
+  }
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    if (((s32) (_CB.unkB0D4 & 1)) != 0)
+    {
+      arg1->unk4C = 0;
+      return;
+    }
+    arg1->unk4C = 0x43C5;
+    return;
+  }
+  arg1->unk4C = 0;
+}
+
+break;
+case 0xC2:
+{
+  arg1->unk4C = 0x440A;
+  return;
+}
+
+break;
+case 0xAE:
+{
+  var_r30_3 = 0;
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    var_r30_3 = 1;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, var_r30_3);
+  return;
+}
+
+break;
+case 0xA2:
+{
+  if (toolbattle_trainerFace(0) == 0)
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Port_Icon_Char[1]));
+    return;
+  }
+  if (((s32) _CB.unk8) == 2)
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Port_Icon_Char[0]));
+    return;
+  }
+  menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Port_Icon_Char[1]));
+  return;
+}
+
+break;
+case 0x9E:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)]));
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+}
+
+break;
+case 0xBD:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    toolbattle_drawHeroID(arg0, 0);
+  }
+}
+
+break;
+case 0xC1:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    toobattle_drawHeroName(arg0, 0);
+  }
+}
+
+break;
+case 0xC8:
+{
+  var_r4 = 0;
+  if ((((s32) (_CB.unkB0D4 & 2)) != 0) && (((s32) tunaide02_last_kakunin_flag) != 2))
+  {
+    var_r4 = 1;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, var_r4);
+  return;
+}
+
+break;
+case 0xA8:
+{
+  if (((s32) tunaide02_last_kakunin_flag) == 2)
+  {
+    winSpriteSetDisp(arg1, 1);
+    return;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 2) == 0);
+  return;
+}
+
+break;
+case 0xA9:
+{
+  menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 2) == 0);
+  return;
+}
+
+break;
+case 0xB3:
+{
+  if (((s32) tunaide02_last_kakunin_flag) == 2)
+  {
+    arg1->unk4C = 0x43C8;
+    return;
+  }
+  if (((s32) (_CB.unkB0D4 & 2)) != 0)
+  {
+    arg1->unk4C = 0;
+    return;
+  }
+  arg1->unk4C = 0x43C6;
+  return;
+}
+
+break;
+case 0xB7:
+{
+  if (((s32) tunaide02_last_kakunin_flag) == 2)
+  {
+    arg1->unk4C = 0x43C7;
+    return;
+  }
+  if (((s32) (_CB.unkB0D4 & 2)) != 0)
+  {
+    arg1->unk4C = 0;
+    return;
+  }
+  arg1->unk4C = 0x43C5;
+  return;
+}
+
+break;
+case 0xC3:
+{
+  arg1->unk4C = 0x440B;
+}
+
+break;
+case 0xAF:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    winSpriteSetDisp(arg1, 1);
+    return;
+  }
+  menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PlayerNumber[0]));
+}
+
+break;
+case 0x9F:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)]));
+    return;
+  }
+  menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)]));
+}
+
+break;
+case 0xBC:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    toolbattle_drawHeroID(arg0, 1);
+    return;
+  }
+  toolbattle_drawHeroID(arg0, 0);
+}
+
+break;
+case 0xC0:
+{
+  if ((toolbattle_trainerFace(0) == 0) || (((s32) _CB.unk8) == 2))
+  {
+    toobattle_drawHeroName(arg0, 1);
+    return;
+  }
+  toobattle_drawHeroName(arg0, 0);
+}
+
+break;
+case 0xC9:
+{
+  menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 4) != 0);
+  return;
+}
+
+break;
+case 0x94:
+case 0x95:
+case 0x96:
+case 0x97:
+case 0x98:
+case 0xA4:
+{
+  var_r30_2 = 0;
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) != 0))
+  {
+    var_r30_2 = 1;
+  }
+  menuCB_SpriteDispCheckONorOFF(arg1, var_r30_2);
+  return;
+}
+
+break;
+case 0xAA:
+case 0xAB:
+{
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) != 0))
+  {
+    menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 4) == 0);
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+  return;
+}
+
+break;
+case 0xB4:
+{
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) != 0))
+  {
+    if (((s32) (_CB.unkB0D4 & 4)) != 0)
+    {
+      arg1->unk4C = 0;
+      return;
+    }
+    arg1->unk4C = 0x43C6;
+    return;
+  }
+  arg1->unk4C = 0;
+  return;
+}
+
+break;
+case 0xB8:
+{
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) != 0))
+  {
+    if (((s32) (_CB.unkB0D4 & 4)) != 0)
+    {
+      arg1->unk4C = 0;
+      return;
+    }
+    arg1->unk4C = 0x43C5;
+    return;
+  }
+  arg1->unk4C = 0;
+  return;
+}
+
+break;
+case 0xC4:
+{
+  if ((((s32) _CB.unk8) == 2) || (toolbattle_trainerFace(0) != 0))
+  {
+    arg1->unk4C = 0x440C;
+    return;
+  }
+  arg1->unk4C = 0;
+}
+
+break;
+case 0xB0:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    winSpriteSetDisp(arg1, 1);
+    return;
+  }
+  if (toolbattle_trainerFace(0) != 0)
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(PlayerNumber[1]));
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+  return;
+}
+
+break;
+case 0xA0:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(2)]));
+    return;
+  }
+  if (toolbattle_trainerFace(0) != 0)
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)]));
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+  return;
+}
+
+break;
+case 0xBB:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    toolbattle_drawHeroID(arg0, 2);
+    return;
+  }
+  if (toolbattle_trainerFace(0) != 0)
+  {
+    toolbattle_drawHeroID(arg0, 1);
+  }
+}
+
+break;
+case 0xBF:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    toobattle_drawHeroName(arg0, 2);
+    return;
+  }
+  if (toolbattle_trainerFace(0) != 0)
+  {
+    toobattle_drawHeroName(arg0, 1);
+  }
+}
+
+break;
+case 0xCA:
+{
+  menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 8) != 0);
+}
+
+break;
+case 0x99:
+case 0x9A:
+case 0x9B:
+case 0x9C:
+case 0x9D:
+case 0xA5:
+case 0xB1:
+{
+  menuCB_SpriteDispCheckONorOFF(arg1, _CB.unk8 == 2);
+  return;
+}
+
+break;
+case 0xAC:
+case 0xAD:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    menuCB_SpriteDispCheckONorOFF(arg1, (_CB.unkB0D4 & 8) == 0);
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+  return;
+}
+
+break;
+case 0xB5:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    if (((s32) (_CB.unkB0D4 & 8)) != 0)
+    {
+      arg1->unk4C = 0;
+      return;
+    }
+    arg1->unk4C = 0x43C6;
+    return;
+  }
+  arg1->unk4C = 0;
+  return;
+}
+
+break;
+case 0xB9:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    if (((s32) (_CB.unkB0D4 & 8)) != 0)
+    {
+      arg1->unk4C = 0;
+      return;
+    }
+    arg1->unk4C = 0x43C5;
+    return;
+  }
+  arg1->unk4C = 0;
+  return;
+}
+
+break;
+case 0xC5:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    arg1->unk4C = 0x440D;
+    return;
+  }
+  arg1->unk4C = 0;
+  return;
+}
+
+break;
+case 0xA1:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    menuCB_SetSprite(arg1, menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(3)]));
+    return;
+  }
+  winSpriteSetDisp(arg1, 0);
+  return;
+}
+
+break;
+case 0xBA:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    toolbattle_drawHeroID(arg0, 3);
+  }
+}
+
+break;
+case 0xBE:
+{
+  if (((s32) _CB.unk8) == 2)
+  {
+    toobattle_drawHeroName(arg0, 3);
+  }
+}
+
+break;
+default:break;
+}
 }
 
 void menuTool_tunaide02_Button(MenuDBWindow *arg0) {

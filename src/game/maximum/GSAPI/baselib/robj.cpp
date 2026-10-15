@@ -476,7 +476,7 @@ static void resolveCnsDirUp(HSD_RObj* robj, void* obj,
             PSVECSubtract(&up, &dir, &up);
         } else {
             k = 1.0f - PSVECDotProduct(&this_pos, &up);
-            if (__fabs(k) < 1.00000001335e-10) {
+            if (__fabs(k) < (double) 1e-10F) {
                 up.x = 0.0f;
                 up.y = 0.0f;
                 up.z = 1.0;

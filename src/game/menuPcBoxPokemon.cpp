@@ -7,6 +7,7 @@ enum MENU_POKEMON_CB_TYPE {
 };
 
 extern "C" {
+bool pokemonCheckValid(Pokemon*);
 void menuOpenCustom(s32, s32, ...);
 s32 windowGetActiveID();
 s32 windowGetValue(s32);
@@ -479,7 +480,7 @@ Pokemon *CMenuPokemonLeave::getStatusAndModelDisplayPokemonGetPointer() {
         return 0;
     }
     if (displayFlag != 0) {
-        if (statusPokemon.checkValid()) {
+        if (pokemonCheckValid(&statusPokemon)) {
             return &statusPokemon;
         }
         return 0;

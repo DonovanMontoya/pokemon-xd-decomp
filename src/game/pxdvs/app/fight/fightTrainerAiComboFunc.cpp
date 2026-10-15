@@ -3564,7 +3564,6 @@ s32 fightAiCombo_Nihonbare_Irekae_2(FIGHT_TRAINER *arg0, FightOutPokemon **arg1,
     u8 j;
     u8 cnt;
     u8 ties;
-    u8 k;
     u8 i0;
     u8 i;
     u8 flagA;
@@ -3639,12 +3638,12 @@ s32 fightAiCombo_Nihonbare_Irekae_2(FIGHT_TRAINER *arg0, FightOutPokemon **arg1,
         return 0;
     }
     base = fightAiCombo_GetValidValue(arg1, arg2, arg3, arg4);
-    for (k = 0; k < arg4; k++) {
-        if (arg3[k] != 0) {
-            if (fightTrainerAiIsFightOutPokemonZokuseiDataId(arg0, arg3[k], 0xAU) == 1) {
+    for (i = 0; i < arg4; i++) {
+        if (arg3[i] != 0) {
+            if (fightTrainerAiIsFightOutPokemonZokuseiDataId(arg0, arg3[i], 0xAU) == 1) {
                 base = fightTrainerAiAddValueByAddsubDataId(base, arg0, 0x2BC);
             }
-            if (fightAi_GetTokuseiHaveFlag(arg0, arg3[k], 0x22U) >= 1U) {
+            if (fightAi_GetTokuseiHaveFlag(arg0, arg3[i], 0x22U) >= 1U) {
                 base = fightTrainerAiAddValueByAddsubDataId(base, arg0, 0x2BD);
             }
         }
@@ -4470,6 +4469,286 @@ s32 fightAiCombo_Horobinouta_Irekae2_2(FIGHT_TRAINER *arg0, FightOutPokemon **ar
                 }
             }
         }
+    }
+    return 0;
+}
+
+// NONMATCHING: retail selects an indeterminate tied index when every score is
+// zero. Keep both random draws, but skip that undefined table copy.
+extern "C" s32 fightAiCombo_Batontatti_Zikoanzi_2(FIGHT_TRAINER *trainer,
+    FightOutPokemon **allies, u16 allyCount, FightOutPokemon **enemies,
+    u16 enemyCount, FightAiAllWazaValid *out, u8 chance)
+{
+    FightAiAllWazaValid candidates[64];
+    u8 indexes[64];
+    FightPokemon *bench[6];
+    u16 benchMoves[8];
+    u16 enemyMoves[8];
+    u8 ties = 0;
+    FightOutPokemon *strongest = 0;
+    s32 greatestDamage = 0;
+    u8 candidateCount = 0;
+    u32 fightType = fightFloor_GetFightType(0);
+    u8 benchCount = fightTrainerGetIrekaeFightPokemonAry(trainer, bench);
+    if (benchCount == 0) return 0;
+    u8 immune = 0;
+    u8 comparisons = 0;
+    for (u8 p = 0; p < benchCount; ++p) {
+        u8 moveCount = fightTrainerAiGetFightPokemonWazaDataIdAry(trainer, bench[p], benchMoves, 0, 1);
+        for (u8 m = 0; m < moveCount; ++m) {
+            for (u8 e = 0; e < enemyCount; ++e) {
+                ++comparisons;
+                u8 type = fightAi_GetWazaZokuseiData_ThinkWeatherBall(benchMoves[m], 0);
+                u8 type0 = fightTrainerAiGetFightOutPokemonZokuseiDataId(trainer, enemies[e], 0);
+                u8 type1 = fightTrainerAiGetFightOutPokemonZokuseiDataId(trainer, enemies[e], 1);
+                if (zokuseiGetWazaJoutai(type, type0) == 0x43 ||
+                    zokuseiGetWazaJoutai(type, type1) == 0x43) ++immune;
+            }
+        }
+    }
+    if (immune >= comparisons) return 0;
+    u8 immuneEnemies = 0;
+    for (u8 e = 0; e < enemyCount; ++e) {
+        if (fightAi_GetTokuseiHaveFlag(trainer, enemies[e], 0x27) >= 1 ||
+            fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[e], 7) == 1) ++immuneEnemies;
+    }
+    for (u8 a = 0; a < allyCount; ++a) {
+        if (figthOutPokemonGetPokemonDataId(allies[a]) == 0x12E) {
+            for (u8 e = 0; e < enemyCount; ++e) {
+                u8 moveCount = fightTrainerAiGetFightOutPokemonWazaDataIdAry(trainer, enemies[e], enemyMoves, 0, 0);
+                for (u8 m = 0; m < moveCount; ++m) {
+                    s32 damage = fightTrainerAiWazaDoWazaDamageFunc(trainer, enemies[e], enemyMoves[m], allies[a], 0);
+                    if (greatestDamage < damage && fightAi_GetTokuseiHaveFlag(trainer, enemies[e], 0x27) == 0 &&
+                        fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[e], 7) == 0) {
+                        greatestDamage = damage;
+                        strongest = enemies[e];
+                    }
+                }
+            }
+        }
+    }
+    if (immuneEnemies >= enemyCount) {
+        s16 base = fightAiCombo_GetValidValue(allies, allyCount, enemies, enemyCount);
+        for (u8 a = 0; a < allyCount; ++a) {
+            for (u8 i = 0; i < 64; ++i) fightAi_InitAllWazaValidSub(&candidates[i]);
+            candidateCount = 0;
+            fightAi_AllWazaValid_AddComboList(trainer, candidates, &candidateCount, 1, 0xB6, 0, 0);
+            if (candidateCount == 0) return 0;
+            s16 best = 0;
+            for (u8 i = 0; i < candidateCount; ++i) {
+                FightAiAllWazaValid *cur = &candidates[i];
+                cur->attacker[(s8)fightAi_getAnotherPokeNo(a)] = 0;
+                if (cur->wazaId[a] == 0xB6) cur->defender[a] = cur->attacker[a];
+                s16 value = fightAiCombo_GetAllWazaValueTable(cur, base, trainer, allies, enemies, -1);
+                u16 move = cur->wazaId[a];
+                if (move == 0xB6) {
+                    if (wazaDB_GetFightTrainerAiWazaHitFuncPtr(move)(trainer, cur->attacker[a], cur->wazaId[a], cur->defender[a]) == 0) value = 0;
+                    if (fightAi_GetWazaHaveFlag(trainer, getFightPokemonPtr__15FightOutPokemonFv(cur->attacker[a]), 0xE2) != 2) value = 0;
+                }
+                if (best < value) {
+                    indexes[0] = i;
+                    best = value;
+                    ties = 1;
+                } else if (best == value && best > 0) {
+                    indexes[ties++] = i;
+                }
+            }
+            u16 random = HSD_Rand();
+            if (ties != 0) fightAi_CopyAllWazaValidTable(out, &candidates[indexes[random % ties]]);
+            u8 roll = HSD_Rand() % 100;
+            if (best != 0 && best + chance > roll) {
+                setComboFuncId__15FightOutPokemonFUc(allies[a], 0x15);
+                fightAi_CreateAction_FromAllWazaValid(trainer, out);
+            }
+        }
+        return 0;
+    }
+    for (u8 i = 0; i < 64; ++i) fightAi_InitAllWazaValidSub(&candidates[i]);
+    if (ai_allwaza_valid_work < 2) return 0;
+    if (allyCount < 2) return 0;
+    fightAi_AllWazaValid_AddComboList(trainer, candidates, &candidateCount, 1, 0xFC, 1, 0xE);
+    if (candidateCount == 0) return 0;
+    s16 best = 0;
+    s16 base = fightAiCombo_GetValidValue(allies, allyCount, enemies, enemyCount);
+    for (u8 i = 0; i < candidateCount; ++i) {
+        FightAiAllWazaValid *cur = &candidates[i];
+        for (u8 a = 0; a < ai_allwaza_valid_work; ++a) {
+            if (cur->wazaId[a] == 0xFC) {
+                if (strongest != 0) cur->defender[a] = strongest;
+                // Retail tests the corresponding enemy for type immunity here.
+                if (fightAi_GetTokuseiHaveFlag(trainer, cur->defender[a], 0x27) >= 1 ||
+                    fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[a], 7) == 1) {
+                    FightOutPokemon *other = (FightOutPokemon *)fightTargetGetPtr(0xE, (FIGHT_TRAINER *)cur->defender[a], (u8)fightType);
+                    if (other != 0 && fightAi_GetTokuseiHaveFlag(trainer, other, 0x27) == 0 &&
+                        fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, other, 7) == 0) cur->defender[a] = other;
+                }
+            }
+        }
+        s16 value = fightAiCombo_GetAllWazaValueTable(cur, base, trainer, allies, enemies, -1);
+        for (u8 a = 0; a < ai_allwaza_valid_work; ++a) {
+            if (cur->wazaId[a] == 0xE &&
+                fightAi_GetWazaHaveFlag(trainer, getFightPokemonPtr__15FightOutPokemonFv(cur->attacker[a]), 0xE2) != 2) value = 0;
+            if (cur->wazaId[a] == 0xFC &&
+                wazaDB_GetFightTrainerAiWazaHitFuncPtr(cur->wazaId[a])(trainer, cur->attacker[a], cur->wazaId[a], cur->defender[a]) == 0) value = 0;
+        }
+        if (best < value) {
+            indexes[0] = i;
+            best = value;
+            ties = 1;
+        } else if (best == value && best > 0) {
+            indexes[ties++] = i;
+        }
+    }
+    u16 random = HSD_Rand();
+    if (ties != 0) fightAi_CopyAllWazaValidTable(out, &candidates[indexes[random % ties]]);
+    u8 roll = HSD_Rand() % 100;
+    if (best != 0 && best + chance > roll) {
+        for (u8 a = 0; a < allyCount; ++a) setComboFuncId__15FightOutPokemonFUc(allies[a], 0x15);
+        return 1;
+    }
+    return 0;
+}
+
+// NONMATCHING: retail selects an indeterminate tied index when every score is
+// zero. Keep both random draws, but skip that undefined table copy.
+extern "C" s32 fightAiCombo_Batontatti_Nekodamasi_2(FIGHT_TRAINER *trainer,
+    FightOutPokemon **allies, u16 allyCount, FightOutPokemon **enemies,
+    u16 enemyCount, FightAiAllWazaValid *out, u8 chance)
+{
+    FightAiAllWazaValid candidates[64];
+    u8 indexes[64];
+    FightPokemon *bench[6];
+    u16 benchMoves[8];
+
+    u8 ties = 0;
+    FightOutPokemon *strongest = 0;
+    s32 greatestDamage = 0;
+    u8 candidateCount = 0;
+    u32 fightType = fightFloor_GetFightType(0);
+    u8 benchCount = fightTrainerGetIrekaeFightPokemonAry(trainer, bench);
+    if (benchCount == 0) return 0;
+    u8 immune = 0;
+    u8 comparisons = 0;
+    for (u8 p = 0; p < benchCount; ++p) {
+        u8 moveCount = fightTrainerAiGetFightPokemonWazaDataIdAry(trainer, bench[p], benchMoves, 0, 1);
+        for (u8 m = 0; m < moveCount; ++m) {
+            for (u8 e = 0; e < enemyCount; ++e) {
+                ++comparisons;
+                u8 type = fightAi_GetWazaZokuseiData_ThinkWeatherBall(benchMoves[m], 0);
+                u8 type0 = fightTrainerAiGetFightOutPokemonZokuseiDataId(trainer, enemies[e], 0);
+                u8 type1 = fightTrainerAiGetFightOutPokemonZokuseiDataId(trainer, enemies[e], 1);
+                if (zokuseiGetWazaJoutai(type, type0) == 0x43 ||
+                    zokuseiGetWazaJoutai(type, type1) == 0x43) ++immune;
+            }
+        }
+    }
+    if (immune >= comparisons) return 0;
+    u8 immuneEnemies = 0;
+    for (u8 e = 0; e < enemyCount; ++e) {
+        if (fightAi_GetTokuseiHaveFlag(trainer, enemies[e], 0x27) >= 1 ||
+            fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[e], 7) == 1) ++immuneEnemies;
+    }
+    for (u8 a = 0; a < allyCount; ++a) {
+        if (figthOutPokemonGetPokemonDataId(allies[a]) == 0x12E) {
+            for (u8 e = 0; e < enemyCount; ++e) {
+                s16 entry = fightPokemon_GetEntryId(fightOutPokemon_GetFightPokemonPtr(enemies[e]));
+                for (u8 m = 0; m < 4; ++m) {
+                    s32 damage = fightTrainerAiWazaDoWazaDamageFunc(trainer, enemies[e], fightTrainer_GetEnemyStoreWazaData(trainer, entry, m), allies[a], 0);
+                    if (greatestDamage < damage && fightAi_GetTokuseiHaveFlag(trainer, enemies[e], 0x27) == 0 &&
+                        fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[e], 7) == 0) {
+                        greatestDamage = damage;
+                        strongest = enemies[e];
+                    }
+                }
+                for (u8 m = 0; m < 8; ++m) {
+                    s32 damage = fightTrainerAiWazaDoWazaDamageFunc(trainer, enemies[e], fightTrainer_GetEnemyExpectWazaData(trainer, entry, m), allies[a], 0);
+                    if (greatestDamage < damage && fightAi_GetTokuseiHaveFlag(trainer, enemies[e], 0x27) == 0 &&
+                        fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[e], 7) == 0) {
+                        greatestDamage = damage;
+                        strongest = enemies[e];
+                    }
+                }
+            }
+        }
+    }
+    if (immuneEnemies >= enemyCount) {
+        s16 base = fightAiCombo_GetValidValue(allies, allyCount, enemies, enemyCount);
+        for (u8 a = 0; a < allyCount; ++a) {
+            for (u8 i = 0; i < 64; ++i) fightAi_InitAllWazaValidSub(&candidates[i]);
+            candidateCount = 0;
+            fightAi_AllWazaValid_AddComboList(trainer, candidates, &candidateCount, 1, 0xB6, 0, 0);
+            if (candidateCount == 0) return 0;
+            s16 best = 0;
+            for (u8 i = 0; i < candidateCount; ++i) {
+                FightAiAllWazaValid *cur = &candidates[i];
+                cur->attacker[(s8)fightAi_getAnotherPokeNo(a)] = 0;
+                if (cur->wazaId[a] == 0xB6) cur->defender[a] = cur->attacker[a];
+                s16 value = fightAiCombo_GetAllWazaValueTable(cur, base, trainer, allies, enemies, -1);
+                u16 move = cur->wazaId[a];
+                if (move == 0xB6) {
+                    if (wazaDB_GetFightTrainerAiWazaHitFuncPtr(move)(trainer, cur->attacker[a], cur->wazaId[a], cur->defender[a]) == 0) value = 0;
+                    if (fightAi_GetWazaHaveFlag(trainer, getFightPokemonPtr__15FightOutPokemonFv(cur->attacker[a]), 0xE2) != 2) value = 0;
+                }
+                if (best < value) {
+                    indexes[0] = i;
+                    best = value;
+                    ties = 1;
+                } else if (best == value && best > 0) {
+                    indexes[ties++] = i;
+                }
+            }
+            u16 random = HSD_Rand();
+            if (ties != 0) fightAi_CopyAllWazaValidTable(out, &candidates[indexes[random % ties]]);
+            u8 roll = HSD_Rand() % 100;
+            if (best != 0 && best + chance > roll) {
+                setComboFuncId__15FightOutPokemonFUc(allies[a], 0x14);
+                fightAi_CreateAction_FromAllWazaValid(trainer, out);
+            }
+        }
+        return 0;
+    }
+    for (u8 i = 0; i < 64; ++i) fightAi_InitAllWazaValidSub(&candidates[i]);
+    if (ai_allwaza_valid_work < 2) return 0;
+    if (allyCount < 2) return 0;
+    fightAi_AllWazaValid_AddComboList(trainer, candidates, &candidateCount, 1, 0xFC, 1, 0xE);
+    if (candidateCount == 0) return 0;
+    s16 best = 0;
+    s16 base = fightAiCombo_GetValidValue(allies, allyCount, enemies, enemyCount);
+    for (u8 i = 0; i < candidateCount; ++i) {
+        FightAiAllWazaValid *cur = &candidates[i];
+        for (u8 a = 0; a < ai_allwaza_valid_work; ++a) {
+            if (cur->wazaId[a] == 0xFC) {
+                if (strongest != 0) cur->defender[a] = strongest;
+                // Retail tests the corresponding enemy for type immunity here.
+                if (fightAi_GetTokuseiHaveFlag(trainer, cur->defender[a], 0x27) >= 1 ||
+                    fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, enemies[a], 7) == 1) {
+                    FightOutPokemon *other = (FightOutPokemon *)fightTargetGetPtr(0xE, (FIGHT_TRAINER *)cur->defender[a], (u8)fightType);
+                    if (other != 0 && fightAi_GetTokuseiHaveFlag(trainer, other, 0x27) == 0 &&
+                        fightTrainerAiIsFightOutPokemonZokuseiDataId(trainer, other, 7) == 0) cur->defender[a] = other;
+                }
+            }
+        }
+        s16 value = fightAiCombo_GetAllWazaValueTable(cur, base, trainer, allies, enemies, -1);
+        for (u8 a = 0; a < ai_allwaza_valid_work; ++a) {
+            if (cur->wazaId[a] == 0xE &&
+                fightAi_GetWazaHaveFlag(trainer, getFightPokemonPtr__15FightOutPokemonFv(cur->attacker[a]), 0xE2) != 2) value = 0;
+            if (cur->wazaId[a] == 0xFC &&
+                wazaDB_GetFightTrainerAiWazaHitFuncPtr(cur->wazaId[a])(trainer, cur->attacker[a], cur->wazaId[a], cur->defender[a]) == 0) value = 0;
+        }
+        if (best < value) {
+            indexes[0] = i;
+            best = value;
+            ties = 1;
+        } else if (best == value && best > 0) {
+            indexes[ties++] = i;
+        }
+    }
+    u16 random = HSD_Rand();
+    if (ties != 0) fightAi_CopyAllWazaValidTable(out, &candidates[indexes[random % ties]]);
+    u8 roll = HSD_Rand() % 100;
+    if (best != 0 && best + chance > roll) {
+        for (u8 a = 0; a < allyCount; ++a) setComboFuncId__15FightOutPokemonFUc(allies[a], 0x14);
+        return 1;
     }
     return 0;
 }

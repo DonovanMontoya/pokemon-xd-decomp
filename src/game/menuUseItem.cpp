@@ -46,7 +46,6 @@ struct LogEntry {
 
 struct ITEMUSE2POKEMON_LOG1 {
     LogEntry e[32];
-    s32 pad;
 };
 
 struct ItemParam {
@@ -82,11 +81,11 @@ f32 pokemonGetDp(Pokemon*);
 void pokemonAddDpFormPokemonDpFilterId(Pokemon*, u16, s32);
 void reliveHallInfomationPokemonDP0(Pokemon*);
 void soundOpenPlayME(s32, s32, s32);
-s32 pokemonBiosGetLevel(Pokemon*);
+u8 pokemonBiosGetLevel(Pokemon*);
 void winMsgOpenLevelUpFiledStatus(MENU_LVUP_STATUS*, s32);
 void winMsgCloseLevelUpStatus(s32);
-u32 pokemonGetOboeWazaDataId(Pokemon*, u8, u8*);
-s8 pokemonSearchWazaDataId(Pokemon*, u32);
+u16 pokemonGetOboeWazaDataId(Pokemon*, u8, u8*);
+s8 pokemonSearchWazaDataId(Pokemon*, u16);
 u32 fightFloor_GetStockPokemonNum(s32);
 s8 pcboxGetNbPokemonBox(void);
 s8 pcboxGetPokemonBoxNbEmptySlot(s32, s8);
@@ -102,10 +101,10 @@ u8 itemParamGetPPSelectFlag(void);
 s32 menuPokemonOpenWazaLight(s8);
 void menuPokemonCloseWazaLight(void);
 u8 pokemonCheckValid(Pokemon*);
-u32 itemDataBiosGetWazaIDByWazaMachineNo(u8);
+u16 itemDataBiosGetWazaIDByWazaMachineNo(u8);
 u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
 u8 pokemonDataBiosGetWazaMcn(u32, u16);
-s32 evolutionWazaLearn(Pokemon*, u32, u8*, s32, s8 (*)(Pokemon*, u16, long), s32);
+s32 evolutionWazaLearn(Pokemon*, u16, u8*, s32, s8 (*)(Pokemon*, u16, long), void*);
 s32 itemDataBiosGetPtr(u16);
 u32 itemDataBiosGetWazaMachineNo(void);
 u8 itemDataBiosGetHidenMachineNo(s32);
@@ -213,7 +212,7 @@ static s32 dispMsgYesNo(unsigned long msg) {
 }
 
 static void dispMsg(unsigned long msg) {
-    switch ((s32)msg) {
+    switch (msg) {
     case 0xC368:
     case 0xC369:
     case 0xC371:
@@ -234,28 +233,10 @@ static void dispMsg(unsigned long msg) {
 }
 
 static void playRecoverSE(unsigned long item) {
-    s32 index = 0;
-    u16 local[5] = {0x27, 0x28, 0x29, 0x2A, 0x2B};
-    if (item != local[0]) {
-        index = 1;
-        if (item != local[1]) {
-            index = 2;
-            if (item != local[2]) {
-                index = 3;
-                if (item != local[3]) {
-                    index = 4;
-                    if (item != local[4]) {
-                        index = 5;
-                    }
-                }
-            }
-        }
-    }
-    if (index < 5) {
-        GSsndPlayNow(0x20);
-    } else {
-        GSsndPlayNow(0x1F);
-    }
+    s32 index;
+    u16 local[5] = {0x27,0x28,0x29,0x2A,0x2B};
+    for(index=0;index<5;index++){if(item==local[index])break;}
+    GSsndPlayNow(index<5?0x20:0x1F);
 }
 
 static void wazaLean(Pokemon* pokemon, unsigned short move, unsigned char slot) {
@@ -282,7 +263,8 @@ static s32 wazaMachineProc(Pokemon* pokemon, int machine) {
     u8 slot;
     u16 moveCopy;
     s32 i;
-    u32 move;
+    s32 learned;
+    u16 move;
     menuOffScreenSetPriority(0);
     if (pokemonIsDarkPokemon(pokemon)) {
         dispMsg(0xC371);
@@ -314,11 +296,11 @@ static s32 wazaMachineProc(Pokemon* pokemon, int machine) {
         dispMsg(0xC369);
         return 0;
     }
-    i = evolutionWazaLearn(pokemon, move, &slot, 1, cbForgetWazaSelect, 0);
-    if (i != 0) {
+    learned = evolutionWazaLearn(pokemon, move, &slot, 1, cbForgetWazaSelect, 0);
+    if (learned != 0) {
         wazaLean(pokemon, move, slot);
     }
-    return i;
+    return learned;
 }
 
 static void getLogMsgBattle(unsigned short* buf, int len, ITEMUSE2POKEMON_LOG1* log, short count, Pokemon* pokemon) {
@@ -518,9 +500,9 @@ s32 menuUseItemEventMirraboradar(u32 item, s32* out) {
 
 s32 menuUseItemEventCraneMemo(u32 item, s32* out) {
     ItemCraneMemo* memo;
-    u32 i;
+    s32 i;
     *out = 0;
-    for (i = 0, memo = item_crane_memo; i < item_crane_memo_number; i++, memo++) {
+    for (i = 0, memo = item_crane_memo; i < item_crane_memo_number; memo++, i++) {
         if (memo->item == item) {
             dispMsg(memo->msg);
             return 2;
@@ -685,7 +667,7 @@ s32 menuUseItemSkill(u32 item, s32* out) {
     Pokemon* pokemon;
     u32 slot;
     s32 itemData;
-    u16 move;
+    u32 move;
     u8 machine;
     u8 hiden;
     u32 msg;
@@ -933,7 +915,7 @@ s32 menuUseItemListLVUp(u32 item, s32* out) {
     s16 count;
     u16 evolved;
     u8 level;
-    u32 move;
+    u16 move;
     oboeIndex = 0;
     menu = menuPocket2OpenPokemonMenu(item, 1);
     if (menu >= 0) {
@@ -963,7 +945,8 @@ s32 menuUseItemListLVUp(u32 item, s32* out) {
                 s32 nick = pokemonBiosGetNicknamePtr(pokemon);
                 msgctrlSetValue(0x32, nick);
             }
-            msgctrlSetValue(0x2F, (u8)pokemonBiosGetLevel(pokemon));
+            level=pokemonBiosGetLevel(pokemon);
+            msgctrlSetValue(0x2F,(u8)level);
             dispMsg(0xC367);
             getPokemonLvupStatus(&after, pokemon);
             getDifLvupStatus(&diff, &after, &before);
@@ -1080,21 +1063,12 @@ s32 menuUseItemScriptCologn(u32 item, s32 slot) {
     s32 i;
     u16 voice;
     u16 id;
+    f32 remaining;
     menuPocket2GetTemochiPokemon(slot, &pokemon, &slotOut);
     if (pokemonCheckValid(pokemon) == 0) {
         return 1;
     }
-    id = item;
-    index = 0;
-    if (id != table[0].item) {
-        index = 1;
-        if (id != table[1].item) {
-            index = 2;
-            if (id != table[2].item) {
-                index = 3;
-            }
-        }
-    }
+    for(index=0;index<3;index++){if((u16)item==table[index].item)break;}
     if (index >= 3) {
         return 1;
     }
@@ -1130,7 +1104,8 @@ s32 menuUseItemScriptCologn(u32 item, s32 slot) {
         pokemonAddDpFormPokemonDpFilterId(pokemon, item, 4);
         msgctrlSetValue(0x32, pokemonBiosGetNicknamePtr(pokemon));
         dispMsg(*(s32*)((u8*)&table[0].second + offset));
-        if (!(pokemonGetDp(pokemon) != 0.0f)) {
+        remaining=pokemonGetDp(pokemon);
+        if (!remaining) {
             reliveHallInfomationPokemonDP0(pokemon);
         }
     }

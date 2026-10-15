@@ -20,7 +20,7 @@ void peRenderContainer::PreUpdate() {
             if(dirty) {
                 u8 current=swapIndex;
                 memcpy(displayLists[current].data,displayLists[!current].data,displayLists[0].size);
-                displayLists[swapIndex].flags|=2;dirty=0;
+                u32 flagsOffset=swapIndex*16+40;u16* flags=(u16*)((u32)this+flagsOffset);*flags|=2;dirty=0;
             }
         }
     }
@@ -58,15 +58,16 @@ void peContainer::Start(){if(!active)active=1;}
 peContainer::~peContainer() {
     if(memory){u32 size=GSmemGetSize(memory);g_particle_debug_stats.node-=size;g_particle_debug_stats.total-=size;GSmemFree(memory);memory=0;}
 }
-peContainer::peContainer(peEmitterNode* emitter,u32 nodeBytes,u16 maximum) {
-    owner=emitter;u32 bytes=maximum*nodeBytes;next=0;memory=0;freeNodes=0;nodes=0;count=0;capacity=maximum;dirty=0;active=0;
+peContainer::peContainer(peEmitterNode* emitter,u32 nodeBytes,u16 maximum):owner(emitter),next(0),memory(0),freeNodes(0),nodes(0),count(0),capacity(maximum),dirty(0),active(0) {
+    u32 totalNodes=maximum;
+    u32 bytes=totalNodes*nodeBytes;
     u32 localTransform=(owner->emitter->flags>>6)&1;
-    if(localTransform)bytes+=maximum*0x28;
+    if(localTransform)bytes+=totalNodes*0x28;
     memory=(u8*)GSmemAllocClr(bytes);if(!memory)return;
     u32 size=GSmemGetSize(memory);g_particle_debug_stats.node+=size;g_particle_debug_stats.total+=size;
-    freeNodes=(peNode*)memory;u8* cursor=(u8*)freeNodes;peNode* previous=0;
-    for(u16 i=maximum;i;--i) {
-        peNode* node=(peNode*)cursor;cursor+=nodeBytes;
+    freeNodes=(peNode*)memory;peNode* node;u8* cursor=(u8*)freeNodes;peNode* previous=0;
+    for(u32 i=0;i<totalNodes;++i) {
+        node=(peNode*)cursor;cursor+=nodeBytes;
         if(localTransform){node->transform=cursor;cursor+=0x28;}else node->transform=emitter->world;
         node->previous=previous;if(previous)previous->next=node;previous=node;
     }
@@ -82,17 +83,20 @@ peRenderContainer::~peRenderContainer() {
         }
     }
 }
-peRenderContainer::peRenderContainer(peEmitterNode* emitter,u32 nodeBytes,u16 maximum,GSgfxVF* format,GSgfxPrimType primitive,u8 vertices,u8 stride,bool doubleBuffer):peContainer(emitter,nodeBytes,maximum) {
-    u32 bytes=maximum*stride;swapped=0;swapIndex=0;renderBytes=0;memset(&displayLists[0],0,0x10);memset(&displayLists[1],0,0x10);renderData[0]=0;renderData[1]=0;tokens[0]=0;tokens[1]=0;
-    u32 aligned=(bytes+31)&~31;u32 allocate=aligned;if(doubleBuffer)allocate=aligned*2;
+peRenderContainer::peRenderContainer(peEmitterNode* emitter,u32 nodeBytes,u16 maximum,GSgfxVF* format,GSgfxPrimType primitive,u8 vertices,u8 stride,bool doubleBuffer):peContainer(emitter,nodeBytes,maximum),swapped(0),swapIndex(0),renderBytes(0) {
+    u32 aligned=maximum*stride;
+    u32 bytes=aligned;memset(&displayLists[0],0,0x10);memset(&displayLists[1],0,0x10);renderData[0]=0;renderData[1]=0;tokens[0]=0;tokens[1]=0;
+    aligned=(bytes+31)&~31;u32 allocate=aligned;if(doubleBuffer)allocate=aligned*2;
     u8* data=(u8*)GSmemAllocAlignClr(allocate,32);if(!data)return;
-    u16 indices=maximum*vertices;GSgfxDLCreate(&displayLists[0],primitive,format,indices);
+    u32 indices=maximum*vertices;GSgfxDLCreate(&displayLists[0],primitive,format,(u16)indices);
     if((displayLists[0].flags&1)!=1){if(data)GSmemFree(data);return;}
-    if(doubleBuffer)GSgfxDLCreate(&displayLists[1],primitive,format,indices);
+    if(doubleBuffer)GSgfxDLCreate(&displayLists[1],primitive,format,(u16)indices);
     u32 size=GSmemGetSize(data);
-    g_particle_debug_stats.displayList=displayLists[0].size+(displayLists[1].size+g_particle_debug_stats.displayList);
-    g_particle_debug_stats.renderData+=size;
-    g_particle_debug_stats.total=size+(displayLists[0].size+displayLists[1].size+g_particle_debug_stats.total);
+    u32 display0=displayLists[0].size,display1=displayLists[1].size;
+    u32 oldDisplay=g_particle_debug_stats.displayList,oldData=g_particle_debug_stats.renderData,oldTotal=g_particle_debug_stats.total;
+    g_particle_debug_stats.displayList=display0+(display1+oldDisplay);
+    g_particle_debug_stats.renderData=oldData+size;
+    g_particle_debug_stats.total=size+(display0+display1+oldTotal);
     if((displayLists[1].flags&1)==1){DCFlushRange(data,aligned*2);renderData[0]=data+0x40000000;renderData[1]=renderData[0]+aligned;}
     else {DCFlushRange(data,bytes);renderData[0]=data+0x40000000;}
     renderBytes=bytes;

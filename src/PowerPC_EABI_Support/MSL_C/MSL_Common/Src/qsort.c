@@ -5,7 +5,7 @@ void qsort(void* base, unsigned long count, unsigned long width,
            int (*compare)(const void*, const void*)) {
     unsigned long root, limit, child;
     char *rootEntry, *lastEntry, *parent, *entry, *next;
-    if (count < 2) return;
+    if (count >= 2) {
     root = (count >> 1) + 1;
     limit = count;
     rootEntry = (char*)base + width * (root - 1);
@@ -16,7 +16,7 @@ void qsort(void* base, unsigned long count, unsigned long width,
             char* a = lastEntry - 1;
             char* b = rootEntry - 1;
             unsigned long bytes = width + 1;
-            while (--bytes) { char value = *++b; *b = *++a; *a = value; }
+            while (--bytes) { char value = *(b + 1); *(b + 1) = *(a + 1); *(a + 1) = value; ++b; ++a; }
             if (--limit == 1) return;
             lastEntry -= width;
         }
@@ -35,8 +35,9 @@ void qsort(void* base, unsigned long count, unsigned long width,
                 char* a = entry - 1;
                 char* b = parent - 1;
                 unsigned long bytes = width + 1;
-                while (--bytes) { char value = *++b; *b = *++a; *a = value; }
+                while (--bytes) { char value = *(b + 1); *(b + 1) = *(a + 1); *(a + 1) = value; ++b; ++a; }
             }
         }
+    }
     }
 }

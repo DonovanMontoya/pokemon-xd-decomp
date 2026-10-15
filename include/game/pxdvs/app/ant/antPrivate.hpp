@@ -32,8 +32,8 @@ public:
     s16 unk18;
     s16 unk1A;
     f32 unk1C;
-    u32 unk20;
-    u32 unk24;
+    s32 unk20;
+    s32 unk24;
     u32 unk28;
     f32 unk2C;
     u32 unk30;

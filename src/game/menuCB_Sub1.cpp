@@ -87,7 +87,7 @@ MenuSubPokemon *getPokemon__5PCBOXFScSc(void *,s8,s8);
 void *getPointer__11CReliveHallFv(void); void *getStage__11CReliveHallFl(void *,u32);
 MenuSubPokemon *getVisitorPointer__12CReliveStageFv(void *); MenuSubPokemon *getDancerPointer__12CReliveStageFl(void *,u32);
 
-s32 winSpriteGetLayerID(void); MenuSubItem *menuItemBiosGetPtr(s32,s16);
+s32 winSpriteGetLayerID(MenuSubWindow*,MenuSubSprite*); MenuSubItem *menuItemBiosGetPtr(s32,s16);
 u16 menuCBRule_RegulationItemID(s32); u8 itemDataCheckValid(u32);
 void menuPokemonStatusOpenFromPokemonChange(MenuSubPokemon *,s32,s32);
 void menuCB_RuleMessageTblDisp(MenuSubWindow *arg0, MenuSubSprite *arg1, s32 arg2);
@@ -1759,7 +1759,7 @@ void menuCB_RuleItemFlagDisp(MenuSubWindow *arg0, MenuSubSprite *arg1) {
     MenuSubItem *temp_r27;
     MenuSubItem *temp_r7;
 
-    temp_r31 = winSpriteGetLayerID();
+    temp_r31 = winSpriteGetLayerID(arg0,arg1);
     temp_r27 = menuItemBiosGetPtr(arg0->unk4, 0x3AB);
     temp_r7 = menuItemBiosGetPtr(arg0->unk4, arg1->unk6);
     var_r30 = -(_CB.unkB028 * 0x18);
@@ -1800,7 +1800,7 @@ void menuCB_RuleItemNameEntry(MenuSubWindow *arg0, MenuSubSprite *arg1) {
     MenuSubItem *temp_r27;
     MenuSubItem *temp_r7;
 
-    temp_r31 = winSpriteGetLayerID();
+    temp_r31 = winSpriteGetLayerID(arg0,arg1);
     temp_r27 = menuItemBiosGetPtr(arg0->unk4, 0x3AC);
     temp_r7 = menuItemBiosGetPtr(arg0->unk4, arg1->unk6);
     var_r30 = -(_CB.unkB028 * 0x18);
@@ -3082,3 +3082,66 @@ void toolbattle_drawHeroID(MenuSubWindow *arg0, s32 arg1) {
     _drawStrings__FP14tagWINDOW_WORKPUsllUl(arg0, sp88, 0, 0, 0x43C4);
 }
 #pragma pool_strings on
+
+/* Trainer portrait rendering and the animated entry selection corners. */
+typedef struct MenuSubTexture{u8 reserved0[7];u8 dirty;}MenuSubTexture;
+typedef struct MenuSubLayer{u8 reserved0[0x173C];u32 flags0;MenuSubTexture*texture0;u8 reserved1744[0xB0];u32 flags1;MenuSubTexture*texture1;u8 reserved17FC[0x19C];u32 primitive;}MenuSubLayer;
+MenuSubLayer*GSgfxLayerFindByID(s32);
+void*GSgfxVFBuildTemp(s32,s32,s32,s32,s32,s32,s32,s32,s32);
+void setRenderStateAndSelect__10GSgfxLayerFP7GSgfxVF(void*,void*);
+void beginSurface__10GSgfxLayerFUs(void*,u16);
+void endSurface__10GSgfxLayerFv(void*);
+void menuCBBattleStartDispTrainerFaceSub(MenuSubWindow*window,MenuSubSprite*sprite,u32 index){
+    MenuSubTexture*texture;
+    MenuSubLayer*layer;
+    u8 alpha=window->unk93;
+    layer=GSgfxLayerFindByID(window->unk1C);
+    texture=(MenuSubTexture*)_menuCBBattleStartWork.faces[index].texture;
+    if(texture){
+        layer->primitive=0x98;
+        setRenderStateAndSelect__10GSgfxLayerFP7GSgfxVF(layer,GSgfxVFBuildTemp(0,3,0,0,1,5,1,1,4));
+        if(layer->texture0!=texture||layer->texture1!=texture||texture->dirty){layer->texture0=texture;layer->flags0|=1;layer->texture1=texture;layer->flags1|=1;}
+        beginSurface__10GSgfxLayerFUs(layer,4);
+#define SUB_POS(x,y) *(s16*)0xCC008000=(x);*(s16*)0xCC008000=(y)
+#define SUB_COLOR() *(u8*)0xCC008000=255;*(u8*)0xCC008000=255;*(u8*)0xCC008000=255;*(u8*)0xCC008000=alpha
+#define SUB_UV(x,y) *(f32*)0xCC008000=(x);*(f32*)0xCC008000=(y)
+        SUB_POS(0,0);SUB_COLOR();SUB_UV(0.0f,0.0f);
+        SUB_POS(sprite->unk54,0);SUB_COLOR();SUB_UV(1.0f,0.0f);
+        SUB_POS(0,sprite->unk56);SUB_COLOR();SUB_UV(0.0f,1.0f);
+        {s16 height=sprite->unk56;SUB_POS(sprite->unk54,height);SUB_COLOR();SUB_UV(1.0f,1.0f);}
+#undef SUB_POS
+#undef SUB_COLOR
+#undef SUB_UV
+        endSurface__10GSgfxLayerFv(layer);
+    }
+}
+f32 _f_menuCB_circleAnimationTime;
+f32 timeGetLastFrameSec(void);double fmod(double,double);
+typedef struct MenuSubSpriteValue{u8 reserved0[4];s16 width,height;}MenuSubSpriteValue;
+MenuSubSpriteValue*menuSpriteBiosGetValPtr(void*);
+void menuPtSpriteDrawColor__FUsllllUl(u16,s32,s32,s32,s32,u32);
+void menuPtSpriteDrawColor__FUsllUl(u16,s32,s32,u32);
+void menuCB_GCEntryCursolDisp(MenuSubWindow*window,MenuSubSprite*sprite,u8 enabled){
+    if(enabled){
+        u32 color;MenuSubSpriteValue*value;s32 width,height,offset,nearCorner,farCorner,negativeWidth,negativeHeight;
+        f32 phase=_f_menuCB_circleAnimationTime/0.5f;
+        if(phase>0.5f)phase=1.0f-phase;
+        phase=2.0f*phase;
+        _f_menuCB_circleAnimationTime+=timeGetLastFrameSec();
+        if(_f_menuCB_circleAnimationTime>=0.5f)_f_menuCB_circleAnimationTime=fmod(_f_menuCB_circleAnimationTime,0.5);
+        color=window->unk93|~0xFF;
+        value=menuSpriteBiosGetValPtr((void*)menuSpriteBiosGetPtr(0x216));
+        width=value->width;height=value->height;
+        offset=(s16)(5.0f*phase);
+        if(offset>4)offset=4;
+        nearCorner=(s16)(offset+4);
+        menuPtSpriteDrawColor__FUsllllUl(0x216,nearCorner,nearCorner,width,height,color);
+        farCorner=(s16)(0x32-offset);
+        negativeWidth=-width;
+        menuPtSpriteDrawColor__FUsllllUl(0x216,farCorner,nearCorner,negativeWidth,height,color);
+        negativeHeight=-height;
+        menuPtSpriteDrawColor__FUsllllUl(0x216,nearCorner,farCorner,width,negativeHeight,color);
+        menuPtSpriteDrawColor__FUsllllUl(0x216,farCorner,farCorner,negativeWidth,negativeHeight,color);
+        menuPtSpriteDrawColor__FUsllUl(0x214,7,0x23,color);
+    }
+}

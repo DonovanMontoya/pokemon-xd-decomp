@@ -31,7 +31,7 @@ struct GSeffect {
 };
 void *operator new(unsigned long);
 void operator delete(void *);
-static void _wazaCameraInitShake(WazaSequence *, s32);
+static void _wazaCameraInitShake(WazaSequence *, int);
 #define ALIGN32(p) ((u8 *)(((u32)(p) + 0x1f) & ~0x1f))
 
 u32 gSoundThread;

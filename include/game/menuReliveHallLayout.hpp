@@ -30,6 +30,7 @@ public:
     f32 getDarkPoint() const;
     u16 *getNicknamePtr();
     DarkPokemon *getDarkPokemon();
+    void *getPokemonDataPtr() const;
 };
 
 enum darkPokemonStatus {
@@ -66,6 +67,7 @@ public:
     void init();
     void initByPokemonAndSetColorAnimationInAny(Pokemon *);
     void setAnimation(long);
+    void drawAndUpdate(PocketVec<short>);
 };
 
 class CMenuPokemonCursor {

@@ -1,4 +1,5 @@
 #include "layer_private.h"
+#include <game/pxdvs/GSAPI/GSgfxM/layerStatePrivate.hpp>
 static const u32 defaultColor=0x80808080;
 extern "C" {
 u8 GSgfxRenderModuleIsRendering__Fv();
@@ -1238,11 +1239,7 @@ loop_208:
                     fogProjection[3][2] = -1.0f;
                     fogProjection[3][3] = 0.0f;
                 }
-                // SDK fast-cast uses GQR3 unsigned-halfword quantization here.
-                register float viewportWidth=LAYER_STATE_FIELD(float, temp_r3_6,8);
-                u16 fogWidth;
-                register u16* fogWidthStorage=&fogWidth;
-                asm { psq_st viewportWidth, 0(fogWidthStorage), 1, 3 }
+                u16 fogWidth = (u16)LAYER_STATE_FIELD(float, temp_r3_6, 8);
                 GXInitFogAdjTable(reinterpret_cast<GXFogAdjTable*>(temp_r31 + 0xA20), fogWidth, fogProjection);
             }
             if (LAYER_STATE_FIELD(s32, temp_r30, 0x64) & 0x200) {
@@ -1324,12 +1321,12 @@ __declspec(weak) void GSgfx_GCSetBlendMode(s32 arg0, s32 arg1, s32 arg2, s32 arg
         if ((arg0 == 1) || (arg0 == 3)) {
             var_r0 = 1;
         }
-        layerField<u8>(gsgfxState, 0x3B) = (u8) ((layerField<u8>(gsgfxState, 0x3B) & ~1) | (var_r0 & 1));
-        layerField<u8>(gsgfxState, 0x3B) = (u8) ((layerField<u8>(gsgfxState, 0x3B) & ~2) | (((u8) (arg0 == 2) << 1) & 2));
-        layerField<u8>(gsgfxState, 0x3A) = (u8) ((layerField<u8>(gsgfxState, 0x3A) & ~7) | (arg1 & 7));
-        layerField<u8>(gsgfxState, 0x3B) = (u8) ((layerField<u8>(gsgfxState, 0x3B) & ~0xE0) | ((arg2 << 5) & 0xE0));
-        layerField<u8>(gsgfxState, 0x3A) = (u8) ((layerField<u8>(gsgfxState, 0x3A) & ~8) | (((u8) (arg0 == 3) << 3) & 8));
-        layerField<u8>(gsgfxState, 0x3A) = (u8) ((layerField<u8>(gsgfxState, 0x3A) & ~0x10) | ((arg3 << 4) & 0x10));
+        LAYER_BLEND_STATE->blend.fields.blend = var_r0;
+        LAYER_BLEND_STATE->blend.fields.logic = (u8)(arg0 == 2);
+        LAYER_BLEND_STATE->blend.fields.source = arg1;
+        LAYER_BLEND_STATE->blend.fields.destination = arg2;
+        LAYER_BLEND_STATE->blend.fields.subtract = (u8)(arg0 == 3);
+        LAYER_BLEND_STATE->blend.fields.operation = arg3;
         layerField<s32>(gsgfxState, 0x0) = (s32) (layerField<s32>(gsgfxState, 0x0) | 4);
         reinterpret_cast<LayerBlendCache*>(gsgfxState)->mode = arg0;
         reinterpret_cast<LayerBlendCache*>(gsgfxState)->source = arg1;

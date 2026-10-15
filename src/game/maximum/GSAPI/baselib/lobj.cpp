@@ -821,7 +821,7 @@ void HSD_LObjSetupSpecularInit(Mtx pmtx)
         case LOBJ_POINT:
         case LOBJ_SPOT:
             PSVECSubtract(&jpos, &lobj->lvec, &ldir);
-            if (!vec_normalize_check(&ldir, &ldir)) { PSVECAdd(&ldir,&cdir,&half); } else { half.x=0.0F; half.y=0.0F; half.z=-1.0F; }
+            if (!vec_normalize_check(&ldir, &ldir)) { PSVECAdd(&ldir,&cdir,&half); } else { half.x=0.0F; half.y=0.0F; half.z=1.0F; goto set_specular_direction; }
             break;
 
         case LOBJ_INFINITE:
@@ -831,7 +831,8 @@ void HSD_LObjSetupSpecularInit(Mtx pmtx)
         default:
             HSD_ASSERT(634, 0);
         }
-        if (vec_normalize_check(&half, &half)) { half.x=0.0F; half.y=0.0F; half.z=-1.0F; }
+        if (vec_normalize_check(&half, &half)) { half.x=0.0F; half.y=0.0F; half.z=1.0F; }
+set_specular_direction:
         GXInitLightDir(&LOBJ_EXT(lobj)->spec_lightobj, half.x, half.y, half.z);
         lobj->flags |= LOBJ_SPEC_DIRTY;
     }

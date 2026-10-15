@@ -4,12 +4,14 @@
 #include <dolphin/mtx.h>
 #include <libc/string.h>
 struct _peEmitter {u32 flags;};
-struct peEmitterNode {u8 reserved00[0xa8];u8 world[0x28];u8 previousWorld[0x28];f32 depth;_peEmitter* emitter;void* containers;};
-struct peNode {u8 reserved00[0x20];void* transform;u32 reserved24;peNode* next;peNode* previous;};
+struct peEmitterNode {u8 reserved00[0x38];f32 color[4];u8 reserved48[0x60];u8 world[0x28];u8 previousWorld[0x28];f32 depth;_peEmitter* emitter;void* containers;};
+struct _EmitParams;
+struct peNode {f32 life,time;Vec position,velocity;void* transform;u32 reserved24;peNode* next;peNode* previous;void Start(peEmitterNode*,_EmitParams*);u8 Update(peEmitterNode*,f32);};
 struct GSgfxVF;
 enum GSgfxPrimType { PARTICLE_PRIMITIVE_DEFAULT };
 enum GSgfxLayerID { PARTICLE_LAYER_DEFAULT };
-struct GSgfxLayer {u16 tokenMark();void SetLayerVisibility(bool);};
+enum GSgfxTunitKReg {PARTICLE_KREG_DEFAULT};
+struct GSgfxLayer {u16 tokenMark();void SetLayerVisibility(bool);void tunitKRegSel(u8,GSgfxTunitKReg);};
 struct GSgfxDL {u16 flags,stride;u8* data;u32 size,reserved;};
 struct ParticleDebugStats {u32 bank,node,displayList,renderData,reserved10,total,reserved18[3];};
 struct peContainer {

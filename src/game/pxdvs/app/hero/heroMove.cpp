@@ -83,7 +83,7 @@ static u32 getEquipItemEffect(u16 item) {
 extern "C" {
 
 void heroMoveSlowStop() {
-    _heroMoveSlowStopFactor(1.0f, false);
+    _heroMoveSlowStopFactor(3.0f, false);
 }
 
 void heroMoveSetLockFrame(s32 frames) {

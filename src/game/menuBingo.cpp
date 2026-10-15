@@ -6251,6 +6251,301 @@ s32 fn_80091DD8(BingoWindow *arg0) {
     return 0;
 }
 
+static inline BingoCell *bingoCell(BingoState *state, u32 panel) {
+    return (BingoCell *)((u8 *)state + 8 + panel * sizeof(BingoCell));
+}
+static inline u8 bingoPanelOpen(BingoState *state, u32 panel) {
+    return bingoCell(state, panel)->unk2;
+}
+
+static inline u8 bingoLineClear(BingoState *state, s32 line) {
+    u32 i;
+    switch (line) {
+    case 0: case 1: case 2: case 3:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, line + i * 4) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+        break;
+    case 4: case 5: case 6: case 7:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, (7 - line) * 4 + i) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+        break;
+    case 8:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, 3 - i + i * 4) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+        break;
+    case 9:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, i + i * 4) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+    }
+    return 0;
+}
+
+
+static inline u8 bingoCompletedLines(BingoState *state) {
+    u8 count = 0;
+    s32 line;
+    for (line = 0; line < 10; ++line) {
+        if (bingoLineClear(state, line)) ++count;
+    }
+    return count;
+}
+
+static inline u8 bingoCanOpenPanel(BingoState *state) {
+    u32 panel;
+    for (panel = 0; panel < 16; ++panel) {
+        s32 row, column;
+        u8 available;
+        if (state->unk122) {
+            row = state->unk134 / 4;
+            column = state->unk134 % 4;
+            if ((state->unk134 - 4 == panel && row - 1 >= 0) ||
+                (state->unk134 + 4 == panel && row + 1 <= 3) ||
+                (state->unk134 - 1 == panel && column - 1 >= 0) ||
+                (state->unk134 + 1 == panel && column + 1 <= 3)) {
+                available = state->cells[panel].unk2 == 0;
+            } else {
+                available = bingoNoClearedPanel(state);
+            }
+        } else {
+            row = (s32)panel / 4;
+            column = (s32)panel % 4;
+            if ((row - 1 >= 0 && state->cells[panel - 4].unk2) ||
+                (row + 1 <= 3 && state->cells[panel + 4].unk2) ||
+                (column - 1 >= 0 && state->cells[panel - 1].unk2) ||
+                (column + 1 <= 3 && state->cells[panel + 1].unk2)) available = 1;
+            else available = bingoNoClearedPanel(state);
+        }
+        if (available) return 1;
+    }
+    return 0;
+}
+
+void menuBingoMain(void) {
+    s32 selected;
+    u8 choosing = 1;
+    s32 start = 0;
+    s32 result;
+    if (GSfloorGetCurrent() != 0x388) {
+        selected = gBingo.unk134;
+        menuOpenCustom(0xC8, 0, &selected, 2, 0, 0);
+        while (windowGetKeyInfo()->unk4 != 0x20) GSthreadSwitch();
+        menuClose(0xC8);
+        menuCloseSync(0xC8, 1);
+        menuOffScreenSetPriority(1);
+        GSfloorPop();
+        floorSetFadeScript(0, 0);
+        return;
+    }
+    selected = 0;
+    while (choosing) {
+        u32 sheet;
+        gBingo.unk138 = 0;
+        gBingo.unk134 = 0;
+        gBingo.unk12C = 0;
+        gBingo.unk12B = 0;
+        gBingo.unk129 = 0;
+        gBingo.unk12F = 0;
+        gBingo.unk12A = 0;
+        gBingo.unk12E = 0;
+        gBingo.unk124 = -1;
+        gBingo.unk10C = 0;
+        gBingo.unk108 = 0;
+        gBingo.unk144 = 13;
+        gBingo.unk140 = 0.0f;
+        gBingo.unk128 = getClearLv__10bingo_biosFv(&gBingo);
+        if (GSflagGet(0x4F2) >= 6) setSelect__10bingo_biosFUl(10);
+        for (sheet = 0; sheet < *bingo_data_number; ++sheet) {
+            u32 id = TopCurIdx__6cBingo[sheet];
+            if (isSelect__10bingo_biosFUl(&gBingo, sheet)) menuItemBiosSetSelectFlag(0xC3, id, 1);
+            else menuItemBiosSetSelectFlag(0xC3, id, 0);
+            if (id == 0x693 && isSelect__10bingo_biosFUl(&gBingo, 10)) {
+                u8 level;
+                void *item = menuItemBiosGetPtr(0xC3, id);
+                if (isSelect__10bingo_biosFUl(&gBingo, 8)) level = 2;
+                else if (isSelect__10bingo_biosFUl(&gBingo, 5)) level = 1;
+                else level = 0;
+                *(s16 *)((u8 *)item + 8) = level * 101 + 156;
+            }
+        }
+        fadeSet(2, 0.25f);
+        FlashSystemSetNowFrameLabel(0x1EC93000, "start");
+        FlashSystemSetPlayFrameLabel(0x1EC93000, "start", "select");
+        menuOpen(0xDC, 0);
+        selected = menuOpenCustom(0xC3, 0, &selected, 0, 1, 0);
+        FlashSystemSetPlayFrameLabel(0x1EC93000, "select", "panel");
+        if (selected < 0) {
+            gBingo.unk129 = 0;
+            gBingo.unk12A = 0;
+            setStaticNo__10bingo_biosFUc(255);
+            setStaticBall__10bingo_biosFUc(0);
+            setStaticResult__10bingo_biosFUc(0);
+            setStaticIdx__10bingo_biosFUcUc(0, 0);
+            GSfloorPop();
+            return;
+        }
+        SetupSheet__6cBingoFUl(&gBingo, selected);
+        fadeCheck(1);
+        for (;;) {
+            u32 frame = FlashSystemGetFrameFromLabel(0x1EC93000, "panel");
+            if (FlashSystemGetNowFrame(0x1EC93000) == frame) break;
+            GSthreadSwitch();
+        }
+        menuClose(0xC3);
+        menuCloseSync(0xC3, 1);
+        while (menuFaceCheckLoading()) GSthreadSwitch();
+        menuOpen(0xDC, 0);
+        menuOpen(0xC7, 0);
+        menuOpen(0xC9, 0);
+        menuOpen(0xCA, 0);
+        menuOpenCustom(0xC8, 0, &gBingo.unk134, 0, 0, 0);
+        winSeqSetMenu(0xC7, 0x1A5);
+        winSeqSetMenu(0xC9, 0x1A9);
+        winSeqSetMenu(0xC8, 0x1AD);
+        FlashSystemSetNowFrameLabel(0x1EC93000, "panel");
+        GSthreadSwitch();
+        while (winSeqCheckMove(0xC8)) GSthreadSwitch();
+        for (;;) {
+            s32 direction = 0;
+            gBingo.unk13C = 0xDB0A;
+            GSthreadSwitch();
+            if (windowGetKeyInfo()->unk4 & 0x10) { start = 1; break; }
+            if (windowGetKeyInfo()->unk4 & 0x20) { start = 0; break; }
+            if (windowGetKeyInfo()->unk4 & 0x200) direction = -1;
+            else if (windowGetKeyInfo()->unk4 & 0x400) direction = 1;
+            if (direction) {
+                u8 index;
+                fadeSet(3, 0.125f); fadeCheck(1);
+                menuClose(0xDC); menuClose(0xC7); menuClose(0xC9); menuClose(0xCA); menuCloseCustom(0xC8, 0, 0);
+                if (direction < 0) {
+                    index = getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1;
+                    do { if (index) --index; else index = 10; } while (!isSelect__10bingo_biosFUl(&gBingo, index));
+                    SetupSheet__6cBingoFUl(&gBingo, index);
+                } else {
+                    index = getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1;
+                    do { if (index < 10) ++index; else index = 0; } while (!isSelect__10bingo_biosFUl(&gBingo, index));
+                    SetupSheet__6cBingoFUl(&gBingo, index);
+                }
+                menuOpen(0xDC, 0);
+                menuOpen(0xC7, 0);
+                menuOpen(0xC9, 0);
+                menuOpen(0xCA, 0);
+                menuOpenCustom(0xC8, 0, &gBingo.unk134, 0, 0, 0);
+                winSeqSetMenu(0xC7, 0x1A5);
+                winSeqSetMenu(0xC9, 0x1A9);
+                winSeqSetMenu(0xC8, 0x1AD);
+                FlashSystemSetNowFrameLabel(0x1EC93000, "panel");
+                GSthreadSwitch();
+                while (winSeqCheckMove(0xC8)) GSthreadSwitch();
+                fadeSet(2, 0.125f); fadeCheck(1);
+            }
+        }
+        if (start) {
+            gBingo.unk144 = 14;
+            gBingo.unk124 = -1;
+            gBingo.unk13C = 0xDADE;
+            if (menuSubOpenYesNo(0, 0x1BD, 0x104, 0) == 0) {
+                u32 count = 0;
+                if (isClear__10bingo_biosFUl(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1)) {
+                    while (windowGetKeyInfo()->unk4 != 0x10) { gBingo.unk13C = 0xDADF; GSthreadSwitch(); }
+                    makeRandomSheet__6cBingoFv(&gBingo);
+                }
+                gBingo.unk122 = 0;
+                for (sheet = 0; sheet < 10; ++sheet) if (isClear__10bingo_biosFUl(&gBingo, sheet)) ++count;
+                if (count == 10) {
+                    gBingo.unk13C = 0xDB33;
+                    if (menuSubOpenSelect3(0, MenuBingoMsgIdx__6cBingo, 2, 0x28, 0x12C, 0, 2, 0, 0) == 1) gBingo.unk122 = 1;
+                }
+                choosing = 0;
+            } else start = 0;
+        }
+        if (!start) { menuClose(0xDC); menuClose(0xC7); menuClose(0xC9); menuClose(0xCA); menuCloseCustom(0xC8, 0, 0); }
+    }
+    if (start) {
+        u8 retry = 1;
+        while (retry) {
+            gBingo.unk144 = 7;
+            gBingo.unk124 = -1;
+            do {
+                GSthreadSwitch();
+                setStepMessage__6cBingoFv(&gBingo);
+                if (windowGetKeyInfo()->unk4 & 0x40) {
+                    GSthreadSwitch(); menuOpen(0xF6, 0);
+                    while (!(windowGetKeyInfo()->unk4 & 0xF0)) GSthreadSwitch();
+                    menuClose(0xF6); menuCloseSync(0xF6, 1);
+                } else if (windowGetKeyInfo()->unk4 & 0x80) {
+                    GSthreadSwitch(); menuOpen(0x100, 0);
+                    while (!(windowGetKeyInfo()->unk4 & 0xF0)) GSthreadSwitch();
+                    menuClose(0x100); menuCloseSync(0x100, 1);
+                }
+                result = gBingo.unk108;
+            } while (!result);
+            gBingo.unk13C = 0;
+            gBingo.unk144 = 14;
+            gBingo.unk124 = -1;
+            switch (result) {
+            case 3:
+                if (isClear__10bingo_biosFUl(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1)) {
+                    gBingo.unk13C = bingoCompletedLines(&gBingo) < 2 ? 0xDAFA : 0xDB3B;
+                    GSthreadSwitch();
+                    if (menuSubOpenYesNo(0, 0x1BD, 0x104, 0)) retry = 0;
+                    else { retry = 1; ResetSheet__6cBingoFUl(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4)); }
+                } else retry = 0;
+                break;
+            case 2: {
+                u32 frame, end;
+                GSsndPlayNow(0x5B6);
+                FlashSystemSetNowFrameLabel(0x1F573000, "clear_start");
+                FlashSystemSetPlayFrameLabel(0x1F573000, "clear_start", "clear_end");
+                FlashSystemSetNowFrameLabel(0x1F573000, "clear_start");
+                FlashSystemSetPlayFrameLabel(0x1F573000, "clear_start", "clear_end");
+                menuOpen(0xF8, 0); menuSetPosition(0xF8, 0, 0);
+                frame = FlashSystemGetFrameFromLabel(0x1F573000, "clear_start");
+                end = FlashSystemGetFrameFromLabel(0x1F573000, "clear_end");
+                while (frame != end) { GSthreadSwitch(); frame = FlashSystemGetNowFrame(0x1F573000); }
+                menuClose(0xF8);
+                while (windowGetKeyInfo()->unk4 != 0x10) { gBingo.unk13C = 0xDAF8; GSthreadSwitch(); }
+                if (gBingo.unk122) fn_802967E4(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1);
+                else setClear__10bingo_biosFUl(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1);
+                retry = 0;
+                break;
+            }
+            case 1:
+                while (windowGetKeyInfo()->unk4 != 0x10) {
+                    gBingo.unk13C = gBingo.unk122 && !bingoCanOpenPanel(&gBingo) ? 0xDB37 : 0xDAF9;
+                    GSthreadSwitch();
+                }
+                if (isClear__10bingo_biosFUl(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4) - 1)) {
+                    gBingo.unk13C = bingoCompletedLines(&gBingo) < 2 ? 0xDAFA : 0xDB3B;
+                    GSthreadSwitch();
+                    if (menuSubOpenYesNo(0, 0x1BD, 0x104, 0)) retry = 0;
+                    else { retry = 1; ResetSheet__6cBingoFUl(&gBingo, getNo__10bingo_biosFP14BINGO_DATA_dd_(&gBingo, gBingo.unk4)); }
+                } else retry = 0;
+                break;
+            }
+        }
+        fadeSet(3, 0.125f); fadeCheck(1);
+        menuClose(0xDC); menuClose(0xC7); menuClose(0xC9); menuClose(0xCA); menuCloseCustom(0xC8, 0, 0); menuClose(0xDC);
+    }
+    {
+        u8 lines = bingoCompletedLines(&gBingo);
+        switch (result) { case 2: lines |= 0x10; break; case 3: lines |= 0x20; break; }
+        setStaticResult__10bingo_biosFUc(lines);
+    }
+    GSfloorPop();
+}
+
 void menuBingoExit(void) {
 
 }
@@ -9184,47 +9479,6 @@ loop_70:
 }
 
 // Keep the cell index separate from the record offset, as in the original accessors.
-static inline BingoCell *bingoCell(BingoState *state, u32 panel) {
-    return (BingoCell *)((u8 *)state + 8 + panel * sizeof(BingoCell));
-}
-static inline u8 bingoPanelOpen(BingoState *state, u32 panel) {
-    return bingoCell(state, panel)->unk2;
-}
-
-static inline u8 bingoLineClear(BingoState *state, s32 line) {
-    u32 i;
-    switch (line) {
-    case 0: case 1: case 2: case 3:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, line + i * 4) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-        break;
-    case 4: case 5: case 6: case 7:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, (7 - line) * 4 + i) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-        break;
-    case 8:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, 3 - i + i * 4) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-        break;
-    case 9:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, i + i * 4) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-    }
-    return 0;
-}
-
 u8 isChgBingoLine__6cBingoFl(BingoState *arg0, s32 arg1) {
     u8 current;
     if (arg1 < 0) {

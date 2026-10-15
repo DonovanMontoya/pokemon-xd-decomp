@@ -3,8 +3,13 @@
 #include <game/pxdvs/app/fight/fightSeq/fightSeqWazaseqPrivate.hpp>
 
 struct WSFightAction { u8 data[0x38]; };
+struct WSOutPokemonSnapshot { u32 words[0x225]; };
+struct WSPokemonSnapshot { u32 words[0x31]; };
+struct WSWazaSnapshot { u32 words[0x2B]; };
+typedef void (*WSDamageCallback)(void*,u16,void*,void*);
 
 extern "C" {
+extern u8* UserWork;
 extern u8 ActionSeqNo;
 extern s32 ServerStatusFlag;
 extern void* fight_seq_now_fight_action_ptr;
@@ -78,7 +83,7 @@ void fightMenuFightOutPokemonOpenStatusMenu(void*, u8, u32);
 void fightMenuFightOutPokemonCloseStatusMenuAnotherMine(s32, void*, u8, u32, u32);
 void fightMenuFightOutPokemonCloseStatusMenu(void*, u8, u32);
 u8 fightOutPokemonIsGcHeroFightOutPokemon(void*);
-void pokemonAddDpFormPokemonDpFilterId(s32, s32);
+void pokemonAddDpFormPokemonDpFilterId(void*,u16,u16);
 u32 fightOutPokemon_GetMotoWazaDataId(void*);
 u8 fightOutPokemon_GetNamakeFlag(void*);
 void fightOutPokemon_SetFightoutTurnCount(void*, u16);
@@ -86,5 +91,53 @@ s8 fightOutPokemonGetNowKaisuuJoutaiDataId(void*, u16);
 s8 fightOutPokemonGetKaisuuJoutaiDataId(void*, u16);
 s32 fightOutPokemonGetJoutaiMigawariHp(void*);
 void* fightFloorGetValidFightSidePtr(void*, u16);
+void fightSeqClearOneTurnCount(s8);
+void fightSeqClearOneSelfTurnCount();
+s32 fightSeqWazaOutBeforeCheckSub(void*,u16,void*);
+void fightOutPokemon_SetHitWazaDataId(void*,u16);
+void fightOutPokemon_SetHitWazaZokuseiDataId(void*,u16);
+void fightFloorInitFightOutPokemonPtrAryFightWazaJoutai(void*);
+void fightSeqFloorJoutaiCheck();
+void fightSeqSideJoutaiCheck();
+void fightSeqSideJoutaiCheck2();
+u16 fightGetFightResultId();
+u32 fightFloor_GetTurnCount(void*);
+void fightFloor_SetTurnCount(void*,u32);
+void fightFloor_SetFisstAttackRnd(void*,u16);
+void fightOutPokemonBiosCopy(void*,void*);
+void pokemonBiosCopy(void*,void*);
+void fightWazaInit(void*);
+void fightWazaCreate(void*,u8,u16,u8,u8);
+void fightSeqTypeCheckHikaePokemon(void*,u8,u8,u8);
+void *fightFloor_GetDefensePokemonPtr(void*);
+void WS_CRITICAL_CHECK();
+void WS_DAMAGE_CALC();
+void WS_TYPE_CHECK();
+void WS_DAMAGE_LOSS();
+extern u8 fight_action_data_waza[];
+extern u8* WazaEffectTbl[];
+extern u8 lbl_804EB918;
+extern u8 fightseq_attack_pokemon_joutai_check_buff;
+void fightFloor_SetAttackMsgId(void*,u32);
+void fightFloor_SetCriticakMsgId(void*,u32);
+void fightFloor_SetWazakoukaMsgId(void*,u32);
+u8 fightSeqTameWazaCheck(u16);
+void fightOutPokemonCreateFightActionAttackWaza(void*,u32,u32,void*,void*,u16,u32,s8,u32);
+u16 pokemonGetSoubiItemDataId(void*);
+u16 pokemonGetSoubiItemSoubiDataId(void*);
+u8 fightFloorGetFightTrainerFightOutPokemonPtrAry(void*,void*,void**,u8,u8);
+u16 fightOutPokemon_GetTokuseiDataId(void*);
+u8 fightFloorIsNowEncountTuusinTaisen(void*);
+extern u8* ItemNormalTbl[];
+extern u8* ItemBallTbl[];
+extern u8 ItemFightTbl[];
+extern u32 AbiCntMsgTbl[];
+void *fightOutPokemon_GetFightItemPtr(void*);
+u16 fightItem_GetTargetDataId(void*);
+s16 fightItem_GetCount(void*);
+void *fightItem_GetBuff(void*);
+u8 itemDB_GetKind(u16);
+void *fightTrainerGetPrefixNamePtr(void*);
+s32 heroItemDecItemDataId(void*,u16,u8,s16);
 }
 #endif

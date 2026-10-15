@@ -1420,7 +1420,7 @@ static unsigned long _fadeEffectGetRandom(unsigned long range) {
 
 extern "C" void fadeEffectInit() { _fadeEffectFirstFlag = 1; }
 
-extern "C" f32 __float_nan;
+extern "C" s32 __float_nan[];
 // Three Newton steps are the SDK square-root expansion used by these fades.
 static inline f32 fadeSqrt(f32 value) {
     if (value > 0.0f) {
@@ -1429,16 +1429,18 @@ static inline f32 fadeSqrt(f32 value) {
         estimate = 0.5 * estimate * (3.0 - estimate * estimate * value);
         estimate = 0.5 * estimate * (3.0 - estimate * estimate * value);
         return (f32)(value * estimate);
-    } else if (value < 0.0) return __float_nan;
+    } else if (value < 0.0) return *(f32*)__float_nan;
     else {
-        u32 bits = *(u32*)&value;
+        union { f32 f; u32 u; } representation;
+        representation.f = value;
+        s32 bits = representation.u;
         int classification;
         switch (bits & 0x7f800000) {
         case 0x7f800000: classification = (bits & 0x7fffff) ? 1 : 2; break;
         case 0: classification = (bits & 0x7fffff) ? 5 : 3; break;
         default: classification = 4; break;
         }
-        if (classification == 1) return __float_nan;
+        if (classification == 1) return *(f32*)__float_nan;
         return value;
     }
 }
@@ -2185,4 +2187,40 @@ bool fadeEffectHookFunction_distortion_zoom_in(GSgfxLayerID id, bool active, f32
 }
 bool fadeEffectHookFunction_carde(GSgfxLayerID id, bool active, f32 elapsed, f32 duration, f32 elapsedSecond, f32 durationSecond, void* opaque) {
     return fadeEffectHookFunction_yoko(id, active, elapsed, duration, elapsedSecond, durationSecond, opaque);
+}
+
+extern "C" void fadeFluidDispSecond(s32,GStexture*,f32,f32);
+extern "C" void fadeFluidEvaluateSecond();
+bool fadeEffectHookFunction_boss_second(GSgfxLayerID id,bool active,f32 elapsed,f32 duration,f32 elapsedSecond,f32 durationSecond,void* opaque) {
+    GStexture* texture;
+    GSgfxLayer* layer=GSgfxLayerFindByID(id);
+    if(!layer)return active;
+    texture=(GStexture*)opaque;
+    if(!texture)return active;
+    if(_fadeEffectFirstFlag==1) {
+        _fadeEffectFirstFlag=0;
+        _fadeEffectFunction_boss_FirstInit_second();
+        GSgfxBeginBackFBCapture(texture,_myBackFB,0);
+    }
+    if(_fadeEffectFirstFlag==0 && !active) {
+        fadeFluidQuit();
+        GSgfxEndBackFBCapture(texture);
+        return active;
+    }
+    f32 progress=elapsed/duration;
+    f32 second=elapsedSecond/durationSecond;
+    if(timeGetLastFrameTime()) {
+        ++_fadeEffectWork.frame;
+        GSgfxBeginBackFBCapture(texture,_myBackFB,0);
+    } else GSgfxEndBackFBCapture(texture);
+    if(active==1) {
+        GSvec center;
+        center.param1=320.0f;center.param2=240.0f;center.param3=0.0f;
+        _fadeEffectSnapshotFadeFunction(layer,texture,&center,1.0f,0.0f,fadeSqrt(progress),0.0f);
+        if(timeGetLastFrameTime())fadeFluidEvaluateSecond();
+        second*=second;
+        progress=progress*(progress*(progress*progress));
+        fadeFluidDispSecond(id,texture,progress,second);
+    }
+    return active;
 }

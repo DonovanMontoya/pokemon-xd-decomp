@@ -1,6 +1,23 @@
 #ifndef PXDVS_MENU_FACE_PRIVATE_HPP
 #define PXDVS_MENU_FACE_PRIVATE_HPP
 #include <global.h>
+#include <game/pxdvs/app/menu/windowPrivate.hpp>
+struct GSvec2 {f32 x,y;};
+struct GSivec2 {s16 x,y;};
+struct tagSPRITE_WORK {
+    tagSPRITE_WORK* next;
+    s8 type;u8 flags;s16 itemID;
+    u32 texture;
+    u8 sequence[0x3c];
+    u32 callback,message;
+    s16 x,y,width,height;
+    u32 resource;
+    s16 sourceX,sourceY,sourceWidth,sourceHeight;
+    u32 color;
+    f32 scaleX,scaleY,rotation;
+    u8 drawType,blendType,mode;
+};
+typedef char FaceSpriteSize[sizeof(tagSPRITE_WORK)==0x78?1:-1];
 struct Pokemon;
 typedef Pokemon* (*FacePokemonGetter)(void*);
 struct FaceListEntry {
@@ -57,6 +74,11 @@ struct FaceTextureFile {
     u32 palette;
 };
 void GStextureFree(void*);
+void* GSresGetResourceAllGroup(u32);
+u16 GStextureGetXsize(void*);
+u16 GStextureGetYsize(void*);
+void winSpriteDrawTexture(tagWINDOW_WORK*,tagSPRITE_WORK*);
 }
 u32 menuFaceBiosGetTexID(u16);
+u8 menuFaceBiosGetRareFlag(u16);
 #endif

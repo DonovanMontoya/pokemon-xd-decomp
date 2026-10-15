@@ -271,7 +271,7 @@ extern "C" void menuScriptPdaAddFuncMain(void) {
 
 extern "C" void menuScriptPdaAddFuncInit(void) {
     GSsndPlayNow(0x454);
-    cameraPlayAnime(0x17, 0x17CF1800, 0, 1.0f);
+    cameraPlayAnime(0x17, 0x17CF1800, 0, 0.0f);
     menuPdaModelVisibility(0x17CF1000, false);
 }
 
@@ -426,7 +426,7 @@ extern "C" u8 menuScriptCheckMailOpen(void) {
 }
 
 extern "C" void menuScriptMailOpenInit(void) {
-    cameraPlayAnime(0x17, 0x17CF1800, 0, 1.0f);
+    cameraPlayAnime(0x17, 0x17CF1800, 0, 0.0f);
     GSsndPlayNow(0x44F);
     menuOffScreenSetPriority(0);
     menuScriptSetMailOpen(1);

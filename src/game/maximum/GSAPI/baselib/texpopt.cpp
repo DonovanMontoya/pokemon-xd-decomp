@@ -1632,12 +1632,13 @@ int HSD_TExpSimplify2(HSD_TExp* texp_)
     HSD_TExp* texp = texp_;
     HSD_TExp* src_exp;
     u8 src_sel;
+    HSD_TExp* cursor;
     int i;
 
-    for (i = 0; i < 4; i++) {
-        src_exp = texp->tev.c_in[i].exp;
-        src_sel = texp->tev.c_in[i].sel;
-        if (texp->tev.c_in[i].type == HSD_TE_TEV && src_sel == 1 &&
+    for (i = 0, cursor=texp; i < 4; i++, cursor=(HSD_TExp*)((u8*)cursor+sizeof(HSD_TEArg))) {
+        src_exp = cursor->tev.c_in[0].exp;
+        src_sel = cursor->tev.c_in[0].sel;
+        if (cursor->tev.c_in[0].type == HSD_TE_TEV && src_sel == 1 &&
             IsThroughColor(src_exp))
         {
             switch (src_exp->tev.c_in[3].type) {
@@ -1649,17 +1650,17 @@ int HSD_TExpSimplify2(HSD_TExp* texp_)
                 }
                 /* fallthrough */
             case HSD_TE_IMM:
-                texp->tev.c_in[i] = src_exp->tev.c_in[3];
-                HSD_TExpRef(texp->tev.c_in[i].exp, texp->tev.c_in[i].sel);
+                cursor->tev.c_in[0] = src_exp->tev.c_in[3];
+                HSD_TExpRef(cursor->tev.c_in[0].exp, cursor->tev.c_in[0].sel);
                 HSD_TExpUnref(src_exp, src_sel);
                 break;
             }
         }
     }
-    for (i = 0; i < 4; i++) {
-        src_exp = texp->tev.a_in[i].exp;
-        src_sel = texp->tev.a_in[i].sel;
-        if (texp->tev.a_in[i].type == HSD_TE_TEV && IsThroughAlpha(src_exp)) {
+    for (i = 0, cursor=texp; i < 4; i++, cursor=(HSD_TExp*)((u8*)cursor+sizeof(HSD_TEArg))) {
+        src_exp = cursor->tev.a_in[0].exp;
+        src_sel = cursor->tev.a_in[0].sel;
+        if (cursor->tev.a_in[0].type == HSD_TE_TEV && IsThroughAlpha(src_exp)) {
             switch (src_exp->tev.a_in[3].type) {
             case HSD_TE_KONST:
                 if (texp->tev.kasel == 0xFF) {
@@ -1669,8 +1670,8 @@ int HSD_TExpSimplify2(HSD_TExp* texp_)
                 }
                 /* fallthrough */
             case HSD_TE_IMM:
-                texp->tev.a_in[i] = src_exp->tev.a_in[3];
-                HSD_TExpRef(texp->tev.a_in[i].exp, texp->tev.a_in[i].sel);
+                cursor->tev.a_in[0] = src_exp->tev.a_in[3];
+                HSD_TExpRef(cursor->tev.a_in[0].exp, cursor->tev.a_in[0].sel);
                 HSD_TExpUnref(src_exp, src_sel);
                 break;
             }

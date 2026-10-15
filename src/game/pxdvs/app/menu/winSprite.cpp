@@ -75,7 +75,7 @@ tagSPRITE_WORK *winSpriteAdd(tagSPRITE_WORK **list) {
             return s;
         }
     }
-    GSlogWrite("winSpriteAdd: no free sprite work\n");
+    GSlogWrite("Error!! winSpriteAdd() [\x83\x58\x83\x76\x83\x89\x83\x43\x83\x67\x83\x8f\x81\x5b\x83\x4e\x95\x73\x91\xab]\n\0");
     return 0;
 }
 }

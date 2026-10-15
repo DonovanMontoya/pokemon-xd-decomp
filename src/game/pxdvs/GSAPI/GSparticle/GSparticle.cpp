@@ -69,7 +69,7 @@ struct _GSparticleBank {
 
 extern "C" {
 void GSmemFree(void *);
-void GSgfxRenderWaitForDrawComplete(void);
+void GSgfxRenderWaitForDrawComplete__Fv(void);
 void GSparticleDestroyGenerator(_GSparticleGen *, u8);
 void GSparticleDestroyAllGenerators(_GSparticleBank *, u8);
 void peBankFreeFile(void *);
@@ -141,7 +141,7 @@ extern "C" void GSparticleGeneratorSetCamera(_GSparticleGen *g, void *cam) {
 }
 
 extern "C" void GSparticleFree(_GSparticleBank *bank) {
-    GSgfxRenderWaitForDrawComplete();
+    GSgfxRenderWaitForDrawComplete__Fv();
     GSparticleDestroyAllGenerators(bank, 1);
     if (bank->gens) {
         GSmemFree(bank->gens);

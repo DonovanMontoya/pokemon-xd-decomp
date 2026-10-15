@@ -49,7 +49,7 @@ u8 fightSeqIsSketchNgWazaDataId(u16);
 void fightSeqMichidureCheckAct();
 u8 fightSeqMonomaneNGCheck(u16);
 u8 fightSeqRendouWazaCheck(u16);
-u8 fightSeqSawaguCheck(void*);
+bool fightSeqSawaguCheck(void*);
 u8 fightSeqTameWazaCheck(u16);
 s32 fightSeqTameWazaTurnCheck(u16, u16);
 }
@@ -658,7 +658,8 @@ void WS_HUNKA(void) {
         fightOutPokemon_GetUseWazaDataId(temp_r3);
         temp_r30 = fightWaza_GetIryoku(temp_r28);
         temp_r31 = pokemon_GetHp(fightOutPokemonGetPokemonPtr(temp_r3));
-        var_r4 = (u16) ((s32) (temp_r30 * temp_r31) / (s32) pokemon_GetMaxHp(fightOutPokemonGetPokemonPtr(temp_r3)));
+        u16 maxHp = pokemon_GetMaxHp(fightOutPokemonGetPokemonPtr(temp_r3));
+        var_r4 = (u16) ((s32) (temp_r30 * temp_r31) / (s32) maxHp);
         if (var_r4 == 0) {
             var_r4 = 1;
         }
@@ -2799,9 +2800,9 @@ void WS_HUKITOBASHI(void) {
     u8* seq;
     FightOutPokemon* attacker;
     FightOutPokemon* defender;
+    s16 entryId;
     void* encount;
     void* fightPokemon;
-    s16 entryId;
 
 
 
@@ -3017,11 +3018,29 @@ void WS_TAKUWAERU(void) {
 }
 }
 
-// WS_SAWAGU_CHECK: draft only, does not compile/match yet
-
-// fightSeqSawaguCheck: draft only, does not compile/match yet
-
-// _fightSeqSawaguCheckSub: draft only, does not compile/match yet
+extern "C" {
+void WS_SAWAGU_CHECK(void) {
+    FightOutPokemon *pokemon=(FightOutPokemon*)fightTargetGetPtrAsNowFightType(0x12,0);
+    u16 ability=fightOutPokemonGetTokuseiDataId(pokemon);
+    u8 *jump=*(u8**)(fightSeq_GetWazaSeq()+1);
+    if(fightSeqSawaguCheck(pokemon)!=0){fightSeq_JumpWazaSeq(jump);return;}
+    if(ability==0xF || ability==0x48){ServerWork.flags[5]=2;fightSeq_JumpWazaSeq(jump);return;}
+    fightSeq_NextWazaSeq(5);
+}
+bool fightSeqSawaguCheck(void* pokemon) {
+    return fightFloorLoopValidFightOutPokemon(0,_fightSeqSawaguCheckSub,pokemon,1)!=1;
+}
+}
+static s32 _fightSeqSawaguCheckSub(void* pokemon,u16,void* other) {
+    u16 ability=fightOutPokemonGetTokuseiDataId(other);
+    if(fightOutPokemonCheckFightOut(pokemon)==0)return 1;
+    if(fightOutPokemonIsJoutaiDataId(pokemon,0xB)==1 && ability!=0x2B){
+        fightFloor_SetAppointPokemonPtr(0,pokemon);
+        if(pokemon==other)ServerWork.flags[5]=0;else ServerWork.flags[5]=1;
+        return 0;
+    }
+    return 1;
+}
 
 extern "C" {
 void WS_SAWAGU(void) {
@@ -3288,12 +3307,12 @@ void WS_JIBAKU(void) {
 
 extern "C" {
 void WS_JIBAKU_INIT(void) {
-    FightWaza* waza;
     u8 fightType;
+    FightWaza* waza;
+    FightOutPokemon* attacker;
     s32 menuId;
     FightOutPokemon* found;
     FightOutPokemon* cur;
-    FightOutPokemon* attacker;
     FightOutPokemon* tokusei;
     u8* seq;
 
@@ -3348,3 +3367,17 @@ void WS_JIBAKU_INIT(void) {
 }
 
 // WS_GUARD_SUCCESS_CHECK: draft only, does not compile/match yet
+
+extern "C" u16 fightSeqCondChgActTypeToPokemonStatusId(u8 type) {
+    switch(type){
+    case 0:break;
+    case 1:return 0xE6;
+    case 2:return 0xE7;
+    case 3:return 0xEA;
+    case 4:return 0xE8;
+    case 5:return 0xE9;
+    case 6:return 0xEB;
+    case 7:return 0xEC;
+    }
+    return 0;
+}

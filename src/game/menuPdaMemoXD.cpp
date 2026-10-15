@@ -107,8 +107,8 @@ void operator delete(void *);
 extern "C" s32 menuPdaMemoXDGetItem(void);
 extern "C" void menuPdaMemoXDHeight(tagWINDOW_WORK *, tagSPRITE_WORK *);
 extern "C" void menuPdaMemoXDWeight(tagWINDOW_WORK *, tagSPRITE_WORK *);
-extern menuPdaMemoXD *pMemo;
-extern CURSOR _cursor;
+menuPdaMemoXD *pMemo;
+static CURSOR _cursor;
 
 extern "C" s32 menuPdaMemoXDGetItem(void) {
     if (pMemo == 0) {

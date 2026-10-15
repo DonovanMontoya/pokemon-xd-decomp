@@ -577,6 +577,8 @@ PSGenerator *psCreateGeneratorID(s32 arg0, s32 arg1, s32 arg2) {
             }
             var_r29->axisXY = psCmdListArray[arg1][arg2]->param2;
             break;
+        case 2:
+            break;
         default:                                    /* switch 1 */
             if (((void (*)(PSGenerator *)) psExtCreateGenFunc) != NULL) {
                 psExtCreateGenFunc(var_r29);

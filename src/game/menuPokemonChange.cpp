@@ -214,13 +214,13 @@ void CMenuPokemonChange::stateFunctionSelectPokemon1PokeExChange() {
 }
 
 void CMenuPokemonChange::stateFunctionSelectPokemon1CheckStatus() {
-    _pokemonChangeFadeOut(1.0f);
+    _pokemonChangeFadeOut(0.3f);
     menuStateChange(MENU_STATE_0);
     menuPokemonStatusExecute(PLAYER_0);
     flagC51 = 1;
     menuStateChange(MENU_STATE_3);
     waitMenuOpen();
-    _pokemonChangeFadeIn(1.0f);
+    _pokemonChangeFadeIn(0.3f);
     fadeCheck(1);
     cstate.unk4 = 8;
     memset(cstate.saved, 0, 0x40);
@@ -950,7 +950,7 @@ void _cbMenuPokemonStatus(Pokemon *p, MENU_POKEMON_CB_TYPE type, long player) {
 }
 
 void CMenuPokemonChange::bgDrawFadeIn() {
-    bgDrawFadeIn(1.0f);
+    bgDrawFadeIn(0.3f);
 }
 
 bool CMenuPokemonChange::bgDrawFadeIsLive() {

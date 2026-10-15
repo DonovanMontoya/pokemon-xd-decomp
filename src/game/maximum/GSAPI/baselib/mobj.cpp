@@ -280,10 +280,12 @@ void HSD_MObjCompileTev(HSD_MObj* mobj)
 static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** list)
 {
     HSD_TExp *diff, *spec, *ext, *alpha;
+    HSD_TExp* cnst;
     HSD_TExp *exp, *exp_2, *exp_3;
     HSD_TObj *tobj, *tobj_2, *tobj_3, *tobj_4, *toon = NULL;
     u32 done = 0;
-    int diffuse_mode, alpha_mode;
+    u32 diffuse_mode;
+    int alpha_mode;
     static u8 one = 255;
     HSD_ASSERT(395, list);
     *list = NULL;
@@ -302,20 +304,20 @@ static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** lis
             HSD_TExpColorIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_1, HSD_TEXP_ZERO);
             break;
         default: {
-            HSD_TExp* cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->diffuse, HSD_TE_RGB, HSD_TE_U8, list);
+            cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->diffuse, HSD_TE_RGB, HSD_TE_U8, list);
             HSD_TExpColorOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpColorIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_RGB, cnst);
             break;
         } }
         switch (alpha_mode) {
         case RENDER_ALPHA_VTX: {
-            HSD_TExp* cnst = HSD_TExpCnst(&one, HSD_TE_X, HSD_TE_U8, list);
+            cnst = HSD_TExpCnst(&one, HSD_TE_X, HSD_TE_U8, list);
             HSD_TExpAlphaOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpAlphaIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_X, cnst);
             break;
         }
         default: {
-            HSD_TExp* cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->alpha, HSD_TE_X, HSD_TE_F32, list);
+            cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->alpha, HSD_TE_X, HSD_TE_F32, list);
             HSD_TExpAlphaOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpAlphaIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_X, cnst);
             break;
@@ -323,7 +325,7 @@ static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** lis
     } else {
         switch (diffuse_mode) {
         case RENDER_DIFFUSE_MAT: {
-            HSD_TExp* cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->diffuse, HSD_TE_RGB, HSD_TE_U8, list);
+            cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->diffuse, HSD_TE_RGB, HSD_TE_U8, list);
             HSD_TExpColorOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpColorIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_RGB, cnst);
             break;
@@ -334,7 +336,7 @@ static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** lis
             HSD_TExpColorIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_RGB, toon ? HSD_TEXP_TEX : HSD_TEXP_RAS);
             break;
         default: {
-            HSD_TExp* cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->diffuse, HSD_TE_RGB, HSD_TE_U8, list);
+            cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->diffuse, HSD_TE_RGB, HSD_TE_U8, list);
             HSD_TExpOrder(exp, toon, GX_COLOR0A0);
             HSD_TExpColorOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpColorIn(exp, HSD_TE_RGB, toon ? HSD_TEXP_TEX : HSD_TEXP_RAS, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_RGB, cnst);
@@ -342,7 +344,7 @@ static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** lis
         } }
         switch (alpha_mode) {
         case RENDER_ALPHA_MAT: {
-            HSD_TExp* cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->alpha, HSD_TE_X, HSD_TE_F32, list);
+            cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->alpha, HSD_TE_X, HSD_TE_F32, list);
             HSD_TExpAlphaOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpAlphaIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_X, cnst);
             break;
@@ -353,7 +355,7 @@ static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** lis
             HSD_TExpAlphaIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_A, HSD_TEXP_RAS);
             break;
         default: {
-            HSD_TExp* cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->alpha, HSD_TE_X, HSD_TE_F32, list);
+            cnst = HSD_TExpCnst(&MOBJ_MAT(mobj)->alpha, HSD_TE_X, HSD_TE_F32, list);
             HSD_TExpOrder(exp, toon, GX_COLOR0A0);
             HSD_TExpAlphaOp(exp, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_ENABLE);
             HSD_TExpAlphaIn(exp, HSD_TE_0, HSD_TEXP_ZERO, HSD_TE_A, HSD_TEXP_RAS, HSD_TE_X, cnst, HSD_TE_0, HSD_TEXP_ZERO);
@@ -411,7 +413,7 @@ static HSD_TExp* MObjMakeTExp(HSD_MObj* mobj, HSD_TObj* tobj_top, HSD_TExp** lis
     }
 
     if (mobj->rendermode & RENDER_SPECULAR) {
-        HSD_TExp* cnst =
+        cnst =
             HSD_TExpCnst(&MOBJ_MAT(mobj)->specular, HSD_TE_RGB, HSD_TE_U8, list);
         exp_3 = HSD_TExpTev(list);
         HSD_TExpColorOp(exp_3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1,
@@ -628,7 +630,7 @@ void HSD_MObjRemoveAnimByFlags(HSD_MObj* mobj, u32 flags)
 void HSD_MObjClearFlags(HSD_MObj* mobj, u32 flags)
 {
     if (mobj != NULL) {
-        mobj->rendermode &= ~flags;
+        mobj->rendermode = mobj->rendermode & ~flags;
     }
 }
 

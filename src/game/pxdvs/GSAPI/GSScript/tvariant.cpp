@@ -222,7 +222,7 @@ void tigaVariant::name(tigaVariant* result, tigaVariant* other) { \
 }
 DEFINE_VARIANT_COMPARISON(condLe, <=, "le convert error")
 DEFINE_VARIANT_COMPARISON(condLs, <, "ls convert error")
-DEFINE_VARIANT_COMPARISON(condGe, >=, "ge convert error")
+DEFINE_VARIANT_COMPARISON(condGe, >=, "Ge convert error")
 DEFINE_VARIANT_COMPARISON(condGt, >, "gt convert error")
 #undef DEFINE_VARIANT_COMPARISON
 // Vector comparison used by condNot/condEqu: component-wise absolute difference below an epsilon.

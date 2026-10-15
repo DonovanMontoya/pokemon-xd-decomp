@@ -55,6 +55,24 @@ static inline GSmodel* findFreeModel(GSmodelBank* bank) {
     }
     return 0;
 }
+extern "C" void modelBankInit__Fv() { addBank(createBank()); }
+extern "C" GSmodel* modelBankGetFreeModel__Fv() {
+    GSmodelBank* bank = _modelBankList;
+    while (bank && (bank->flags & 4)) bank = bank->next;
+    if (!bank) { bank = createBank(); if (!bank) return 0; addBank(bank); }
+    GSmodel* model = findFreeModel(bank);
+    memset(model, 0, sizeof(GSmodelBankSlot));
+    model->flags = 1;
+    updateBank(bank);
+    model->next = 0;
+    if (!_modelTopPtr) _modelTopPtr = model;
+    else {
+        GSmodel* tail = _modelTopPtr;
+        while (tail->next) tail = tail->next;
+        tail->next = model;
+    }
+    return model;
+}
 extern "C" void modelBankReleaseModel__FP8_GSmodel(GSmodel* model) {
     GSmodelBank* bank = findBank(model);
     if (_modelTopPtr == model) _modelTopPtr = model->next;
@@ -65,8 +83,9 @@ extern "C" void modelBankReleaseModel__FP8_GSmodel(GSmodel* model) {
     }
     model->flags = 0; model->next = 0;
     updateBank(bank);
-    GSmodelBank* previous = _modelBankList;
-    for (GSmodelBank* item = previous; item; item = item->next) {
+    GSmodelBank* item = _modelBankList;
+    GSmodelBank* previous = item;
+    for (; item; item = item->next) {
         if ((item->flags & 2) && item->next) {
             GSmodelBank* next = item->next;
             if (containsBank(item)) {
@@ -85,21 +104,3 @@ extern "C" void modelBankReleaseModel__FP8_GSmodel(GSmodel* model) {
         }
     }
 }
-extern "C" GSmodel* modelBankGetFreeModel__Fv() {
-    GSmodelBank* bank = _modelBankList;
-    while (bank && (bank->flags & 4)) bank = bank->next;
-    if (!bank) { bank = createBank(); if (!bank) return 0; addBank(bank); }
-    GSmodel* model = findFreeModel(bank);
-    memset(model, 0, sizeof(GSmodelBankSlot));
-    model->flags = 1;
-    updateBank(bank);
-    model->next = 0;
-    if (!_modelTopPtr) _modelTopPtr = model;
-    else {
-        GSmodel* tail = _modelTopPtr;
-        while (tail->next) tail = tail->next;
-        tail->next = model;
-    }
-    return model;
-}
-extern "C" void modelBankInit__Fv() { addBank(createBank()); }

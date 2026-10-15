@@ -471,10 +471,10 @@ u8 CMetaMenu::getAlphaFadeAlpha() const {
     switch (fadeState) {
     case 0:
         return 0xFF;
-    case 1:
+    case 3:
         total = (u32)(0.5f * GSgfxVideoGetVsyncRate());
         return ((s32)((u32)(0.5f * GSgfxVideoGetVsyncRate()) - fadeTime) * 255) / total;
-    case 3:
+    case 1:
         return (fadeTime * 255) / (s32)(u32)(0.5f * GSgfxVideoGetVsyncRate());
     case 2:
         return 0;

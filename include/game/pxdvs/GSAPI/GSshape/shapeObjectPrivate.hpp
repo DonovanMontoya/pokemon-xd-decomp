@@ -86,4 +86,7 @@ typedef char GSgfxLayerShaderOffsetCheck[offsetof(GSgfxLayer, shaders) == 0x1818
 typedef char GSgfxLayerShaderIndexOffsetCheck[offsetof(GSgfxLayer, shaderIndex) == 0x1994 ? 1 : -1];
 typedef char GSgfxLayerDirtyOffsetCheck[offsetof(GSgfxLayer, dirty) == 0x16a8 ? 1 : -1];
 typedef char GSgfxLayerSavedTextureOffsetCheck[offsetof(GSgfxLayer, savedTextures) == 0x17f8 ? 1 : -1];
+struct ShapeTextureBinding {u32 reserved00;u16 index;u8 minFilter,magFilter,wrapS,wrapT,blend;};
+struct ShapeTextureEntry {u8 reserved00[0xe];u8 colorRange;};
+struct GsShapeTexture {ShapeTextureEntry *entry;GStexture *texture;};
 #endif

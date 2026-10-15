@@ -57,7 +57,7 @@ struct AppScriptWork {
 
 class AppScript : public GSscript::Tiga {
 public:
-    AppScriptWork* work() { return *(AppScriptWork**)pad914; }
+    AppScriptWork* work() { return (AppScriptWork*)workBuffer; }
 
     GSscript::tigaWaza waza[7];     // 0x988
 

@@ -326,8 +326,8 @@ static void _inputDoSmoothing(InputDevice* device, s8 x, s8 y, s8* oldX, s8* old
             *stepX = ((f32)x - *positionX) / device->smoothingRate;
             *stepY = ((f32)y - *positionY) / device->smoothingRate;
         } else if (device->smoothingFunction == 1) {
-            *stepX = ((f32)x - *positionX) / (0.25f * (f32)device->smoothingRate);
-            *stepY = ((f32)y - *positionY) / (0.25f * (f32)device->smoothingRate);
+            *stepX = ((f32)x - *positionX) / ((f32)device->smoothingRate / 4.0f);
+            *stepY = ((f32)y - *positionY) / ((f32)device->smoothingRate / 4.0f);
         }
         device->smoothingProgress = 0;
     }

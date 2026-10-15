@@ -2315,7 +2315,7 @@ block_427:
 }
 
 void psInterpretParticles(u32 mask) {
-    PSParticle *current, *last, *next, *result;
+    PSParticle *current, *next, *last, *result;
     s32 link;
     for (link = 0; link < 16; link++, mask >>= 1) {
         if (!(mask & 0x10000)) {

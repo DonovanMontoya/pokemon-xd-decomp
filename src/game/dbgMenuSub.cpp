@@ -72,10 +72,11 @@ void winMsgClose(s32);
 void winMsgOpenField(u32, s32, s32);
 
 extern s8 __pokecolo_renderXluc;
-extern s32 _dbgMenuDispAMemInfoFlag;
 extern u32* flag_data_number;
 extern s32 g_hFloorHeap;
 }
+
+static s32 _dbgMenuDispAMemInfoFlag;
 
 static const char* _dbgMenuMovieTestGetStr(unsigned long index);
 

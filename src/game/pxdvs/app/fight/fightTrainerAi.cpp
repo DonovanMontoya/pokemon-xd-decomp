@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/fight/fightTrainerAiPrivate.hpp>
 #undef NULL
 #define NULL 0
 
@@ -303,7 +304,7 @@ u8 fightFloorCheckHuuinWazaFightOutPokemon(void *, FightOutPokemon *, u16);
 u32 fightOutPokemonGetBuffJoutaiDataId(FightOutPokemon *, u16);
 u8 fightOutPokemonIsNokoriHpFollowing(FightOutPokemon *, u16);
 u8 _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza__FUs(u16);
-s8 fightAi_CreateAllWazaValid_GetDefense(u16, s8);
+u8 fightAi_CreateAllWazaValid_GetDefense(u16, u8);
 FIGHT_TRAINER * fightFloorGetFightPokemonPtrToFightTrainerPtr(void *, FightPokemon *);
 u8 fightFloorCmpfightOutPokemonNimbleness(void *, FightOutPokemon *, FightOutPokemon *, u8);
 s32 fightTrainerAiWazaDoWazaDamageFightPokemonFunc(FIGHT_TRAINER *, FightOutPokemon *, u16, FightPokemon *, u8);
@@ -321,7 +322,7 @@ void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon *, u32, u32, voi
 FightOutPokemon * fightSeqSelectDefensePokemonPtr(FightOutPokemon *, u16, u8, void *, u8, u8, s16);
 s32 fightAi_HitCheckWazaAboutJoutaiAndType(FIGHT_TRAINER *, FightOutPokemon *, FightOutPokemon *, u16);
 FightOutPokemon * fightAi_SelectDefPoke(FIGHT_TRAINER *, FightOutPokemon *, FightOutPokemon **, u16, u16, s8);
-s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER *, FightOutPokemon *, FightOutPokemon *, s8, u16, s8, s8);
+s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER *, FightOutPokemon *, FightOutPokemon *, s16, u16, s8, s8);
 u8 fightAi_GetWazaCombValue(FightOutPokemon **, u16 *, u8 *);
 void fightTrainerAiWazaSelectDefensePokemon();
 extern u8 fight_action_data_turn[64];
@@ -2164,7 +2165,7 @@ u16 fightAi_GetWazaZokuseiData_ThinkWeatherBall(u16 arg0, u16 arg1) {
     return (u16) var_r3;
 }
 
-s8 fightAi_CreateAllWazaValid_GetDefense(u16 arg0, s8 arg1) {
+u8 fightAi_CreateAllWazaValid_GetDefense(u16 arg0, u8 arg1) {
     s32 temp_r3;
 
     temp_r3 = (u8) (wazaDB_GetRangeId(arg0));
@@ -3105,6 +3106,386 @@ u8 fightAi_GetWazaCombValue(FightOutPokemon **pokemon, u16 *damage, u8 *probabil
     case 2: return (probability[0] + probability[1]) / 2;
     case 1: return (s32)(0.5 * (f64)fraction[0] * (f64)average[0] + 0.5 * (f64)fraction[1] * (f64)average[1]);
     default: return (s32)(0.25 * (f64)fraction[0] * (f64)average[0] + 0.25 * (f64)fraction[1] * (f64)average[1]);
+    }
+}
+
+s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER *trainer,FightOutPokemon *attacker,FightOutPokemon *defender,s16 weather,u16 mode,s8 canHit,s8 canKnockout) {
+    FightPokemon *allyParty[24],*enemyParty[24];
+    FightOutPokemon *allies[8],*enemies[8];
+    u16 move;
+    s16 value=0;
+    u8 highestLevel=0;
+    u8 trainers=fightFloor_GetFightTypeTrainerNum(0);
+    u8 entries=fightFloor_GetFightTypeEntryPokemonNum(0);
+    u8 outCount=fightFloor_GetFightTypeFightoutPokemonNum(0);
+    if(!attacker)return 0;
+    if(!defender)return 0;
+    FightPokemon *attackFight=fightOutPokemon_GetFightPokemonPtr(attacker);
+    FightPokemon *defendFight=fightOutPokemon_GetFightPokemonPtr(defender);
+    Pokemon *attackPokemon=fightPokemon_GetPokemonBuffPtr(attackFight);
+    Pokemon *defendPokemon=fightPokemon_GetPokemonBuffPtr(defendFight);
+    fightFloorGetFightPokemonPtrToFightTrainerPtr(0,attackFight);
+    FIGHT_TRAINER *enemyTrainer=fightFloorGetFightPokemonPtrToFightTrainerPtr(0,defendFight);
+    u32 level=pokemon_GetLevel(defendPokemon);
+    void *side=fightTargetGetPtrAsNowFightType(2,(FightOutPokemon*)trainer);
+    u32 attackSpeed=pokemon_GetNimbleness(attackPokemon);
+    u32 defendSpeed=pokemon_GetNimbleness(defendPokemon);
+    u16 allyCount=fightFloorGetFightTrainerFightOutPokemonPtrAry(0,trainer,allies,1,1);
+    fightFloorGetFightTrainerFightOutPokemonPtrAry(0,trainer,enemies,0,1);
+    fightFloorGetFightTrainerFightPokemonPtrAry(0,trainer,allyParty,1,1);
+    fightFloorGetFightTrainerFightPokemonPtrAry(0,trainer,enemyParty,0,1);
+    u16 hp=fightTrainerAiGetFightOutPokemonNowHp(trainer,defender);
+    for(u8 i=0;i<4;i++){
+        move=pokemon_GetPokemonWazaDataId(attackPokemon,i);
+        if(move!=0x176&&move!=0&&move!=0x163){
+            u8 hit=fightTrainerAiWazaDoWazaHitFunc(trainer,attacker,move,defender);
+            if(hit==1&&canHit==-1)canHit=1;
+            if(fightTrainerAiIsWazaTypeId(trainer,move,1)!=0){
+                fightTrainerAiWazaDoWazaDamageFunc(trainer,attacker,move,defender,1);
+                if((s32)hp<fightTrainerAiWazaDoWazaDamageFunc(trainer,attacker,move,defender,0)&&hit==1&&canKnockout==-1)canKnockout=1;
+            }
+        }
+    }
+    if(weather==-1)weather=fightFloorGetNowTenkouDataId(0,0);
+    for(u8 i=0;i<allyCount;i++){
+        if(highestLevel<pokemon_GetLevel(fightOutPokemonGetPokemonPtr(allies[i])))highestLevel=pokemon_GetLevel(fightOutPokemonGetPokemonPtr(allies[i]));
+    }
+    fightSideGetHikaeFightPokemonNum(side,trainers,entries,outCount);
+    for(u8 i=0;i<8;i++){
+        u8 flag=fightAi_GetEnemyWazaAndFlag(trainer,defendFight,&move,i);
+        if(move&&fightAi_AppointWazaKoukaFlag(attacker,defender,fightAi_GetWazaZokuseiData_ThinkWeatherBall(move,(u16)weather))==0x41){
+            if(flag==2)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x288);
+            if(flag==1)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x289);
+        }
+    }
+    for(u8 i=0;i<4;i++){
+        move=pokemon_GetPokemonWazaDataId(attackPokemon,i);
+        if(move&&fightAi_AppointWazaKoukaFlag(attacker,defender,fightAi_GetWazaZokuseiData_ThinkWeatherBall(move,(u16)weather))==0x41)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x28A);
+    }
+    value=value+(s16)(((u8)level-highestLevel)*fightTrainerAiValueAddsubDB_GetValue(0x28B));
+    for(u8 i=3;i<12;i++){
+        fightAi_GetEnemyWazaAndFlag(trainer,defendFight,&move,i);
+        if(move==0x78||move==0x99)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x28C);
+        if(move==0x59)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x28E);
+    }
+    for(u8 i=0;i<12;i++){
+        u8 flag=fightAi_GetEnemyWazaAndFlag(trainer,defendFight,&move,i);
+        if(fightAi_DamageKizetsuFlag(allies,fightTrainerAiWazaDoWazaDamageFunc(trainer,defender,move,attacker,0))==1){
+            if(flag==2)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x28F);
+            if(flag==1)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x290);
+        }
+    }
+    if((u16)attackSpeed<(u16)defendSpeed)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x291);
+    u16 abilities=fightTrainerAiGetFightOutPokemonAllAbiCnt(enemyTrainer,defender);
+    s16 addition=(abilities-0x2A)*fightTrainerAiValueAddsubDB_GetValue(0x292);
+    if(addition>0)value+=addition;
+    if(fightAi_PokemonTokuseiMoukaFlag(defender)==2)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x293);
+    if(fightAi_PokemonTokuseiMoukaFlag(defender)==1)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x294);
+    if(canHit==0)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x295);
+    if(canKnockout==1)value=fightTrainerAiAddValueByAddsubDataId(value,trainer,0x296);
+    return value;
+}
+
+s32 _fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(FIGHT_TRAINER *trainer,Hero *hero,Pokemon **selected,u16 selectedCount,u8 mode,Pokemon **out) {
+    AiFightPokemonRecord first,second;
+    fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
+    for(u16 i=0;i<6;i++)out[i]=0;
+    FightPokemon *firstFight=fightTrainer_GetFightPokemonPtr(trainer,0);
+    if(!firstFight)return 0;
+    FightPokemon *secondFight=fightTrainer_GetFightPokemonPtr(trainer,1);
+    if(!secondFight)return 0;
+    aiCopyFightPokemon(first,*(AiFightPokemonRecord*)firstFight);
+    aiCopyFightPokemon(second,*(AiFightPokemonRecord*)secondFight);
+    for(u16 i=0;i<selectedCount;i++){}
+    s32 count=0;
+    for(u16 i=0;i<6;i++){
+        Pokemon *candidate=heroGetStatus(hero,3,i);
+        if(candidate&&pokemonCheckValid(candidate)!=0&&pokemonCheckFightOut(candidate)!=0){
+            u16 j;
+            for(j=0;j<selectedCount;j++)if(selected[j]&&selected[j]==candidate)break;
+            if(j>=selectedCount){
+                fightPokemonCreate(trainer,firstFight,candidate,fightFloorGetFightPokemonEntryCntInc(0));
+                switch(mode){
+                case 1:if(fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight)==2)out[count++]=candidate;break;
+                default:case 0:out[count++]=candidate;break;
+                case 2:if(fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight)==3)out[count++]=candidate;break;
+                case 3:if(fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight)!=2&&fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight)!=3)out[count++]=candidate;break;
+                }
+            }
+        }
+    }
+    aiCopyFightPokemon(*(AiFightPokemonRecord*)firstFight,first);
+    aiCopyFightPokemon(*(AiFightPokemonRecord*)secondFight,second);
+    return count;
+}
+
+void fightTrainerAiSortFirstSelectPokemonAry(FIGHT_TRAINER *trainer,Hero *hero,Pokemon **out,u16 count,u16 aceCount) {
+    AiFightPokemonRecord first,second;
+    Pokemon *candidates[6];
+    u8 flags[6];
+    s32 ai=fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
+    u8 hasCombo=0;
+    u8 comboCount=0;
+    FightPokemon *firstFight=fightTrainer_GetFightPokemonPtr(trainer,0);
+    if(firstFight){
+        FightPokemon *secondFight=fightTrainer_GetFightPokemonPtr(trainer,1);
+        if(secondFight){
+            aiCopyFightPokemon(first,*(AiFightPokemonRecord*)firstFight);
+            aiCopyFightPokemon(second,*(AiFightPokemonRecord*)secondFight);
+            for(u16 i=0;i<count;i++)out[i]=0;
+            for(u16 i=0;i<6;i++)flags[i]=0;
+            u16 selected=0;
+            u16 limit=1;
+            if(fightTrainerAiDB_GetPokemonDataOrderAceBossFlag(ai)!=1)limit=aceCount;
+            void *deck=getDeckTrainerObj__11DeckTrainerFUl(fightTrainer_GetFightTrainerDataId(trainer));
+            for(u16 i=0;i<4;i++)if(getComboID__11DeckTrainerCFUc(deck,(u8)i)!=0){hasCombo=1;break;}
+            if(fightTrainerAiDB_GetPokemonSelectRandomFlag(ai)==1){
+                for(;selected<count;selected++){
+                    u16 available=_fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(trainer,hero,out,(u8)count,0,candidates);
+                    if(!available)break;
+                    out[selected]=candidates[HSD_Rand()%available];
+                    fightPokemonCreate(trainer,firstFight,out[selected],fightFloorGetFightPokemonEntryCntInc(0));
+                    flags[selected]=fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight);
+                }
+            }else{
+                if(hasCombo==1){comboCount=fightTrainerAi_SelComboPartner(candidates,out,_fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(trainer,hero,out,(u8)count,0,candidates),trainer);selected=comboCount;}
+                for(u16 i=0;i<limit;i++){
+                    u16 available=_fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(trainer,hero,out,(u8)count,1,candidates);
+                    if(!available)break;
+                    flags[selected]=2;out[selected++]=candidates[HSD_Rand()%available];
+                }
+                for(u16 i=0;i<limit;i++){
+                    u16 available=_fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(trainer,hero,out,(u8)count,2,candidates);
+                    if(!available)break;
+                    flags[selected]=3;out[selected++]=candidates[HSD_Rand()%available];
+                }
+                for(;selected<count;selected++){
+                    u16 available=_fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(trainer,hero,out,(u8)count,3,candidates);
+                    if(!available)break;
+                    out[selected]=candidates[HSD_Rand()%available];
+                    fightPokemonCreate(trainer,firstFight,out[selected],fightFloorGetFightPokemonEntryCntInc(0));
+                    flags[selected]=fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight);
+                }
+                for(;selected<count;selected++){
+                    u16 available=_fightTrainerAiSortFirstSelectPokemonArySubSelect__FP13FIGHT_TRAINERP4HeroPP7PokemonUsUcPP7Pokemon(trainer,hero,out,(u8)count,0,candidates);
+                    if(!available)break;
+                    out[selected]=candidates[HSD_Rand()%available];
+                    fightPokemonCreate(trainer,firstFight,out[selected],fightFloorGetFightPokemonEntryCntInc(0));
+                    flags[selected]=fightTrainerAiGetFightPokemonKeyPlayerFlag(trainer,firstFight);
+                    if(flags[selected]==2)flags[selected]=3;
+                }
+            }
+            if(fightTrainerAiDB_GetPokemonSelectRandomFlag(ai)!=1){
+                if(fightTrainerAiDB_GetPokemonDataOrderOutFlag(ai)==1){
+                    for(u16 i=0;i<count;i++)if(out[i]){
+                        for(u16 j=i+1;j<count;j++)if(out[j]){
+                            u16 data=pokemon_GetFightTrainerPokemonDataId(out[i]);
+                            if(data>pokemon_GetFightTrainerPokemonDataId(out[j])){Pokemon *old=out[i];out[i]=out[j];u8 flag=flags[i];flags[i]=flags[j];out[j]=old;flags[j]=flag;}
+                        }
+                    }
+                }else{
+                    for(u8 i=comboCount;i<count;i++)if(out[i]){
+                        for(u16 j=i+1;j<count;j++)if(out[j]&&flags[i]!=2&&flags[j]==2){Pokemon *old=out[i];u8 flag=flags[i];flags[i]=flags[j];out[i]=out[j];out[j]=old;flags[j]=flag;}
+                    }
+                }
+            }
+            aiCopyFightPokemon(*(AiFightPokemonRecord*)firstFight,first);
+            aiCopyFightPokemon(*(AiFightPokemonRecord*)secondFight,second);
+        }
+    }
+}
+
+void fightAi_CreateAllWazaValid(FIGHT_TRAINER *trainer,FightOutPokemon **attackers,u8 attackerCount) {
+    u16 damage[2][4][2];
+    s16 slots[2][4];u16 moves[2][4];
+    FightOutPokemon *enemies[2],*defense[2];
+    s16 firstSlots[4],secondSlots[4];u16 firstMoves[4],secondMoves[4];
+    u8 eligible[2][4];
+    u16 totals[2][2],selectedMoves[2];
+    u8 probability[2],result[2];
+    if(trainer){
+        fightAi_InitAllWazaValid();
+        for(u8 i=0;i<2;i++){
+            for(u8 j=0;j<4;j++){
+                for(u8 k=0;k<2;k++){damage[i][j][k]=0;totals[i][k]=0;result[k]=0;}
+                eligible[i][j]=0;slots[i][j]=0;moves[i][j]=0;
+            }
+            enemies[i]=0;probability[i]=0;selectedMoves[i]=0;defense[i]=0;
+        }
+        if(attackers[0])fightTrainerAiGetFightOutPokemonWazaDataIdAry(trainer,attackers[0],firstMoves,firstSlots,1);
+        if(attackers[1])fightTrainerAiGetFightOutPokemonWazaDataIdAry(trainer,attackers[1],secondMoves,secondSlots,1);
+        u16 enemyCount=fightFloorGetFightTrainerFightOutPokemonPtrAry(0,trainer,enemies,0,1);
+        for(u8 i=0;i<2;i++)if(attackers[i]){
+            for(u8 j=0;j<4;j++){
+                if(i==0){moves[i][j]=firstMoves[j];slots[i][j]=firstSlots[j];}
+                else{moves[i][j]=secondMoves[j];slots[i][j]=secondSlots[j];}
+                if(moves[i][j]){
+                    probability[i]=fightAi_WazaSuccessProbability(trainer,attackers[i],enemies,moves[i][j]);
+                    for(u8 k=0;k<2;k++)if(enemies[k])damage[i][j][k]=fightTrainerAiWazaDoWazaDamageFunc(trainer,attackers[i],moves[i][j],enemies[k],0);
+                }
+            }
+        }
+        ai_allwaza_valid_work.count=attackerCount;
+        AiWazaCandidate *table=ai_allwaza_valid_tbl;
+        for(u8 first=0;first<4;first++){
+        u8 second;u8 firstTarget;
+        for(firstTarget=0;firstTarget<2;firstTarget++)for(second=0;second<4;second++)for(u8 secondTarget=0;secondTarget<2;secondTarget++){
+            totals[0][1]=0;totals[0][0]=0;totals[1][1]=0;totals[1][0]=0;selectedMoves[0]=0;selectedMoves[1]=0;
+            if(attackers[0]&&moves[0][first]){
+                eligible[0][first]=fightAi_CreateAllWazaValid_GetDefense(moves[0][first],firstTarget);
+                switch(eligible[0][first]){
+                case 0:totals[0][0]+=damage[0][first][0];defense[0]=enemies[0];break;
+                case 1:totals[0][1]+=damage[0][first][1];defense[0]=enemies[1];break;
+                case 2:totals[0][0]+=damage[0][first][0];totals[0][1]+=damage[0][first][1];defense[0]=enemies[0];break;
+                case 3:defense[0]=enemies[0];break;
+                case 4:defense[0]=attackers[0];break;
+                case 5:defense[0]=enemies[HSD_Rand()%enemyCount];break;
+                }
+                if(eligible[0][first]==2){
+                    u8 hitFirst;
+                    AiDirectHitFunction hit=wazaDB_GetFightTrainerAiWazaHitFuncPtr(moves[0][first]);
+                    hitFirst=0;u8 hitSecond=hitFirst;
+                    if(enemies[0]&&hit(trainer,attackers[0],moves[0][first],enemies[0])==1&&fightTrainerAiWazaDoWazaHitFunc(trainer,attackers[0],moves[0][first],enemies[0])==1)hitFirst=1;
+                    if(enemies[1]&&hit(trainer,attackers[0],moves[0][first],enemies[1])==1&&fightTrainerAiWazaDoWazaHitFunc(trainer,attackers[0],moves[0][first],enemies[1])==1)hitSecond=1;
+                    if(hitFirst==1||hitSecond==1)selectedMoves[0]=moves[0][first];else selectedMoves[0]=0;
+                }else{
+                    AiDirectHitFunction hit=wazaDB_GetFightTrainerAiWazaHitFuncPtr(moves[0][first]);
+                    if(defense[0]&&hit(trainer,attackers[0],moves[0][first],defense[0])==1&&fightTrainerAiWazaDoWazaHitFunc(trainer,attackers[0],moves[0][first],defense[0])==1)selectedMoves[0]=moves[0][first];else selectedMoves[0]=0;
+                }
+            }
+            if(attackers[1]&&moves[1][second]){
+                eligible[1][second]=fightAi_CreateAllWazaValid_GetDefense(moves[1][second],secondTarget);
+                switch(eligible[1][second]){
+                case 0:totals[1][0]+=damage[1][second][0];defense[1]=enemies[0];break;
+                case 1:totals[1][1]+=damage[1][second][1];defense[1]=enemies[1];break;
+                case 3:defense[1]=enemies[0];break;
+                case 4:defense[1]=attackers[1];break;
+                case 2:totals[1][0]+=damage[1][second][0];totals[1][1]+=damage[1][second][1];defense[1]=enemies[1];break;
+                case 5:defense[1]=enemies[HSD_Rand()%enemyCount];break;
+                }
+                if(eligible[1][second]==2){
+                    u8 hitFirst;
+                    AiDirectHitFunction hit=wazaDB_GetFightTrainerAiWazaHitFuncPtr(moves[1][second]);
+                    hitFirst=0;u8 hitSecond=hitFirst;
+                    if(enemies[0]&&hit(trainer,attackers[1],moves[1][second],enemies[0])==1&&fightTrainerAiWazaDoWazaHitFunc(trainer,attackers[1],moves[1][second],enemies[0])==1)hitFirst=1;
+                    if(enemies[1]&&hit(trainer,attackers[1],moves[1][second],enemies[1])==1&&fightTrainerAiWazaDoWazaHitFunc(trainer,attackers[1],moves[1][second],enemies[1])==1)hitSecond=1;
+                    if(hitFirst==1||hitSecond==1)selectedMoves[1]=moves[1][second];else selectedMoves[1]=0;
+                }else{
+                    AiDirectHitFunction hit=wazaDB_GetFightTrainerAiWazaHitFuncPtr(moves[1][second]);
+                    if(defense[1]&&hit(trainer,attackers[1],moves[1][second],defense[1])==1&&fightTrainerAiWazaDoWazaHitFunc(trainer,attackers[1],moves[1][second],defense[1])==1)selectedMoves[1]=moves[1][second];else selectedMoves[1]=0;
+                }
+            }
+            u8 combination=fightAi_GetWazaCombValue(enemies,&totals[0][0],probability);
+            result[0]=fightAi_AttackResult(trainer,enemies[0],selectedMoves[0],selectedMoves[1],totals[0][0]+totals[1][0]);
+            u8 secondResult=fightAi_AttackResult(trainer,enemies[1],selectedMoves[0],selectedMoves[1],totals[0][1]+totals[1][1]);
+            s16 index=firstTarget*8+first*16+second*2+secondTarget;
+            FightOutPokemon *firstAttacker=attackers[0];
+            AiWazaCandidate *entry=&table[index];
+            entry->attackers[0]=firstAttacker;entry->attackers[1]=attackers[1];entry->defenders[0]=defense[0];entry->defenders[1]=defense[1];
+            entry->moves[0]=selectedMoves[0];entry->moves[1]=selectedMoves[1];entry->slots[0]=slots[0][first];entry->slots[1]=slots[1][second];
+            entry->eligible[0]=eligible[0][first];entry->eligible[1]=eligible[1][second];entry->probability[0]=probability[0];entry->probability[1]=probability[1];entry->combination=combination;
+            entry->damage[0][0]=totals[0][0];entry->damage[0][1]=totals[0][1];entry->damage[1][0]=totals[1][0];entry->damage[1][1]=totals[1][1];entry->result[0]=result[0];result[1]=secondResult;entry->result[1]=secondResult;
+        }}
+    }
+}
+
+void fightAi_CheckDoFightActionStroke(FIGHT_TRAINER *trainer){
+    u8 bestScore=0;
+    u8 fightType=fightFloor_GetFightType(0);
+    u8 actionCount=0;
+    if(trainer){
+        u8 stroke=fightTrainerAiDB_GetStrokeValue(fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer)));
+        if(stroke){
+            AiWazaCandidate best;
+            fightAi_InitAllWazaValidSub(&best);
+            for(u8 i=0;i<63;i++){
+                AiWazaCandidate *first=&ai_allwaza_valid_tbl[i];
+                for(u8 j=i+1;j<64;j++){
+                    AiWazaCandidate *second=&ai_allwaza_valid_tbl[j];
+                    if(first->combination<second->combination){
+                        fightAi_CopyAllWazaValidTable(&best,first);
+                        fightAi_CopyAllWazaValidTable(first,second);
+                        fightAi_CopyAllWazaValidTable(second,&best);
+                    }
+                }
+            }
+            fightAi_InitAllWazaValidSub(&best);
+            for(u8 i=0;i<64;i++){
+                u8 present=0,probability=0;
+                AiWazaCandidate *entry=&ai_allwaza_valid_tbl[i];
+                for(u8 j=0;j<2;j++)if(entry->attackers[j]){present++;probability+=entry->probability[j];}
+                if(present==ai_allwaza_valid_work.count)probability=(s32)probability/(s32)ai_allwaza_valid_work.count;
+                FightActionBuff *first=fightOutPokemon_GetFightActionBuffPtr(entry->attackers[0]);
+                if(first){
+                    FightActionBuff *second=fightOutPokemon_GetFightActionBuffPtr(entry->attackers[1]);
+                    if(second && fightActionCheckValid(first)!=1 && fightActionCheckValid(second)!=1 && entry->result[0]==3 && entry->result[1]==3 && _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza__FUs(entry->moves[0])==0 && _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza__FUs(entry->moves[1])==0){
+                        s32 total=probability+stroke;
+                        if(total>=100 && bestScore<total){fightAi_CopyAllWazaValidTable(&best,entry);bestScore=total;}
+                    }
+                }
+            }
+            if(best.attackers[0] && best.moves[0] && best.moves[0]!=0x176 && best.moves[0]!=0x163){
+                FightOutPokemon *target;
+                switch(best.eligible[0]){
+                case 0:target=fightTargetGetPtr(0xF,best.attackers[0],fightType);break;
+                case 1:target=fightTargetGetPtr(0x10,best.attackers[0],fightType);break;
+                default:target=fightTargetGetPtr(0xF,best.attackers[0],fightType);break;
+                }
+                u32 relative=fightTargetGetTragetPtrToRelativeHostSideFightTargetId(target,fightType);
+                fightOutPokemonCreateFightActionAttackWaza(best.attackers[0],0,0x13,0,fight_action_data_waza,best.moves[0],relative,best.slots[0],0);
+                actionCount++;
+            }
+            if(best.attackers[1] && best.moves[1] && best.moves[1]!=0x176 && best.moves[1]!=0x163){
+                FightOutPokemon *target;
+                switch(best.eligible[1]){
+                case 0:target=fightTargetGetPtr(0xF,best.attackers[1],fightType);break;
+                case 1:target=fightTargetGetPtr(0x10,best.attackers[1],fightType);break;
+                default:target=fightTargetGetPtr(0xF,best.attackers[1],fightType);break;
+                }
+                u32 relative=fightTargetGetTragetPtrToRelativeHostSideFightTargetId(target,fightType);
+                fightOutPokemonCreateFightActionAttackWaza(best.attackers[1],0,0x13,0,fight_action_data_waza,best.moves[1],relative,best.slots[1],0);
+                actionCount++;
+            }
+            if(actionCount==0){
+                fightAi_InitAllWazaValidSub(&best);
+                for(u8 i=0;i<64;i++){
+                    u8 present=0,probability=0;
+                    AiWazaCandidate *entry=&ai_allwaza_valid_tbl[i];
+                    for(u8 j=0;j<2;j++)if(entry->attackers[j]){present++;probability+=entry->probability[j];}
+                    if(present==ai_allwaza_valid_work.count)probability=(s32)probability/(s32)ai_allwaza_valid_work.count;
+                    FightActionBuff *first=fightOutPokemon_GetFightActionBuffPtr(entry->attackers[0]);
+                    if(first){
+                        FightActionBuff *second=fightOutPokemon_GetFightActionBuffPtr(entry->attackers[1]);
+                        if(second && fightActionCheckValid(first)!=1 && fightActionCheckValid(second)!=1 && (entry->result[0]==3 || entry->result[1]==3) && _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza__FUs(entry->moves[0])==0 && _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza__FUs(entry->moves[1])==0 && probability+stroke>=100){
+                            fightAi_CopyAllWazaValidTable(&best,entry);
+            if(best.attackers[0] && best.moves[0] && best.moves[0]!=0x176 && best.moves[0]!=0x163){
+                FightOutPokemon *target;
+                switch(best.eligible[0]){
+                case 0:target=fightTargetGetPtr(0xF,best.attackers[0],fightType);break;
+                case 1:target=fightTargetGetPtr(0x10,best.attackers[0],fightType);break;
+                default:target=fightTargetGetPtr(0xF,best.attackers[0],fightType);break;
+                }
+                u32 relative=fightTargetGetTragetPtrToRelativeHostSideFightTargetId(target,fightType);
+                fightOutPokemonCreateFightActionAttackWaza(best.attackers[0],0,0x13,0,fight_action_data_waza,best.moves[0],relative,best.slots[0],0);
+                actionCount++;
+            }
+            if(best.attackers[1] && best.moves[1] && best.moves[1]!=0x176 && best.moves[1]!=0x163){
+                FightOutPokemon *target;
+                switch(best.eligible[1]){
+                case 0:target=fightTargetGetPtr(0xF,best.attackers[1],fightType);break;
+                case 1:target=fightTargetGetPtr(0x10,best.attackers[1],fightType);break;
+                default:target=fightTargetGetPtr(0xF,best.attackers[1],fightType);break;
+                }
+                u32 relative=fightTargetGetTragetPtrToRelativeHostSideFightTargetId(target,fightType);
+                fightOutPokemonCreateFightActionAttackWaza(best.attackers[1],0,0x13,0,fight_action_data_waza,best.moves[1],relative,best.slots[1],0);
+                actionCount++;
+            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

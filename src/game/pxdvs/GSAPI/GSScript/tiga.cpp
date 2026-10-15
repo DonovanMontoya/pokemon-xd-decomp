@@ -1,9 +1,25 @@
+extern "C" {
+#include <libc/stdio.h>
+}
 #include <game/pxdvs/GSAPI/GSScript/tiga.hpp>
 #include <libc/string.h>
 
+
 extern "C" {
+int sprintf(char*,const char*,...);
+int printf(const char*,...);
+double sin(double);
+double cos(double);
+double tan(double);
+double atan2(double,double);
+double acos(double);
+extern f32 __float_nan[];
+int atoi(const char*);
+double atof(const char*);
 void* floorCreateThreadLocal(int, int, int, void (*)(GSscript::Tiga*, long));
 void GSthreadSetName(void*, const char*);
+void* GSgfxLayerFindByName_C(const char*);
+void GSprint(void*,int,int,u32,const char*,...);
 void GSthreadSetArgs(void*, int, ...);
 }
 
@@ -21,6 +37,40 @@ struct TigaCurrentScope {
 };
 
 
+
+void Tiga::debugDump() {
+    GSprint(GSgfxLayerFindByName_C("debug menu"),16,40,0xe0d0ffff,"run thread size = %d",threadCount);
+    GSprint(GSgfxLayerFindByName_C("debug menu"),16,52,0xe0d0ffff,"timer");
+    GSprint(GSgfxLayerFindByName_C("debug menu"),60,52,0xe0d0ffff,"%3.1f",timers[0]);
+    GSprint(GSgfxLayerFindByName_C("debug menu"),108,52,0xe0d0ffff,"%3.1f",timers[1]);
+    GSprint(GSgfxLayerFindByName_C("debug menu"),156,52,0xe0d0ffff,"%3.1f",timers[2]);
+    GSprint(GSgfxLayerFindByName_C("debug menu"),204,52,0xe0d0ffff,"%3.1f",timers[3]);
+    GSprint(GSgfxLayerFindByName_C("debug menu"),16,64,0xe0d0ffff,"- : Line  sp  ");
+    GSprint(GSgfxLayerFindByName_C("debug menu"),16,76,0xe0d0ffff,"------------------");
+    int row=88;
+    for(int i=0;i<8;++i,row+=12){
+        TigaThread* thread=threads[i];
+        if(thread->state==0){
+            GSprint(GSgfxLayerFindByName_C("debug menu"),16,row,0xe0d0ffff,"%d : --",i);
+        }else{
+            u32* previous=0;
+            u32* entry=codeTable;
+            u32* end=codeTable+codeCount*2;
+            u32 depth=((u32)thread->stackPtr10-(u32)thread->stackBase38)>>3;
+            while(entry!=end){
+                u32* saved=previous;
+                previous=entry;
+                if(entry[0]==(u32)thread->code)break;
+                if(entry[0]>(u32)thread->code){previous=saved;break;}
+                entry+=2;
+            }
+            const char* name;
+            if(previous==0)name="unknown";
+            else name=(const char*)previous[1];
+            GSprint(GSgfxLayerFindByName_C("debug menu"),16,row,0xe0d0ffff,"%d : %4d %3d %s",i,thread->field14C,depth,name);
+        }
+    }
+}
 
 int Tiga::getStateSize() {
     GSBinWriteSizeStream stream;
@@ -435,6 +485,70 @@ int Tiga::execExtendGlobalFunction(int, tigaVariant*, tigaVariant*) { return 0; 
 int Tiga::getExtendVariable(tigaVariant*, int, int) { return 0; }
 int Tiga::setExtendVariable(tigaVariant*, int, int) { return 0; }
 
+struct TigaChunkHeader {
+    u8 reserved0[0x10];
+    u32 count;
+    u32 reserved14;
+    u32 flags;
+    u32 reserved1C;
+};
+int Tiga::setTpcChank(CChank* source) {
+    if(source==0){unmappingScript();return 0;}
+    currentThread=0;
+    threadCount=0;
+    chunk.chankD=*(u32*)(source->chankA+4);
+    chunk.blockA=0;
+    TigaChunkHeader* header=(TigaChunkHeader*)source->searchChankID("HEAD",0);
+    if(header==0)return 0;
+    funcCount=header->count;
+    header->flags=1;
+    field940=(s32)(header+1);
+    header=(TigaChunkHeader*)source->searchChankID("CODE",0);
+    if(header==0)return 0;
+    field944=(s32)(header+1);
+    header=(TigaChunkHeader*)source->searchChankID("GVAR",0);
+    if(header==0)return 0;
+    globalCount=header->count;
+    globals=(tigaVariant*)(header+1);
+    header=(TigaChunkHeader*)source->searchChankID("STRG",0);
+    if(header==0)return 0;
+    field950=header->count;
+    field954=(s32)(header+1);
+    header=(TigaChunkHeader*)source->searchChankID("VECT",0);
+    if(header==0)return 0;
+    field958=header->count;
+    field95C=(s32)(header+1);
+    header=(TigaChunkHeader*)source->searchChankID("GIRI",0);
+    if(header){resIdCount=header->count;resIdTable=(u32*)(header+1);}
+    header=(TigaChunkHeader*)source->searchChankID("FTBL",0);
+    if(header){
+        codeCount=header->count;
+        chunk.blockA=header->flags;
+        codeTable=(u32*)(header+1);
+        for(u32* entry=codeTable;entry!=codeTable+codeCount*2;entry+=2){
+            entry[0]=field944+entry[0]*4;
+            entry[1]=(u32)header+entry[1];
+        }
+    }else codeTable=0;
+    header=(TigaChunkHeader*)source->searchChankID("ARRY",0);
+    if(header){
+        u8* base;
+        int offset;
+        int i;
+        base=(u8*)header+0x10;
+        field968=*(u32*)base;
+        field96C=(s32)(base+0x10);
+        i=0;
+        offset=0;
+        for(;i<field968;++i,offset+=4){
+            *(u32*)(field96C+offset)=(u32)base+*(u32*)(field96C+offset);
+            ((u16*)*(u32*)(field96C+offset))[5]=i;
+        }
+    }else{field968=0;field96C=0;}
+    mapping();
+    return 1;
+}
+
 void Tiga::unmappingScript() {
     funcCount = 0;
     field940 = 0;
@@ -773,5 +887,476 @@ s32 tigaErrMessage(const char* message) {
     }
     return (s32)message;
 }
+
+static inline s32 expressionInteger(tigaVariant* value) {
+    if(value->type==1)return value->value.integer;
+    if(value->type==2)return (s32)value->value.single;
+    return value->getCnvInteger();
+}
+void Tiga::calcExpr2(int operation,tigaVariant* result,tigaVariant* left,tigaVariant* right) {
+    switch(operation) {
+    case 0x20: {
+        s32 first=expressionInteger(left);
+        s32 second=expressionInteger(right);
+        result->type=1;
+        result->value.integer=first ^ second;
+        break;
+    }
+    case 0x21: {
+        s32 first=expressionInteger(left);
+        s32 second=expressionInteger(right);
+        result->type=1;
+        result->value.integer=first | second;
+        break;
+    }
+    case 0x22: {
+        s32 first=expressionInteger(left);
+        s32 second=expressionInteger(right);
+        result->type=1;
+        result->value.integer=first & second;
+        break;
+    }
+    case 0x23:left->add(result,right);break;
+    case 0x24:left->sub(result,right);break;
+    case 0x25:left->mul(result,right);break;
+    case 0x26:left->div(result,right);break;
+    case 0x27:left->mod(result,right);break;
+    case 0x30:left->condEqu(result,right);break;
+    case 0x31:left->condGt(result,right);break;
+    case 0x32:left->condGe(result,right);break;
+    case 0x33:left->condLs(result,right);break;
+    case 0x34:left->condLe(result,right);break;
+    case 0x35:left->condNot(result,right);break;
+    }
+}
+
+static inline f32 expressionSingle(tigaVariant* value) {
+    if(value->type==1)return (f32)value->value.integer;
+    if(value->type==2)return value->value.single;
+    return value->getCnvSingle();
+}
+static inline char* expressionString(tigaVariant* value,char* buffer) {
+    if(value->type==3)return value->value.string;
+    return value->getCnvString(buffer);
+}
+static inline f32 expressionSquareRoot(f32 value) {
+    if(value>0.0f){
+        double guess=__frsqrte(value);
+        guess=0.5*guess*(3.0-guess*guess*value);
+        guess=0.5*guess*(3.0-guess*guess*value);
+        guess=0.5*guess*(3.0-guess*guess*value);
+        return (f32)(value*guess);
+    }
+    if(value<0.0)return __float_nan[0];
+    union {f32 value;u32 bits;} check;
+    check.value=value;
+    s32 category;
+    switch(check.bits&0x7f800000){
+    case 0x7f800000:if(check.bits&0x7fffff)category=1;else category=2;break;
+    case 0:if(check.bits&0x7fffff)category=5;else category=3;break;
+    default:category=4;break;
+    }
+    if(category==1)return __float_nan[0];
+    return value;
+}
+static inline void expressionSetInteger(tigaVariant* result,s32 value) {
+    result->type=1;
+    result->value.integer=value;
+}
+int Tiga::execMethod(int category,int operation,tigaVariant* args,tigaVariant* result) {
+    char firstBuffer[256];
+    char secondBuffer[256];
+    result->type=1;
+    result->value.integer=0;
+    int wait=0;
+    if(category==0){
+        switch(operation){
+        case 0x11:currentThread->sleepTime=expressionSingle(&args[0]);wait=1;break;
+        case 0x10:case 0x17:case 0x19:case 0x1a:break;
+        case 0x12:
+            for(s32 i=0;i<expressionInteger(&args[0]);++i)GSthreadSwitch();
+            break;
+        case 0x15:{
+            if(expressionInteger(&args[0])>=4)tigaErrMessage("timer error");
+            f32 limit=expressionSingle(&args[1]);
+            s32 index=expressionInteger(&args[0]);
+            TigaThread* thread=currentThread;
+            thread->timerIndex=index;
+            thread->timerLimit=limit;
+            thread->state|=4;
+            wait=1;
+            break;
+        }
+        case 0x14:{
+            if(expressionInteger(&args[0])>=4)tigaErrMessage("timer error");
+            f32 value=timers[expressionInteger(&args[0])];
+            result->type=2;
+            result->value.single=value;
+            break;
+        }
+        case 0x13:{
+            if(expressionInteger(&args[0])>=4)tigaErrMessage("timer error");
+            s32 index=expressionInteger(&args[0]);
+            timers[index]=expressionSingle(&args[1]);
+            break;
+        }
+        case 0x16: ::printf(expressionString(&args[0],firstBuffer));break;
+        case 0x1c:{s32 value=args[0].type;result->type=1;result->value.integer=value;break;}
+        case 0x1d:
+            strncpy(workBuffer->string,tigaVariant::getTypeString(args[0].type),255);
+            workBuffer->result.value.string=workBuffer->string;
+            workBuffer->result.type=3;
+            break;
+        case 0x30:{
+            f32 value=(f32)sin(0.017453292f*expressionSingle(&args[0]));
+            result->type=2;result->value.single=value;break;
+        }
+        case 0x31:{
+            f32 value=(f32)cos(0.017453292f*expressionSingle(&args[0]));
+            result->type=2;result->value.single=value;break;
+        }
+        case 0x32:{
+            f32 value=(f32)tan(0.017453292f*expressionSingle(&args[0]));
+            result->type=2;result->value.single=value;break;
+        }
+        case 0x33:{
+            f32 x=expressionSingle(&args[1]);
+            f32 value=(f32)atan2(expressionSingle(&args[0]),x);
+            result->type=2;result->value.single=57.29578f*value;break;
+        }
+        case 0x34:{
+            f32 value=(f32)acos(expressionSingle(&args[0]));
+            result->type=2;result->value.single=57.29578f*value;break;
+        }
+        case 0x35:{
+            f32 value=expressionSquareRoot(expressionSingle(&args[0]));
+            result->type=2;result->value.single=value;break;
+        }
+        case 0x21:{
+            int first=expressionInteger(&args[0]);
+            int second=expressionInteger(&args[1]);
+            result->type=1;result->value.integer=first | (1 << second);break;
+        }
+        case 0x22:{
+            int first=expressionInteger(&args[0]);
+            int second=expressionInteger(&args[1]);
+            result->type=1;result->value.integer=first & ~(1 << second);break;
+        }
+        case 0x23:{
+            int first=expressionInteger(&args[0]);
+            int second=expressionInteger(&args[1]);
+            second=first|second;
+            result->type=1;result->value.integer=second;break;
+        }
+        case 0x24:{
+            int first=expressionInteger(&args[0]);
+            int second=expressionInteger(&args[1]);
+            second=first&~second;
+            result->type=1;result->value.integer=second;break;
+        }
+        case 0x1e:{
+            char* string=expressionString(&args[0],firstBuffer);
+            s32 index=expressionInteger(&args[1]);
+            if(string && index>=0 && strlen(string)>(u32)index){s8 value=string[index];expressionSetInteger(result,(u8)value);}
+            else{result->type=1;result->value.integer=0;}
+            break;
+        }
+        case 0x1f:
+            firstBuffer[0]=expressionInteger(&args[0]);
+            firstBuffer[1]=0;
+            strncpy(workBuffer->string,firstBuffer,255);
+            workBuffer->result.value.string=workBuffer->string;
+            workBuffer->result.type=3;
+            break;
+        case 0x20:{
+            char* text=expressionString(&args[0],firstBuffer);
+            char* pattern=expressionString(&args[0],secondBuffer);
+            s32 index;
+            u32 length=strlen(pattern);
+            index=0;
+            while(*text){
+                if(strncmp(text,pattern,length)==0){result->type=1;result->value.integer=index;break;}
+                ++text;++index;
+            }
+            // The original overwrites the temporary match index on both paths.
+            result->type=1;result->value.integer=-1;
+            break;
+        }
+        default:return execExtendGlobalFunction(operation,args,result);
+        }
+    }else if(category==0x36)wait=cmpThread(operation,args,result);
+    else if(category==4)wait=cmpVector(operation,args,result);
+    else if(category==7)wait=cmpArray(operation,args,result);
+    else return execExtendMethod(category,operation,args,result);
+    return wait;
+}
+
+struct TigaInstruction {
+    u8 opcode, subcode;
+    s16 argument;
+};
+static inline void releaseExpression(tigaVariant* value) {
+    if(value->type==1 || value->type==2)value->type=0;
+    else{Tiga::m_cpCurrentObject->cellMemory->freeVariant(value);value->type=0;}
+}
+static inline void retainExpression(tigaVariant* value) {
+    if(value->type!=1 && value->type!=2)Tiga::m_cpCurrentObject->cellMemory->dupVariant(value);
+}
+static inline void clearExpression(tigaVariant* value) {
+    value->type=0;value->value.integer=0;
+}
+static inline void prepareVector(Tiga* owner,tigaVariant* value) {
+    if(value->type!=4){
+        releaseExpression(value);
+        GSvec* vector=(GSvec*)owner->objManager.newVector();
+        value->type=4;value->flags=0;value->value.vector=vector;
+    }
+}
+int Tiga::execute(TigaThread* thread) {
+    tigaVariant result;
+    u8 running=1;
+    Tiga* previous=m_cpCurrentObject;
+    m_cpCurrentObject=this;
+    TigaWorkPrefix* previousWork=workBuffer;
+    workBuffer=(TigaWorkPrefix*)&thread->code;
+    while(running){
+        tigaVariant* stack=thread->stackPtr10;
+        if(stack<=thread->stackArea)break;
+        TigaInstruction* instruction=(TigaInstruction*)thread->code;
+        switch(instruction->opcode){
+        case 0:thread->code=(TPCCode*)(instruction+1);break;
+        case 1:
+            if(instruction->subcode<0x20){
+                calcExpr1(instruction->subcode,&result,stack);
+                releaseExpression(thread->stackPtr10);
+            }else{
+                calcExpr2(instruction->subcode,&result,stack+1,stack);
+                releaseExpression(thread->stackPtr10);
+                ++thread->stackPtr10;
+                releaseExpression(thread->stackPtr10);
+            }
+            *thread->stackPtr10=result;
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        case 2:{
+            u8 type=instruction->subcode;
+            s16 index=instruction->argument;
+            --thread->stackPtr10;
+            thread->stackPtr10->type=type;
+            thread->stackPtr10->flags=0;
+            if(type<=2){
+                thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+                thread->stackPtr10->value.integer=*(s32*)thread->code;
+            }else if(type==0x35){
+                thread->stackPtr10->type=1;
+                thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+                thread->stackPtr10->value.integer=*(s32*)thread->code;
+            }else if(type==3)thread->stackPtr10->value.string=(char*)field954+(u16)index;
+            else if(type==4)thread->stackPtr10->value.vector=(GSvec*)field95C+(u16)index;
+            else if(type==0x2c)thread->stackPtr10->value.pointer=resIdTable+(u16)index*2;
+            retainExpression(thread->stackPtr10);
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 3:{
+            s16 index=instruction->argument;
+            u32 kind=instruction->subcode&15;
+            --thread->stackPtr10;
+            if(kind==0){*thread->stackPtr10=globals[index];}
+            else if(kind==1){*thread->stackPtr10=thread->stackPtr0C[index];}
+            else if(kind==2){*thread->stackPtr10=(&thread->retVar)[index];}
+            else if(kind==3){getPresetVar(thread->stackPtr10,index,0);}
+            retainExpression(thread->stackPtr10);
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 17:{
+            s16 index=instruction->argument;
+            u32 kind=instruction->subcode&15;
+            --thread->stackPtr10;
+            if(kind==0){
+                if(((TigaInstruction*)thread->code)[1].subcode==4)prepareVector(this,&globals[index]);
+                *thread->stackPtr10=globals[index];}
+            else if(kind==1){
+                if(((TigaInstruction*)thread->code)[1].subcode==4)prepareVector(this,&thread->stackPtr0C[index]);
+                *thread->stackPtr10=thread->stackPtr0C[index];}
+            else if(kind==2){
+                if(((TigaInstruction*)thread->code)[1].subcode==4)prepareVector(this,&(&thread->retVar)[index]);
+                *thread->stackPtr10=(&thread->retVar)[index];}
+            else if(kind==3){getPresetVar(thread->stackPtr10,index,0);}
+            if(thread->stackPtr10->type==4){
+                GSvec* vector;
+                if(thread->stackPtr10->type==4)vector=thread->stackPtr10->value.vector;
+                else vector=thread->stackPtr10->getCnvVector();
+                objManager.addVectorIdx(vector);
+            }
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 4:{
+            s16 index=instruction->argument;
+            u32 kind=instruction->subcode&15;
+            if(kind==0){releaseExpression(&globals[index]);globals[index]=*thread->stackPtr10;}
+            else if(kind==1){releaseExpression(&thread->stackPtr0C[index]);thread->stackPtr0C[index]=*thread->stackPtr10;}
+            else if(kind==2){releaseExpression(&(&thread->retVar)[index]);(&thread->retVar)[index]=*thread->stackPtr10;}
+            else if(kind==3){setPresetVar(stack,index,0);}
+            clearExpression(thread->stackPtr10);
+            ++thread->stackPtr10;
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 5:{
+            u8 kind=instruction->subcode;
+            s16 index=instruction->argument;
+            int component=(kind>>4)&15;
+            switch((u32)(kind&15)){
+            case 0:globals[index].setVectorIdx(component,stack);break;
+            case 1:thread->stackPtr0C[index].setVectorIdx(component,stack);break;
+            case 2:(&thread->retVar)[index].setVectorIdx(component,stack);break;
+            case 3:setPresetVar(stack,index,component);break;
+            }
+            clearExpression(thread->stackPtr10);
+            ++thread->stackPtr10;
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 6:{
+            u8 count=instruction->subcode;
+            for(int i=0;i<count;++i){releaseExpression(thread->stackPtr10);++thread->stackPtr10;}
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 7:
+            --thread->stackPtr10;
+            thread->stackPtr10->type=0x35;
+            thread->stackPtr10->value.pointer=(TigaInstruction*)thread->code+1;
+            instruction=(TigaInstruction*)thread->code;
+            thread->code=(TPCCode*)(field944+((u16)instruction->argument+(instruction->subcode<<16))*4);
+            --thread->stackPtr14;
+            *thread->stackPtr14=(s32)thread->stackPtr0C;
+            thread->stackPtr0C=thread->stackPtr10;
+            break;
+        case 8:{
+            thread->stackPtr0C=(tigaVariant*)*thread->stackPtr14++;
+            void* address=thread->stackPtr10->value.pointer;
+            if(address){
+                thread->code=(TPCCode*)address;
+                clearExpression(thread->stackPtr10);
+                ++thread->stackPtr10;
+            }else{
+                resultVar=&thread->retVar;
+                ++thread->stackPtr10;
+                thread->stop();running=0;--threadCount;
+            }
+            break;
+        }
+        case 9:{
+            u8 wait=execMethod(instruction->subcode,instruction->argument,stack,&thread->retVar);
+            workBuffer=(TigaWorkPrefix*)&thread->code;
+            running=wait==0;
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 10:
+            if(stack->value.integer!=0)thread->code=(TPCCode*)(field944+((u16)instruction->argument+(instruction->subcode<<16))*4);
+            else thread->code=(TPCCode*)(instruction+1);
+            clearExpression(thread->stackPtr10);++thread->stackPtr10;break;
+        case 11:
+            if(stack->value.integer==0)thread->code=(TPCCode*)(field944+((u16)instruction->argument+(instruction->subcode<<16))*4);
+            else thread->code=(TPCCode*)(instruction+1);
+            clearExpression(thread->stackPtr10);++thread->stackPtr10;break;
+        case 12:thread->code=(TPCCode*)(field944+((u16)instruction->argument+(instruction->subcode<<16))*4);break;
+        case 13:{
+            u8 count=instruction->subcode;
+            for(int i=0;i<count;++i){--thread->stackPtr10;clearExpression(thread->stackPtr10);}
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 14:{
+            u8 count=instruction->subcode;
+            for(int i=0;i<count;++i){releaseExpression(thread->stackPtr10);++thread->stackPtr10;}
+            thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);
+            break;
+        }
+        case 15:running=0;thread->stop();--threadCount;thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);break;
+        case 16:thread->field14C=instruction->argument;thread->code=(TPCCode*)((TigaInstruction*)thread->code+1);break;
+        }
+    }
+    workBuffer=previousWork;
+    m_cpCurrentObject=previous;
+    return 1;
+}
+
+void Tiga::calcExpr1(int operation,tigaVariant* result,tigaVariant* operand) {
+    char buffer[256];
+    *result=*operand;
+    switch(operation) {
+    case 0x10:
+        if(operand->type==1)result->value.integer=~operand->value.integer;
+        else if(operand->type==2)result->value.single=(f32)~(s32)operand->value.single;
+        break;
+    case 0x11:
+        if(operand->type==1)result->value.integer=-operand->value.integer;
+        else if(operand->type==2)result->value.single=-operand->value.single;
+        else if(operand->type==4){
+            result->value.vector->param1=-result->value.vector->param1;
+            result->value.vector->param2=-result->value.vector->param2;
+            result->value.vector->param3=-result->value.vector->param3;
+        }
+        break;
+    case 0x12:
+        buffer[0]=0;
+        if(operand->type==1)sprintf(buffer,"%08x",operand->value.integer);
+        else if(operand->type==2)sprintf(buffer,"%08x",(s32)operand->value.single);
+        result->type=3;
+        result->value.string=buffer;
+        if(result->type!=1 && result->type!=2)Tiga::m_cpCurrentObject->cellMemory->dupVariant(result);
+        break;
+    case 0x13:
+        buffer[0]=0;
+        if(operand->type==1)sprintf(buffer,"%d",operand->value.integer);
+        else if(operand->type==2)sprintf(buffer,"%.3f",operand->value.single);
+        else if(operand->type==2)break;
+        else if(operand->type==4)sprintf(buffer,"<%.3f, %.3f, %.3f>",operand->value.vector->param1,operand->value.vector->param2,operand->value.vector->param3);
+        result->type=3;
+        result->value.string=buffer;
+        if(result->type!=1 && result->type!=2)Tiga::m_cpCurrentObject->cellMemory->dupVariant(result);
+        break;
+    case 0x14:
+        if(operand->type==2){result->type=1;result->value.integer=(s32)operand->value.single;}
+        else if(operand->type==3){result->type=1;result->value.integer=atoi(operand->value.string);}
+        break;
+    case 0x15:
+        if(operand->type==1){result->type=2;result->value.single=(f32)operand->value.integer;}
+        else if(operand->type==3){result->type=2;result->value.single=atof(operand->value.string);}
+        break;
+    case 0x16: {
+        f32 value;
+        if(operand->type==4)value=operand->value.vector->param1;
+        else{tigaErrMessage("vec.vx not access");value=0.0f;}
+        result->type=2;
+        result->value.single=value;
+        break;
+    }
+    case 0x17: {
+        f32 value;
+        if(operand->type==4)value=operand->value.vector->param2;
+        else{tigaErrMessage("vec.vy not access");value=0.0f;}
+        result->type=2;
+        result->value.single=value;
+        break;
+    }
+    case 0x18: {
+        f32 value;
+        if(operand->type==4)value=operand->value.vector->param3;
+        else{tigaErrMessage("vec.vz not access");value=0.0f;}
+        result->type=2;
+        result->value.single=value;
+        break;
+    }
+    case 0x19:result->type=2;result->value.single=0.0f;break;
+    }
+}
+
 
 }  // namespace GSscript

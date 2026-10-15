@@ -216,9 +216,14 @@ public:
     static bool Load(u8 **);
     static void Unload(u8 **);
 
+    void boneFillEffectLoad(u8 **);
+    void blurEffectLoad(u8 **);
+    void envMapEffectLoad(u8 **);
+    void filterEffectLoad(u8 **);
+
     GSeffect *effect;               // 0x30
     EffectTableEntry *table;        // 0x34
-    u8 pad38[4];
+    f32 effectTime;
     u8 count;                       // 0x3C
     u8 index;                       // 0x3D
     u8 pad3E[2];

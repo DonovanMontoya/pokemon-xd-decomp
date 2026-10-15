@@ -124,8 +124,10 @@ typedef struct MenuSubState {
     u8 reservedB49F[1];
     u8 unkB4A0;
 } MenuSubState;
+typedef struct MenuSubFaceRecord {void*texture;u32 reserved;} MenuSubFaceRecord;
 typedef struct MenuSubBattleWork {
-    u8 reserved0[0x2C];
+    u8 reserved0[0xC];
+    MenuSubFaceRecord faces[4];
     s32 unk2C;
     s32 unk30;
 } MenuSubBattleWork;
