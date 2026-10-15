@@ -17,11 +17,11 @@ extern "C" s32 pokecoloGetCountryCode();
 u32 _msgGetSize(const u16*);
 u32 _msgGetLength(const u16* text) { return (_msgGetSize(text) + 1) / 2 - 1; }
 tagFONT_INFO* _msgGetCodeInfo(MSG_TASK_WORK* task, u16 code, tagFONT_INFO** group) {
-    s32 i;
-    u16 count = _pMw->fontCount;
     s32 offset = 0;
+    u16 count = _pMw->fontCount;
+    s32 i = 0;
     MsgFontSlot* slot;
-    for (i = 0; i < count; ++i) {
+    for (; i < count; ++i) {
         slot = (MsgFontSlot*)((u8*)_pMw->fonts + offset);
         if (slot->identifier == task->fontID) break;
         offset += sizeof(MsgFontSlot);
@@ -29,19 +29,20 @@ tagFONT_INFO* _msgGetCodeInfo(MSG_TASK_WORK* task, u16 code, tagFONT_INFO** grou
     if (i == count) return 0;
     MsgFontGroup* node = (MsgFontGroup*)slot->data;
     while (node) {
-        u32 upper = node->count;
+        tagFONT_INFO* entries = node->entries;
         u32 lower = 0;
+        u32 upper = node->count;
         while (lower < upper) {
             u32 middle = (lower + upper) >> 1;
-            tagFONT_INFO* entry = &node->entries[middle];
-            if (entry->code == code) {
+            tagFONT_INFO* entry = &entries[middle];
+            if (code == entry->code) {
                 if (group) *group = (tagFONT_INFO*)node;
                 return entry;
             }
-            if (entry->code < code) lower = middle + 1;
+            if (code > entry->code) lower = middle + 1;
             else upper = middle;
         }
-        if (lower < upper) return 0;
+        if (lower < upper) break;
         node = node->next;
     }
     return 0;
@@ -119,10 +120,9 @@ u16* GSmsgGetGSchar(u32 identifier) {
             u32 upper = bundle->count;
             u32 lower = 0;
             MsgDirectoryEntry* directory = bundle->entries;
-            u32 candidate;
             while (lower < upper) {
                 middle = (lower + upper) >> 1;
-                candidate = directory[middle].identifier;
+                u32 candidate = directory[middle].identifier;
                 if (candidate == textID) return (u16*)((u8*)bundle + directory[middle].textOffset);
                 if (candidate < textID) lower = middle + 1;
                 else upper = middle;
@@ -157,9 +157,7 @@ MsgBundle* GSmsgOpen(MsgBundle* added) {
             return added;
         }
         bundle = next;
-        continue;
     }
-    return added;
 }
 #pragma dont_inline off
 void GSmsgSetFontInfo(MsgTask* task) {

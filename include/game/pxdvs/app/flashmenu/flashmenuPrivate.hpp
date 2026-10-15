@@ -4,6 +4,10 @@
 #include <dolphin/types.h>
 
 struct _PLACEOBJECT2;
+struct _SHAPERECORD;
+struct _DEFINETEXT;
+struct _DEFINEFONT2;
+struct _DEFINESHAPE;
 struct GStexture;
 struct GSgfxLayer;
 enum GSgfxLayerID { GSGFX_LAYER_ID_DUMMY };
@@ -21,7 +25,8 @@ struct FLASHCXFORM {
 struct FlashHeader {
     u8 reserved0[6];
     u16 frameCount;
-    u8 reserved8[0x10];
+    u8 reserved8[0xC];
+    u32 relocated;
     u16 layerCount;
     u16 itemCount;
 };
@@ -97,6 +102,10 @@ public:
     void Release();
     void DrawSub(GSgfxLayerID, tagWINDOW_WORK *, tagSPRITE_WORK *);
     unsigned char ParseTag(unsigned long, unsigned long, bool, bool, bool);
+    void ParseDefineShapeSub(_DEFINESHAPE *);
+    void ParseDefineFont2Sub(_DEFINEFONT2 *);
+    void ParaseTextRecord(_DEFINETEXT *);
+    void BlendShapeRecord(_SHAPERECORD *, _SHAPERECORD *, _SHAPERECORD *, f32);
 };
 
 #endif

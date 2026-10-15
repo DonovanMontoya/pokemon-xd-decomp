@@ -7,4 +7,6 @@ union LayerBlendRegister {
 struct LayerStateBlendRegisters { u8 reserved[0x38]; LayerBlendRegister blend; };
 ABI_OFF(LayerStateBlendRegisters, blend, 0x38);
 #define LAYER_BLEND_STATE reinterpret_cast<LayerStateBlendRegisters *>(gsgfxState)
+struct LayerAmbDirtyRow { u8 reserved[0x4B8]; u8 dirty; };
+struct LayerMatDirtyRow { u8 reserved[0x4C2]; u8 dirty; };
 #endif

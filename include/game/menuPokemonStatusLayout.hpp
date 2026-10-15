@@ -37,9 +37,13 @@ struct tagWINDOW_WORK {
 struct tagSPRITE_WORK {
     u8 reserved0[6];
     s16 id;                 // 0x06
-    u8 reserved8[0x4C];
+    u8 reserved8[0x44];
+    u32 message;            // 0x4C
+    u8 reserved50[4];
     s16 x;                  // 0x54
     s16 y;                  // 0x56
+    u8 reserved58[0xC];
+    u32 color;              // 0x64
 };
 
 // State of the status screen (static _menuStatus, 0x48 bytes).

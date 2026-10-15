@@ -69,6 +69,8 @@ public:
     u32 unk30;
     void init();
     void initByPokemonAndSetColorAnimationInAny(Pokemon *);
+    void initByPokemonAndSetColorAnimationInReliveHallVisitor(Pokemon *);
+    void initByPokemon(Pokemon *);
     void setAnimation(long);
     void drawAndUpdate(PocketVec<short>);
 };
@@ -88,7 +90,9 @@ public:
     CAnt ant;
     CAnt beforeAnt;
     u8 unk14C;
-    u8 reserved14D[7];
+    u8 reserved14D[3];
+    u8 flag150;
+    u8 reserved151[3];
     static PocketVec<short> defaultPositionTbl;
     void draw();
     bool isCatchPokemon();
@@ -304,7 +308,9 @@ public:
     u8 reserved2D0[0x320 - 0x2D0];
     u64 time;
     CMenuGlobalState *globalState;
-    u8 reserved32C[4];
+    u8 flag32C;
+    u8 reserved32D;
+    u16 val32E;
 };
 
 class CMetaMenu : public CMetaMenuBase {
@@ -336,6 +342,7 @@ public:
     void localWindowCreateAll();
     void localWindowSetTable(long *);
     static CMetaMenu *pCurrentMenu;
+    static long defautlLocalWindowOpenTable[];
     void alphaFadeOutAndWait();
     void alphaFadeUpdate();
     void alphaFadeOutKick();

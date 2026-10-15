@@ -11,6 +11,8 @@ struct GSeffect;
 enum enumSequenceEntryDataType {
     SEQENTRY_MAIN = 0,
     SEQENTRY_CAMERA = 1,
+    SEQENTRY_MODEL = 2,
+    SEQENTRY_EFFECT = 4,
     SEQENTRY_PARTICLE = 3,
     SEQENTRY_SOUND = 5,
     SEQENTRY_EVENT = 6,
@@ -27,6 +29,12 @@ public:
     virtual ~SequenceBase();
     virtual void Dummy1();
     virtual void GetPosition(f32 *);
+    virtual void GetRotation(f32 *);
+    virtual void GetScale(f32 *);
+    virtual void Slot1c();
+    virtual void Slot20();
+    virtual void Slot24();
+    virtual void SetFlag(bool);
     u16 id;                         // 0x4
     u8 visible;                     // 0x6
     u8 failed;                      // 0x7
@@ -40,6 +48,18 @@ public:
     void Sleep();
     void WakeUp();
     void *GetPart(enumNullJointName);
+    f32 GetModelScale(bool) const;
+    void Fly(bool);
+    void Land();
+    void Freeze();
+    void UnFreeze();
+    void ResetPosition();
+    void ResetRotation();
+    void ResetScale();
+    u8 pad0c[0x58 - 0xc];
+    u8 field58;                     // 0x58
+    u8 pad59[0x94 - 0x59];
+    u32 model;                      // 0x94
 };
 
 struct SequenceEntryData {
@@ -180,6 +200,7 @@ public:
     s32 field34;                    // 0x34
     u32 bank;                       // 0x38
     u32 generator;                  // 0x3C
+    s32 field40;                    // 0x40
 };
 
 class ModelEntry : public SequenceEntry {
@@ -194,7 +215,14 @@ public:
     static void Unload(u8 **);
 
     u32 resource;                   // 0x30
-    u8 pad34[0x18];
+    s32 animMode;                   // 0x34
+    s32 animIndex;                  // 0x38
+    s32 texAnimMode;                // 0x3C
+    s32 texAnimIndex;               // 0x40
+    u32 field44;                    // 0x44
+    u16 flags;                      // 0x48
+    u8 field4A;                     // 0x4A
+    u8 field4B;                     // 0x4B
     u32 model;                      // 0x4C
 };
 
@@ -222,23 +250,31 @@ public:
     void filterEffectLoad(u8 **);
 
     GSeffect *effect;               // 0x30
-    EffectTableEntry *table;        // 0x34
+    union {
+        EffectTableEntry *table;    // 0x34
+        f32 timeValue;
+    };
     f32 effectTime;
     u8 count;                       // 0x3C
     u8 index;                       // 0x3D
     u8 pad3E[2];
     u8 active;                      // 0x40
+    u8 effectType;                  // 0x41
 };
 
 class WazaSequence {
 public:
     SequenceEntry *GetEntryFromID(u8);
 
-    u8 pad00[8];
+    f32 clock;                      // 0x0
+    u8 pad04[4];
     u32 flags;                      // 0x8
     u8 pad0C[7];
     u8 index;                       // 0x13
-    u8 pad14[0xc];
+    u8 pad14;
+    u8 done;                        // 0x15
+    u8 pad16[6];
+    u32 field1c;                    // 0x1C
     SequenceEntry **entries;        // 0x20
     SequenceBase *sequence;         // 0x24
 };

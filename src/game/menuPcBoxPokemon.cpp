@@ -33,7 +33,21 @@ void msgctrlSetValue(u32, u32);
 void menuModelInit(MENU_MODEL *, s16, s16);
 void menuModelSetSize(MENU_MODEL *, s16, s16, s16, s16);
 void menuModelTerm(MENU_MODEL *);
-void menuModelCheck(MENU_MODEL *, s32);
+u8 menuModelCheck(MENU_MODEL *, s32);
+u8 menuModelComparePokemon(MENU_MODEL *, Pokemon *);
+void menuModelLoadPokemon(MENU_MODEL *, Pokemon *);
+void menuModelAdjustCamera(MENU_MODEL *);
+void menuModelSetAngle(MENU_MODEL *, f32 *);
+void menuModelRender(MENU_MODEL *);
+u8 menuSubGetPokemonSexForDisp(Pokemon *);
+s32 pokecoloGetCountryCode(void);
+void *itemDataBiosGetPtr(u16);
+u32 itemDataBiosGetName(void *);
+u32 GSmsgGetGSchar(u32);
+u32 pokemonDataBiosGetName(void *);
+s32 menuDrawReliveMeter3(Pokemon *, long, long, long, long, u8, s32);
+u16 zokuseiGetPokemonSpriteID(void *, u16);
+void menuDrawReliveUpdate(void);
 void menuModelRenderOffAll(MENU_MODEL *);
 void GSfsysRead(u32);
 void GSfsysReadWait(u32);
@@ -41,12 +55,16 @@ s32 GSfsysGetStatus(u32);
 void GSfsysFree(u32);
 void GSresFreeGroup(u32);
 void GSthreadSwitch();
+u8 GSgfxVideoGetVsyncRate();
 void menuNameEntryCall(s32, s32);
 s32 menuPokemonStatusOpenFromPcBox(Pokemon *, Pokemon *(*)(Pokemon *, MENU_POKEMON_CB_TYPE, long), long);
 }
 
+extern "C" long actionMenu__9CMetaMenuFPUlill(CMetaMenu *, u32 *, int, long, long, long);
+
 struct GSgfxLayer;
 void GSprimSetup2DRender(GSgfxLayer *);
+long relivehallGetLastViewStage(void);
 void menuPcBoxSetLastViewBox(long);
 long menuPcBoxGetLastViewBox(void);
 
@@ -175,6 +193,7 @@ public:
     void stateStatusProc();
     void stateMarkingProc();
     void stateMainProc();
+    void stateActionMenuMainProc();
     void stateDepositToPcBoxProc();
     void boxNameDraw(int, long, u32);
     void directActionExec();
@@ -290,8 +309,7 @@ int CMenuPokemonLeave::temochiPokemonGetFreePosition() {
 
 bool CMenuPokemonLeave::pokemonPcBoxMarkGetIndex(Pokemon *p, int idx) {
     if (p != 0) {
-        u8 mark = p->getPcboxMark();
-        return ((u8)(1 << idx) & mark) != 0;
+        return ((u8)(1 << idx) & p->getPcboxMark()) != 0;
     }
     return false;
 }
@@ -364,9 +382,10 @@ Pokemon *CMenuPokemonLeave::cursorUnderPokemonGetPointer() {
 }
 
 void CMenuPokemonLeave::currentPokemonDel(bool darkOut) {
-    if (currentPokemonGetPointer() != 0) {
+    Pokemon *cur = currentPokemonGetPointer();
+    if (cur != 0) {
         if (darkOut) {
-            DarkPokemon *dp = currentPokemonGetPointer()->getDarkPokemon();
+            DarkPokemon *dp = cur->getDarkPokemon();
             if (dp != 0) {
                 dp->setPlace(DARK_POKEMON_WHERE_6, 0);
             }
@@ -424,18 +443,20 @@ int CMenuPokemonLeave::temochiPokemonLiveQuantity(bool skipCursor) {
 }
 
 void CMenuPokemonLeave::temochiPokemonDelShift(int slot) {
-    while (slot < 5) {
-        Pokemon *cur = temochiPokemonGetPointer(slot);
-        Pokemon *next = temochiPokemonGetPointer(slot + 1);
+    Pokemon *next;
+    Pokemon *cur;
+    for (; slot < 5; slot++) {
+        cur = temochiPokemonGetPointer(slot);
+        next = temochiPokemonGetPointer(slot + 1);
         if (cur != 0) {
             if (next == 0) {
                 temochiPokemonDel(slot);
-                break;
+            } else {
+                memcpy(cur, next, 0xC4);
             }
-            memcpy(cur, next, 0xC4);
         }
-        slot++;
     }
+    temochiPokemonDel(5);
 }
 
 void CMenuPokemonLeave::waitAnimationStateEnd() {
@@ -574,6 +595,154 @@ void CMenuPokemonLeave::drawTemochiArea() {
                 ant->drawAndUpdateWithOffset(v);
             }
         }
+    }
+}
+
+void CMenuPokemonLeave::animationStateUpdate() {
+    scroll = 0.0f;
+    anim.update();
+    switch (anim.state) {
+    case 0:
+        if (anim.time == 0.0f) {
+            if (pad34B0[0] != 0) {
+                temochiX = 0;
+            } else {
+                temochiX = 0x1E0;
+            }
+            resetViewAntAll();
+            cursor->setAnimationOff();
+            resetStatusAndModelDisplayPokemon();
+            hideFlag = 0;
+        }
+        break;
+    case 2: {
+        if (anim.time == 0.0f) {
+            cursor->unk4 = 3;
+        }
+        f32 t = anim.time / 0.1f;
+        cursor->unk8 = t < 1.0f ? t : 1.0f;
+        if (t >= 1.0f) {
+            anim.sub = 0;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 3: {
+        if (anim.time == 0.0f) {
+            cursor->unk4 = 3;
+            cursor->unk8 = 0.0f;
+        }
+        f32 t = anim.time / 0.25f;
+        f32 m = t < 1.0f ? t : 1.0f;
+        temochiX = (s32)(480.0f * (1.0f - m));
+        if (t >= 1.0f) {
+            anim.sub = 2;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 4: {
+        if (anim.time == 0.0f) {
+            cursor->unk4 = 3;
+            cursor->unk8 = 0.0f;
+        }
+        f32 t = anim.time / 0.25f;
+        f32 m = t < 1.0f ? t : 1.0f;
+        temochiX = (s32)(480.0f * m);
+        if (t >= 1.0f) {
+            anim.sub = 2;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 5: {
+        u32 total = (u32)(0.5f * GSgfxVideoGetVsyncRate());
+        u32 next = anim.frames + 1;
+        f32 end = (f32)(next + 1) / (f32)total;
+        f32 t = (f32)next / (f32)total;
+        if (end >= 1.0f) {
+            anim.sub = 0;
+            memset(anim.saved, 0, 0x40);
+        }
+        scroll = t < 1.0f ? t : 1.0f;
+        break;
+    }
+    case 6: {
+        if (anim.time == 0.0f) {
+            cursor->unk4 = 1;
+            cursorUnderPokemonGetAntPointer()->unk14 = true;
+        }
+        f32 t = anim.time / 0.25f;
+        cursor->unk8 = t < 1.0f ? t : 1.0f;
+        if (t >= 1.0f) {
+            anim.sub = 0;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 7: {
+        if (anim.time == 0.0f) {
+            cursor->unk4 = 2;
+        }
+        f32 t = anim.time / 0.5f;
+        cursor->unk8 = t < 1.0f ? t : 1.0f;
+        if (t >= 1.0f) {
+            anim.sub = 1;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 8: {
+        f32 t = anim.time / 0.2f;
+        s32 idx = cursor->index;
+        s32 last = temochiPokemonGetFreePosition() - 1;
+        PocketVec<short> from = getTemochiSlotPosition(idx - 4);
+        PocketVec<short> to = getTemochiSlotPosition(last);
+        PocketVec<short> pos;
+        PocketVec<short> pos2;
+        CAnt *ant = &temochiAnt[last];
+        pos.x = (s16)(from.x + t * (to.x - from.x));
+        pos.y = (s16)(from.y + t * (to.y - from.y));
+        pos2 = pos;
+        ant->x = pos2.x;
+        ant->y = pos2.y;
+        if (t >= 1.0f) {
+            anim.sub = 0;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 9: {
+        if (anim.time == 0.0f) {
+            resetViewAntAll();
+            if (temochiPokemonIsFull()) {
+                anim.sub = 0;
+                memset(anim.saved, 0, 0x40);
+                break;
+            }
+        }
+        f32 t = anim.time / 0.2f;
+        int i = cursor->index - 4;
+        CAnt *ant = &temochiAnt[i];
+        for (; i < 6; i++, ant++) {
+            if (ant->unk0 != 0) {
+                PocketVec<short> a = getTemochiSlotPosition(i);
+                PocketVec<short> b = getTemochiSlotPosition(i + 1);
+                PocketVec<short> pos;
+                PocketVec<short> pos2;
+                pos.x = (s16)(b.x + t * (a.x - b.x));
+                pos.y = (s16)(b.y + t * (a.y - b.y));
+                pos2 = pos;
+                ant->x = pos2.x;
+                ant->y = pos2.y;
+            }
+        }
+        if (t >= 1.0f) {
+            anim.sub = 0;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
     }
 }
 
@@ -899,6 +1068,134 @@ void CMenuPokemonLeave::stateMainProc() {
     } while (baseAnim.sub == -1);
 }
 
+void CMenuPokemonLeave::actionExecByMsgID(u32 msg) {
+    switch (msg) {
+    case 0x3BCF: {
+        CMenuPokemonCursor *c;
+        Pokemon *p;
+        menuPtPlaySe(0x446);
+        c = cursor;
+        p = c->pokemon.checkValid() ? &c->pokemon : 0;
+        if (p->getHp() == 0 && currentPokemonGetArea() == 1 && temochiPokemonLiveQuantity(true) <= 0) {
+            baseAnim.sub = 8;
+            memset(baseAnim.saved, 0, 0x40);
+            *(u32 *)baseAnim.saved = 0x3BE3;
+            break;
+        }
+        c = cursor;
+        setStatusAndModelDisplayPokemon(c->pokemon.checkValid() ? &c->pokemon : 0);
+        c = cursor;
+        Pokemon tmp = *(c->pokemon.checkValid() ? &c->pokemon : 0);
+        cursor->setPokemon(cursorUnderPokemonGetPointer());
+        cursorUnderPokemonSet(&tmp, true);
+        anim.sub = 6;
+        memset(anim.saved, 0, 0x40);
+        resetViewAntAll();
+        break;
+    }
+    case 0x3BCE: {
+        CMenuPokemonCursor *c;
+        s32 idx;
+        menuPtPlaySe(0x446);
+        c = cursor;
+        cursorUnderPokemonSet(c->pokemon.checkValid() ? &c->pokemon : 0, false);
+        cursor->deletePokemon();
+        resetViewAntAll();
+        idx = cursor->index;
+        if (idx >= 4 && idx <= 9) {
+            if (idx - 4 >= temochiPokemonGetFreePosition()) {
+                anim.sub = 8;
+                memset(anim.saved, 0, 0x40);
+            }
+        }
+        break;
+    }
+    case 0x3BC8: {
+        s32 area = currentPokemonGetArea();
+        if (area == 2 && temochiPokemonLiveQuantity(true) <= 0) {
+            baseAnim.sub = 8;
+            memset(baseAnim.saved, 0, 0x40);
+            *(u32 *)baseAnim.saved = 0x3BE3;
+            break;
+        }
+        menuPtPlaySe(0x445);
+        Pokemon *under = cursorUnderPokemonGetPointer();
+        cursor->setPokemon(under);
+        cursorUnderPokemonDel();
+        resetViewAntAll();
+        if (area == 2) {
+            anim.sub = 9;
+            memset(anim.saved, 0, 0x40);
+        }
+        break;
+    }
+    case 0x3BC9:
+        baseAnim.sub = 0xE;
+        memset(baseAnim.saved, 0, 0x40);
+        break;
+    case 0x3BCA:
+        baseAnim.sub = 0xD;
+        memset(baseAnim.saved, 0, 0x40);
+        break;
+    case 0x3BCD:
+        if (currentPokemonGetArea() == 2 && temochiPokemonLiveQuantity(true) <= 0) {
+            baseAnim.sub = 8;
+            memset(baseAnim.saved, 0, 0x40);
+            *(u32 *)baseAnim.saved = 0x3BE3;
+            break;
+        }
+        baseAnim.sub = 9;
+        memset(baseAnim.saved, 0, 0x40);
+        break;
+    case 0x3BCB:
+        baseAnim.sub = 0xA;
+        memset(baseAnim.saved, 0, 0x40);
+        break;
+    case 0x3BE8:
+        baseAnim.sub = 0xB;
+        memset(baseAnim.saved, 0, 0x40);
+        break;
+    case 0x3BCC:
+        baseAnim.sub = 2;
+        memset(baseAnim.saved, 0, 0x40);
+        break;
+    }
+    if (baseAnim.sub == -1) {
+        baseAnim.sub = 2;
+        memset(baseAnim.saved, 0, 0x40);
+    }
+}
+
+void CMenuPokemonLeave::stateActionMenuMainProc() {
+    u32 items[6];
+    s32 idx;
+    long result;
+    if (cursor->isCatchPokemon()) {
+        if (cursorUnderPokemonGetPointer() != 0) {
+            items[0] = 0x3BCF;
+        } else {
+            items[0] = 0x3BCE;
+        }
+    } else {
+        items[0] = 0x3BC8;
+    }
+    items[1] = 0x3BC9;
+    idx = cursor->index;
+    if (idx >= 4 && idx <= 9) {
+        items[2] = 0x3BCD;
+    } else {
+        items[2] = 0x3BCA;
+    }
+    items[3] = 0x3BCB;
+    items[4] = 0x3BE8;
+    items[5] = 0x3BCC;
+    infoWindow.open(0x3BC7, false);
+    infoWindow.setMsgCtrlValue(0x32, (u32)currentPokemonGetPointer()->getNicknamePtr());
+    result = actionMenu__9CMetaMenuFPUlill(this, items, 6, 0x1C6, 0x8A, 0);
+    actionExecByMsgID(items[result]);
+    infoWindow.close();
+}
+
 void CMenuPokemonLeave::stateBoxNameChangeExecProc() {
     systemFadeOutSetAndWait(-1.0f);
     localWindowDeleteAll();
@@ -1204,6 +1501,127 @@ Pokemon *CMenuPokemonLeave::pokemonStatusMenuCallback(Pokemon *cur, MENU_POKEMON
         return p;
     }
     return cur;
+}
+
+void CMenuPokemonLeave::drawStatusArea() {
+    tagWINDOW_WORK *w;
+    Pokemon *p;
+    u8 loaded;
+    u32 sexMsg;
+    u16 item;
+    int i;
+    int j;
+    int k;
+    tagSPRITE_WORK *sp;
+    u32 titleMsg;
+    u32 nameMsg;
+    u32 levelMsg;
+    u16 sprites[2];
+    f32 angle[3];
+    w = windowSearchID(0x80);
+    loaded = 0;
+    p = getStatusAndModelDisplayPokemonGetPointer();
+    if (p != 0 && !menuModelComparePokemon(&model, p) && !menuModelCheck(&model, 0)) {
+        menuModelLoadPokemon(&model, p);
+        loaded = 1;
+        modelActive = 1;
+    }
+    if (p != 0 && menuModelComparePokemon(&model, p) && !menuModelCheck(&model, 0) && !loaded) {
+        menuPtSpriteWorkGetByItemID(w, 0x3D4, 0);
+        menuModelAdjustCamera(&model);
+        angle[0] = -0.1f;
+        angle[1] = 0.3f;
+        angle[2] = 0.0f;
+        menuModelSetAngle(&model, angle);
+        menuModelRender(&model);
+    } else {
+        menuModelRenderOffAll(&model);
+    }
+    sexMsg = 0;
+    if (p != 0) {
+        u8 sex = menuSubGetPokemonSexForDisp(p);
+        if (sex == 0) {
+            sexMsg = 0x9C5;
+        } else if (sex == 1) {
+            sexMsg = 0x9C6;
+        }
+    } else {
+        sexMsg = 0;
+    }
+    menuPtSpriteWorkSetMsgId(0x80, 0x5C2, 0, sexMsg);
+    item = 0;
+    if (p != 0) {
+        item = p->getItemDataId();
+    }
+    menuPtSpriteWorkSetSw(w, 0x3CF, 0, item != 0);
+    for (i = 0; i < 4; i++) {
+        menuPtSpriteWorkSetSw(w, 0x3C7, i, p != 0);
+    }
+    for (j = 0; j < 4; j++) {
+        menuPtSpriteWorkSetSw(w, 0x3CB, j, pokemonPcBoxMarkGetIndex(p, j));
+    }
+    menuPtSpriteWorkSetSw(w, 0x3DB, 0, p != 0);
+    menuPtWindowWorkDraw(0x80);
+    sp = menuPtSpriteWorkGetByItemID(w, 0x3D9, 0);
+    titleMsg = 0x3BD7;
+    if (globalState->mode == 2) {
+        u32 stage = relivehallGetLastViewStage() + 1;
+        titleMsg = 0x3C2D;
+        msgctrlSetValue(0x34, stage);
+    }
+    {
+        s16 tw = GSmsgGetRect(titleMsg) >> 16;
+        s16 off = (sp->width - tw) / 2;
+        GSmsgPrint2(w->layer, sp->x + off, sp->y, -1, titleMsg);
+    }
+    if (p != 0) {
+        switch (pokecoloGetCountryCode()) {
+        case 0:
+            nameMsg = 0x4276;
+            levelMsg = 0x427B;
+            break;
+        case 1:
+        case 2:
+            nameMsg = 0x4277;
+            levelMsg = 0x4351;
+            break;
+        }
+        if (item != 0) {
+            void *itemData = itemDataBiosGetPtr(item);
+            if (itemData != 0) {
+                msgctrlSetValue(0x37, GSmsgGetGSchar(itemDataBiosGetName(itemData)));
+                sp = menuPtSpriteWorkGetByItemID(w, 0x3D8, 0);
+                GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameMsg);
+            }
+        }
+        msgctrlSetValue(0x37, GSmsgGetGSchar(pokemonDataBiosGetName(p->getPokemonDataPtr())));
+        sp = menuPtSpriteWorkGetByItemID(w, 0x3DC, 0);
+        GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameMsg);
+        msgctrlSetValue(0x37, (u32)p->getNicknamePtr());
+        sp = menuPtSpriteWorkGetByItemID(w, 0x3DA, 0);
+        GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameMsg);
+        sp = menuPtSpriteWorkGetByItemID(w, 0x3DB, 0);
+        msgctrlSetValue(0x34, p->getLevel());
+        GSmsgPrint2(w->layer, sp->x + 0x24 + w->x, w->y + sp->y, -1, levelMsg);
+        if (p->isDarkPokemon()) {
+            sp = menuPtSpriteWorkGetByItemID(w, 0x4CE, 0);
+            menuDrawReliveMeter3(p, w->x + sp->x, w->y + sp->y, sp->width, sp->height, 0xFF, w->layer);
+        }
+        for (k = 0; k < 2; k++) {
+            sprites[k] = zokuseiGetPokemonSpriteID(p->getPokemonDataPtr(), k);
+        }
+        {
+            tagSPRITE_WORK *a = menuPtSpriteWorkGetByItemID(w, 0x5C0, 0);
+            tagSPRITE_WORK *b = menuPtSpriteWorkGetByItemID(w, 0x5C1, 0);
+            if (sprites[0] == sprites[1]) {
+                menuPtSpriteDraw(sprites[0], (a->x + b->x) / 2, (a->y + b->y) / 2);
+            } else {
+                menuPtSpriteDraw(sprites[0], a->x, a->y);
+                menuPtSpriteDraw(sprites[1], b->x, b->y);
+            }
+        }
+        menuDrawReliveUpdate();
+    }
 }
 
 void CMenuPokemonLeave::drawBoxArea(int box, f32 t) {

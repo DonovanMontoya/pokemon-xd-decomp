@@ -2,7 +2,10 @@
 
 // Layout views and callback contracts follow the original USA assembly.
 #include <libc/stddef.h>
-#include <libc/math.h>
+double sin(double x);
+double cos(double x);
+double __fabs(double x);
+#define fabs(x) __fabs(x)
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,17 +74,12 @@ static inline s32 bingoFindPokemon(u32 player) {
 
 u8 menuBattleDeBingoGetEpoint(void) {
     s32 total = 0;
-    s32 player = 0;
-    s32 index;
-    goto checkPlayer;
-nextPlayer:
-    index = bingoFindPokemon(player + 1);
-    if (index == -1) goto finished;
-    player++;
-    total += mPokemon__6cBingo[index].unkC4;
-checkPlayer:
-    if (player < 4) goto nextPlayer;
-finished:
+    s32 player;
+    for (player = 0; player < 4; player++) {
+        s32 index = bingoFindPokemon(player + 1);
+        if (index == -1) break;
+        total += mPokemon__6cBingo[index].unkC4;
+    }
     return (u8)(total + gBingo.unk12A);
 }
 
@@ -102,6 +100,57 @@ s32 menuBattleDeBingoGetResult(void) {
 
 void menuBattleDeBingo(void) {
     GSfloorPush(0x388);
+}
+
+static inline BingoCell *bingoCell(BingoState *state, u32 panel) {
+    return (BingoCell *)((u8 *)state + 8 + panel * sizeof(BingoCell));
+}
+static inline u8 bingoPanelOpen(BingoState *state, u32 panel) {
+    return bingoCell(state, panel)->unk2;
+}
+
+static inline u8 bingoLineClear(BingoState *state, s32 line) {
+    u32 i;
+    switch (line) {
+    case 0: case 1: case 2: case 3:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, line + i * 4) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+        break;
+    case 4: case 5: case 6: case 7:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, (7 - line) * 4 + i) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+        break;
+    case 8:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, 3 - i + i * 4) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+        break;
+    case 9:
+        for (i = 0; i < 4; i++) {
+            if (bingoPanelOpen(state, i + i * 4) != 0) {
+                if (i == 3) return 1;
+            } else break;
+        }
+    }
+    return 0;
+}
+
+
+static inline u8 bingoCompletedLines(BingoState *state) {
+    u8 count = 0;
+    s32 line;
+    for (line = 0; line < 10; ++line) {
+        if (bingoLineClear(state, line)) ++count;
+    }
+    return count;
 }
 
 s32 menuBingoPokemonDraw(BingoWindow *arg0, BingoSprite *arg1) {
@@ -1557,140 +1606,10 @@ loop_42:
         case -4294911242:                           /* switch 2 */
             temp_r28_6 = gBingo.unk12D;
             var_r3_3 = 0;
-            var_ctr_3 = 0xA - 0;
-            if (0 < 0xA) {
-                do {
-                    if (var_r3_3 != 8) {
-                        if (var_r3_3 < 8) {
-                            if (var_r3_3 < 4) {
-                                if (var_r3_3 < 0) {
-                                    goto block_132;
-                                }
-                                if ((u8) gBingo.cells[var_r3_3].unk2 != 0) {
-                                    if (0U == 3U) {
-                                        var_r0_3 = 1;
-                                    } else {
-                                        temp_r4_6 = (var_r3_3 * 8) + 0x20;
-                                        var_r0_3 = 1;
-                                        if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_6) + 0xA) != 0) {
-                                            if (1U == 3U) {
-
-                                            } else {
-                                                temp_r4_7 = temp_r4_6 + 0x20;
-                                                if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_7) + 0xA) != 0) {
-                                                    if (2U == 3U) {
-                                                        var_r0_3 = 1;
-                                                    } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r4_7 + 0x20)) + 0xA) != 0) && (3U == 3U)) {
-                                                        var_r0_3 = 1;
-                                                    } else {
-                                                        goto block_132;
-                                                    }
-                                                } else {
-                                                    goto block_132;
-                                                }
-                                            }
-                                        } else {
-                                            goto block_132;
-                                        }
-                                    }
-                                } else {
-                                    goto block_132;
-                                }
-                            } else {
-                                temp_r4_8 = (7 - var_r3_3) * 4;
-                                if ((u8) gBingo.cells[temp_r4_8].unk2 != 0) {
-                                    if (0U == 3U) {
-                                        var_r0_3 = 1;
-                                    } else {
-                                        var_r0_3 = 1;
-                                        if ((u8) *(u8 *)((u8 *)&gBingo.cells[temp_r4_8] + 0xA) != 0) {
-                                            if (1U == 3U) {
-
-                                            } else {
-                                                temp_r4_9 = (temp_r4_8 * 8) + 8 + 8;
-                                                if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_9) + 0xA) != 0) {
-                                                    if (2U == 3U) {
-                                                        var_r0_3 = 1;
-                                                    } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r4_9 + 8)) + 0xA) != 0) && (3U == 3U)) {
-                                                        var_r0_3 = 1;
-                                                    } else {
-                                                        goto block_132;
-                                                    }
-                                                } else {
-                                                    goto block_132;
-                                                }
-                                            }
-                                        } else {
-                                            goto block_132;
-                                        }
-                                    }
-                                } else {
-                                    goto block_132;
-                                }
-                            }
-                        } else if (var_r3_3 < 0xA) {
-                            if ((u8) gBingo.cells[0].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0_3 = 1;
-                                } else {
-                                    var_r0_3 = 1;
-                                    if ((u8) gBingo.cells[5].unk2 != 0) {
-                                        if (1U == 3U) {
-
-                                        } else if ((u8) gBingo.cells[0xA].unk2 != 0) {
-                                            if (2U == 3U) {
-                                                var_r0_3 = 1;
-                                            } else if (((u8) gBingo.cells[0xF].unk2 != 0) && (3U == 3U)) {
-                                                var_r0_3 = 1;
-                                            } else {
-                                                goto block_132;
-                                            }
-                                        } else {
-                                            goto block_132;
-                                        }
-                                    } else {
-                                        goto block_132;
-                                    }
-                                }
-                            } else {
-                                goto block_132;
-                            }
-                        } else {
-                            goto block_132;
-                        }
-                    } else if ((u8) gBingo.cells[3 - 0].unk2 != 0) {
-                        if (0U == 3U) {
-                            var_r0_3 = 1;
-                        } else {
-                            var_r0_3 = 1;
-                            if ((u8) gBingo.cells[(3 - 1) + 4].unk2 != 0) {
-                                if (1U == 3U) {
-
-                                } else if ((u8) gBingo.cells[(3 - 2) + 8].unk2 != 0) {
-                                    if (2U == 3U) {
-                                        var_r0_3 = 1;
-                                    } else if (((u8) gBingo.cells[(3 - 3) + 0xC].unk2 != 0) && (3U == 3U)) {
-                                        var_r0_3 = 1;
-                                    } else {
-                                        goto block_132;
-                                    }
-                                } else {
-                                    goto block_132;
-                                }
-                            } else {
-                                goto block_132;
-                            }
-                        }
-                    } else {
-block_132:
-                        var_r0_3 = 0;
-                    }
-                    if (var_r0_3 != 0) {
-                        var_r31 = (BingoPokemon *)((u8 *)var_r31 + 1);
-                    }
-                    var_r3_3 += 1;
-                    var_ctr_3 -= 1;
-                } while (var_ctr_3 != 0);
+            for (; var_r3_3 < 0xA; var_r3_3++) {
+                if (bingoLineClear(&gBingo, var_r3_3)) {
+                    var_r31 = (BingoPokemon *)((u8 *)var_r31 + 1);
+                }
             }
             msgctrlSetValue(0x37, GSmsgGetGSchar((u32) temp_r29));
             msgctrlSetValue(0x2F, (u32)var_r31 - temp_r28_6);
@@ -1699,140 +1618,10 @@ block_132:
         case -4294911241:                           /* switch 2 */
             temp_r28_7 = gBingo.unk12D;
             var_r3_4 = 0;
-            var_ctr_4 = 0xA - 0;
-            if (0 < 0xA) {
-                do {
-                    if (var_r3_4 != 8) {
-                        if (var_r3_4 < 8) {
-                            if (var_r3_4 < 4) {
-                                if (var_r3_4 < 0) {
-                                    goto block_196;
-                                }
-                                if ((u8) gBingo.cells[var_r3_4].unk2 != 0) {
-                                    if (0U == 3U) {
-                                        var_r0_4 = 1;
-                                    } else {
-                                        temp_r4_10 = (var_r3_4 * 8) + 0x20;
-                                        var_r0_4 = 1;
-                                        if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_10) + 0xA) != 0) {
-                                            if (1U == 3U) {
-
-                                            } else {
-                                                temp_r4_11 = temp_r4_10 + 0x20;
-                                                if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_11) + 0xA) != 0) {
-                                                    if (2U == 3U) {
-                                                        var_r0_4 = 1;
-                                                    } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r4_11 + 0x20)) + 0xA) != 0) && (3U == 3U)) {
-                                                        var_r0_4 = 1;
-                                                    } else {
-                                                        goto block_196;
-                                                    }
-                                                } else {
-                                                    goto block_196;
-                                                }
-                                            }
-                                        } else {
-                                            goto block_196;
-                                        }
-                                    }
-                                } else {
-                                    goto block_196;
-                                }
-                            } else {
-                                temp_r4_12 = (7 - var_r3_4) * 4;
-                                if ((u8) gBingo.cells[temp_r4_12].unk2 != 0) {
-                                    if (0U == 3U) {
-                                        var_r0_4 = 1;
-                                    } else {
-                                        var_r0_4 = 1;
-                                        if ((u8) *(u8 *)((u8 *)&gBingo.cells[temp_r4_12] + 0xA) != 0) {
-                                            if (1U == 3U) {
-
-                                            } else {
-                                                temp_r4_13 = (temp_r4_12 * 8) + 8 + 8;
-                                                if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_13) + 0xA) != 0) {
-                                                    if (2U == 3U) {
-                                                        var_r0_4 = 1;
-                                                    } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r4_13 + 8)) + 0xA) != 0) && (3U == 3U)) {
-                                                        var_r0_4 = 1;
-                                                    } else {
-                                                        goto block_196;
-                                                    }
-                                                } else {
-                                                    goto block_196;
-                                                }
-                                            }
-                                        } else {
-                                            goto block_196;
-                                        }
-                                    }
-                                } else {
-                                    goto block_196;
-                                }
-                            }
-                        } else if (var_r3_4 < 0xA) {
-                            if ((u8) gBingo.cells[0].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0_4 = 1;
-                                } else {
-                                    var_r0_4 = 1;
-                                    if ((u8) gBingo.cells[5].unk2 != 0) {
-                                        if (1U == 3U) {
-
-                                        } else if ((u8) gBingo.cells[0xA].unk2 != 0) {
-                                            if (2U == 3U) {
-                                                var_r0_4 = 1;
-                                            } else if (((u8) gBingo.cells[0xF].unk2 != 0) && (3U == 3U)) {
-                                                var_r0_4 = 1;
-                                            } else {
-                                                goto block_196;
-                                            }
-                                        } else {
-                                            goto block_196;
-                                        }
-                                    } else {
-                                        goto block_196;
-                                    }
-                                }
-                            } else {
-                                goto block_196;
-                            }
-                        } else {
-                            goto block_196;
-                        }
-                    } else if ((u8) gBingo.cells[3 - 0].unk2 != 0) {
-                        if (0U == 3U) {
-                            var_r0_4 = 1;
-                        } else {
-                            var_r0_4 = 1;
-                            if ((u8) gBingo.cells[(3 - 1) + 4].unk2 != 0) {
-                                if (1U == 3U) {
-
-                                } else if ((u8) gBingo.cells[(3 - 2) + 8].unk2 != 0) {
-                                    if (2U == 3U) {
-                                        var_r0_4 = 1;
-                                    } else if (((u8) gBingo.cells[(3 - 3) + 0xC].unk2 != 0) && (3U == 3U)) {
-                                        var_r0_4 = 1;
-                                    } else {
-                                        goto block_196;
-                                    }
-                                } else {
-                                    goto block_196;
-                                }
-                            } else {
-                                goto block_196;
-                            }
-                        }
-                    } else {
-block_196:
-                        var_r0_4 = 0;
-                    }
-                    if (var_r0_4 != 0) {
-                        var_r31 = (BingoPokemon *)((u8 *)var_r31 + 1);
-                    }
-                    var_r3_4 += 1;
-                    var_ctr_4 -= 1;
-                } while (var_ctr_4 != 0);
+            for (; var_r3_4 < 0xA; var_r3_4++) {
+                if (bingoLineClear(&gBingo, var_r3_4)) {
+                    var_r31 = (BingoPokemon *)((u8 *)var_r31 + 1);
+                }
             }
             msgctrlSetValue(0x37, GSmsgGetGSchar((u32) temp_r29));
             temp_r28_8 = (u32)var_r31 - temp_r28_7;
@@ -1846,140 +1635,10 @@ block_196:
             break;
         case -4294911173:                           /* switch 2 */
             var_r3_5 = 0;
-            var_ctr_5 = 0xA - 0;
-            if (0 < 0xA) {
-                do {
-                    if (var_r3_5 != 8) {
-                        if (var_r3_5 < 8) {
-                            if (var_r3_5 < 4) {
-                                if (var_r3_5 < 0) {
-                                    goto block_261;
-                                }
-                                if ((u8) gBingo.cells[var_r3_5].unk2 != 0) {
-                                    if (0U == 3U) {
-                                        var_r0_5 = 1;
-                                    } else {
-                                        temp_r4_14 = (var_r3_5 * 8) + 0x20;
-                                        var_r0_5 = 1;
-                                        if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_14) + 0xA) != 0) {
-                                            if (1U == 3U) {
-
-                                            } else {
-                                                temp_r4_15 = temp_r4_14 + 0x20;
-                                                if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_15) + 0xA) != 0) {
-                                                    if (2U == 3U) {
-                                                        var_r0_5 = 1;
-                                                    } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r4_15 + 0x20)) + 0xA) != 0) && (3U == 3U)) {
-                                                        var_r0_5 = 1;
-                                                    } else {
-                                                        goto block_261;
-                                                    }
-                                                } else {
-                                                    goto block_261;
-                                                }
-                                            }
-                                        } else {
-                                            goto block_261;
-                                        }
-                                    }
-                                } else {
-                                    goto block_261;
-                                }
-                            } else {
-                                temp_r4_16 = (7 - var_r3_5) * 4;
-                                if ((u8) gBingo.cells[temp_r4_16].unk2 != 0) {
-                                    if (0U == 3U) {
-                                        var_r0_5 = 1;
-                                    } else {
-                                        var_r0_5 = 1;
-                                        if ((u8) *(u8 *)((u8 *)&gBingo.cells[temp_r4_16] + 0xA) != 0) {
-                                            if (1U == 3U) {
-
-                                            } else {
-                                                temp_r4_17 = (temp_r4_16 * 8) + 8 + 8;
-                                                if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r4_17) + 0xA) != 0) {
-                                                    if (2U == 3U) {
-                                                        var_r0_5 = 1;
-                                                    } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r4_17 + 8)) + 0xA) != 0) && (3U == 3U)) {
-                                                        var_r0_5 = 1;
-                                                    } else {
-                                                        goto block_261;
-                                                    }
-                                                } else {
-                                                    goto block_261;
-                                                }
-                                            }
-                                        } else {
-                                            goto block_261;
-                                        }
-                                    }
-                                } else {
-                                    goto block_261;
-                                }
-                            }
-                        } else if (var_r3_5 < 0xA) {
-                            if ((u8) gBingo.cells[0].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0_5 = 1;
-                                } else {
-                                    var_r0_5 = 1;
-                                    if ((u8) gBingo.cells[5].unk2 != 0) {
-                                        if (1U == 3U) {
-
-                                        } else if ((u8) gBingo.cells[0xA].unk2 != 0) {
-                                            if (2U == 3U) {
-                                                var_r0_5 = 1;
-                                            } else if (((u8) gBingo.cells[0xF].unk2 != 0) && (3U == 3U)) {
-                                                var_r0_5 = 1;
-                                            } else {
-                                                goto block_261;
-                                            }
-                                        } else {
-                                            goto block_261;
-                                        }
-                                    } else {
-                                        goto block_261;
-                                    }
-                                }
-                            } else {
-                                goto block_261;
-                            }
-                        } else {
-                            goto block_261;
-                        }
-                    } else if ((u8) gBingo.cells[3 - 0].unk2 != 0) {
-                        if (0U == 3U) {
-                            var_r0_5 = 1;
-                        } else {
-                            var_r0_5 = 1;
-                            if ((u8) gBingo.cells[(3 - 1) + 4].unk2 != 0) {
-                                if (1U == 3U) {
-
-                                } else if ((u8) gBingo.cells[(3 - 2) + 8].unk2 != 0) {
-                                    if (2U == 3U) {
-                                        var_r0_5 = 1;
-                                    } else if (((u8) gBingo.cells[(3 - 3) + 0xC].unk2 != 0) && (3U == 3U)) {
-                                        var_r0_5 = 1;
-                                    } else {
-                                        goto block_261;
-                                    }
-                                } else {
-                                    goto block_261;
-                                }
-                            } else {
-                                goto block_261;
-                            }
-                        }
-                    } else {
-block_261:
-                        var_r0_5 = 0;
-                    }
-                    if (var_r0_5 != 0) {
-                        var_r31 = (BingoPokemon *)((u8 *)var_r31 + 1);
-                    }
-                    var_r3_5 += 1;
-                    var_ctr_5 -= 1;
-                } while (var_ctr_5 != 0);
+            for (; var_r3_5 < 0xA; var_r3_5++) {
+                if (bingoLineClear(&gBingo, var_r3_5)) {
+                    var_r31 = (BingoPokemon *)((u8 *)var_r31 + 1);
+                }
             }
             msgctrlSetValue(0x37, GSmsgGetGSchar((u32) temp_r29));
             msgctrlSetValue(0x2F, (u32) var_r31);
@@ -2283,7 +1942,7 @@ block_65:
     if ((s32) gBingo.unk12E != 0) {
         goto block_72;
     }
-    var_f1 = 128.0f * (1.0f + (f32) sin((f64) (9.424778f * gBingo.unk140)));
+    { f32 sv = (f32) sin((f64) (9.424778f * gBingo.unk140)); var_f1 = 128.0f * (1.0f + sv); }
     if (!(var_f1 > 255.0f)) {
         goto block_69;
     }
@@ -2693,140 +2352,10 @@ s32 menuBingoScoreDraw(BingoWindow *arg0, BingoSprite *arg1) {
         winSpriteSetDisp(arg1, 0);
         var_r3 = 0U;
         var_r4 = 0;
-        var_ctr = 0xA - 0;
-        if (0 < 0xA) {
-            do {
-                if (var_r4 != 8) {
-                    if (var_r4 < 8) {
-                        if (var_r4 < 4) {
-                            if (var_r4 < 0) {
-                                goto block_70;
-                            }
-                            if ((u8) gBingo.cells[var_r4].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0 = 1;
-                                } else {
-                                    temp_r5 = (var_r4 * 8) + 0x20;
-                                    var_r0 = 1;
-                                    if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r5) + 0xA) != 0) {
-                                        if (1U == 3U) {
-
-                                        } else {
-                                            temp_r5_2 = temp_r5 + 0x20;
-                                            if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r5_2) + 0xA) != 0) {
-                                                if (2U == 3U) {
-                                                    var_r0 = 1;
-                                                } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r5_2 + 0x20)) + 0xA) != 0) && (3U == 3U)) {
-                                                    var_r0 = 1;
-                                                } else {
-                                                    goto block_70;
-                                                }
-                                            } else {
-                                                goto block_70;
-                                            }
-                                        }
-                                    } else {
-                                        goto block_70;
-                                    }
-                                }
-                            } else {
-                                goto block_70;
-                            }
-                        } else {
-                            temp_r5_3 = (7 - var_r4) * 4;
-                            if ((u8) gBingo.cells[temp_r5_3].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0 = 1;
-                                } else {
-                                    var_r0 = 1;
-                                    if ((u8) *(u8 *)((u8 *)&gBingo.cells[temp_r5_3] + 0xA) != 0) {
-                                        if (1U == 3U) {
-
-                                        } else {
-                                            temp_r5_4 = (temp_r5_3 * 8) + 8 + 8;
-                                            if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r5_4) + 0xA) != 0) {
-                                                if (2U == 3U) {
-                                                    var_r0 = 1;
-                                                } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r5_4 + 8)) + 0xA) != 0) && (3U == 3U)) {
-                                                    var_r0 = 1;
-                                                } else {
-                                                    goto block_70;
-                                                }
-                                            } else {
-                                                goto block_70;
-                                            }
-                                        }
-                                    } else {
-                                        goto block_70;
-                                    }
-                                }
-                            } else {
-                                goto block_70;
-                            }
-                        }
-                    } else if (var_r4 < 0xA) {
-                        if ((u8) gBingo.cells[0].unk2 != 0) {
-                            if (0U == 3U) {
-                                var_r0 = 1;
-                            } else {
-                                var_r0 = 1;
-                                if ((u8) gBingo.cells[5].unk2 != 0) {
-                                    if (1U == 3U) {
-
-                                    } else if ((u8) gBingo.cells[0xA].unk2 != 0) {
-                                        if (2U == 3U) {
-                                            var_r0 = 1;
-                                        } else if (((u8) gBingo.cells[0xF].unk2 != 0) && (3U == 3U)) {
-                                            var_r0 = 1;
-                                        } else {
-                                            goto block_70;
-                                        }
-                                    } else {
-                                        goto block_70;
-                                    }
-                                } else {
-                                    goto block_70;
-                                }
-                            }
-                        } else {
-                            goto block_70;
-                        }
-                    } else {
-                        goto block_70;
-                    }
-                } else if ((u8) gBingo.cells[3 - 0].unk2 != 0) {
-                    if (0U == 3U) {
-                        var_r0 = 1;
-                    } else {
-                        var_r0 = 1;
-                        if ((u8) gBingo.cells[(3 - 1) + 4].unk2 != 0) {
-                            if (1U == 3U) {
-
-                            } else if ((u8) gBingo.cells[(3 - 2) + 8].unk2 != 0) {
-                                if (2U == 3U) {
-                                    var_r0 = 1;
-                                } else if (((u8) gBingo.cells[(3 - 3) + 0xC].unk2 != 0) && (3U == 3U)) {
-                                    var_r0 = 1;
-                                } else {
-                                    goto block_70;
-                                }
-                            } else {
-                                goto block_70;
-                            }
-                        } else {
-                            goto block_70;
-                        }
-                    }
-                } else {
-block_70:
-                    var_r0 = 0;
-                }
-                if (var_r0 != 0) {
-                    var_r3 += 1;
-                }
-                var_r4 += 1;
-                var_ctr -= 1;
-            } while (var_ctr != 0);
+        for (; var_r4 < 0xA; var_r4++) {
+            if (bingoLineClear(&gBingo, var_r4)) {
+                var_r3 += 1;
+            }
         }
         if ((u32) (var_r31 + 1) == var_r3) {
             if (isChgBingoLine__6cBingoFl(&gBingo, -1) != 0) {
@@ -2877,140 +2406,10 @@ block_70:
         msgctrlSetValue(0x34, (u32) var_r28);
         var_r3_2 = 0;
         var_r4_2 = 0;
-        var_ctr_2 = 0xA - 0;
-        if (0 < 0xA) {
-            do {
-                if (var_r4_2 != 8) {
-                    if (var_r4_2 < 8) {
-                        if (var_r4_2 < 4) {
-                            if (var_r4_2 < 0) {
-                                goto block_150;
-                            }
-                            if ((u8) gBingo.cells[var_r4_2].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0_2 = 1;
-                                } else {
-                                    temp_r5_5 = (var_r4_2 * 8) + 0x20;
-                                    var_r0_2 = 1;
-                                    if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r5_5) + 0xA) != 0) {
-                                        if (1U == 3U) {
-
-                                        } else {
-                                            temp_r5_6 = temp_r5_5 + 0x20;
-                                            if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r5_6) + 0xA) != 0) {
-                                                if (2U == 3U) {
-                                                    var_r0_2 = 1;
-                                                } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r5_6 + 0x20)) + 0xA) != 0) && (3U == 3U)) {
-                                                    var_r0_2 = 1;
-                                                } else {
-                                                    goto block_150;
-                                                }
-                                            } else {
-                                                goto block_150;
-                                            }
-                                        }
-                                    } else {
-                                        goto block_150;
-                                    }
-                                }
-                            } else {
-                                goto block_150;
-                            }
-                        } else {
-                            temp_r5_7 = (7 - var_r4_2) * 4;
-                            if ((u8) gBingo.cells[temp_r5_7].unk2 != 0) {
-                                if (0U == 3U) {
-                                    var_r0_2 = 1;
-                                } else {
-                                    var_r0_2 = 1;
-                                    if ((u8) *(u8 *)((u8 *)&gBingo.cells[temp_r5_7] + 0xA) != 0) {
-                                        if (1U == 3U) {
-
-                                        } else {
-                                            temp_r5_8 = (temp_r5_7 * 8) + 8 + 8;
-                                            if ((u8) *(u8 *)((u8 *)((u8 *)&gBingo + temp_r5_8) + 0xA) != 0) {
-                                                if (2U == 3U) {
-                                                    var_r0_2 = 1;
-                                                } else if (((u8) *(u8 *)((u8 *)((u8 *)&gBingo + (temp_r5_8 + 8)) + 0xA) != 0) && (3U == 3U)) {
-                                                    var_r0_2 = 1;
-                                                } else {
-                                                    goto block_150;
-                                                }
-                                            } else {
-                                                goto block_150;
-                                            }
-                                        }
-                                    } else {
-                                        goto block_150;
-                                    }
-                                }
-                            } else {
-                                goto block_150;
-                            }
-                        }
-                    } else if (var_r4_2 < 0xA) {
-                        if ((u8) gBingo.cells[0].unk2 != 0) {
-                            if (0U == 3U) {
-                                var_r0_2 = 1;
-                            } else {
-                                var_r0_2 = 1;
-                                if ((u8) gBingo.cells[5].unk2 != 0) {
-                                    if (1U == 3U) {
-
-                                    } else if ((u8) gBingo.cells[0xA].unk2 != 0) {
-                                        if (2U == 3U) {
-                                            var_r0_2 = 1;
-                                        } else if (((u8) gBingo.cells[0xF].unk2 != 0) && (3U == 3U)) {
-                                            var_r0_2 = 1;
-                                        } else {
-                                            goto block_150;
-                                        }
-                                    } else {
-                                        goto block_150;
-                                    }
-                                } else {
-                                    goto block_150;
-                                }
-                            }
-                        } else {
-                            goto block_150;
-                        }
-                    } else {
-                        goto block_150;
-                    }
-                } else if ((u8) gBingo.cells[3 - 0].unk2 != 0) {
-                    if (0U == 3U) {
-                        var_r0_2 = 1;
-                    } else {
-                        var_r0_2 = 1;
-                        if ((u8) gBingo.cells[(3 - 1) + 4].unk2 != 0) {
-                            if (1U == 3U) {
-
-                            } else if ((u8) gBingo.cells[(3 - 2) + 8].unk2 != 0) {
-                                if (2U == 3U) {
-                                    var_r0_2 = 1;
-                                } else if (((u8) gBingo.cells[(3 - 3) + 0xC].unk2 != 0) && (3U == 3U)) {
-                                    var_r0_2 = 1;
-                                } else {
-                                    goto block_150;
-                                }
-                            } else {
-                                goto block_150;
-                            }
-                        } else {
-                            goto block_150;
-                        }
-                    }
-                } else {
-block_150:
-                    var_r0_2 = 0;
-                }
-                if (var_r0_2 != 0) {
-                    var_r3_2 += 1;
-                }
-                var_r4_2 += 1;
-                var_ctr_2 -= 1;
-            } while (var_ctr_2 != 0);
+        for (; var_r4_2 < 0xA; var_r4_2++) {
+            if (bingoLineClear(&gBingo, var_r4_2)) {
+                var_r3_2 += 1;
+            }
         }
         if (var_r31 == (u32) (var_r3_2 - 1)) {
             GSmsgPrintRect(temp_r29, 0, 0, arg1->unk54, arg1->unk56, 0xFF, 0x4287);
@@ -3247,7 +2646,7 @@ loop_47:
                 }
             }
             if (var_r0_2 == 2) {
-                var_f1 = 128.0f * (1.0f + (f32) sin((f64) (9.424778f * gBingo.unk140)));
+                { f32 sv = (f32) sin((f64) (9.424778f * gBingo.unk140)); var_f1 = 128.0f * (1.0f + sv); }
                 if (var_f1 > 255.0f) {
                     var_f1 = 255.0f;
                 }
@@ -5978,11 +5377,14 @@ block_939:
 
 static inline u8 bingoNoClearedPanel(BingoState *state) {
     u32 count = 0;
-    u32 i;
-    for (i = 0; i < 16; i++) {
+    u32 i = count;
+    for (; i < 16; i++) {
         if (state->cells[i].unk2 != 0) count++;
     }
-    return count == 0;
+    if (count != 0) {
+        return 0;
+    }
+    return 1;
 }
 
 s32 menuBingoSheetCur(BingoWindow *arg0) {
@@ -6050,8 +5452,8 @@ s32 menuBingoSheetCur(BingoWindow *arg0) {
             goto block_38;
         }
     } else {
-        temp_r5_2 = var_r31 / 4;
         temp_r4_4 = var_r31 % 4;
+        temp_r5_2 = var_r31 / 4;
         if (((s32) (temp_r5_2 - 1) >= 0) && ((u8) gBingo.cells[(u32)(var_r31 - 4)].unk2 != 0)) {
             var_r0 = 1;
         } else if (((s32) (temp_r5_2 + 1) <= 3) && ((u8) gBingo.cells[(u32)(var_r31 + 4)].unk2 != 0)) {
@@ -6249,57 +5651,6 @@ s32 fn_80091DD8(BingoWindow *arg0) {
         break;
     }
     return 0;
-}
-
-static inline BingoCell *bingoCell(BingoState *state, u32 panel) {
-    return (BingoCell *)((u8 *)state + 8 + panel * sizeof(BingoCell));
-}
-static inline u8 bingoPanelOpen(BingoState *state, u32 panel) {
-    return bingoCell(state, panel)->unk2;
-}
-
-static inline u8 bingoLineClear(BingoState *state, s32 line) {
-    u32 i;
-    switch (line) {
-    case 0: case 1: case 2: case 3:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, line + i * 4) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-        break;
-    case 4: case 5: case 6: case 7:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, (7 - line) * 4 + i) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-        break;
-    case 8:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, 3 - i + i * 4) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-        break;
-    case 9:
-        for (i = 0; i < 4; i++) {
-            if (bingoPanelOpen(state, i + i * 4) != 0) {
-                if (i == 3) return 1;
-            } else break;
-        }
-    }
-    return 0;
-}
-
-
-static inline u8 bingoCompletedLines(BingoState *state) {
-    u8 count = 0;
-    s32 line;
-    for (line = 0; line < 10; ++line) {
-        if (bingoLineClear(state, line)) ++count;
-    }
-    return count;
 }
 
 static inline u8 bingoCanOpenPanel(BingoState *state) {
@@ -6801,190 +6152,11 @@ block_42:
     var_r3 = 0;
     var_r4_3 = 0;
     arg0->cells[arg0->unk134].unk2 = 1;
-    var_ctr_2 = 0xA - 0;
-    if (0 >= 0xA) {
-        goto block_105;
+    for (; var_r4_3 < 0xA; var_r4_3++) {
+        if (bingoLineClear(&gBingo, var_r4_3)) {
+            var_r3 += 1;
+        }
     }
-loop_43:
-    if (var_r4_3 == 8) {
-        goto block_76;
-    }
-    if (var_r4_3 >= 8) {
-        goto block_48;
-    }
-    if (var_r4_3 >= 4) {
-        goto block_63;
-    }
-    if (var_r4_3 >= 0) {
-        goto block_50;
-    }
-    goto block_101;
-block_48:
-    if (var_r4_3 >= 0xA) {
-        goto block_101;
-    }
-    goto block_89;
-block_50:
-    temp_r5_2 = var_r4_3 * 8;
-    if ((u8) arg0->cells[var_r4_3].unk2 == 0) {
-        goto block_101;
-    }
-    if (0U != 3U) {
-        goto block_53;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_53:
-    var_r7_2 = 1;
-    if ((u8) *((u8 *)arg0 + (temp_r5_2 + 0x2A)) == 0) {
-        goto block_101;
-    }
-    if (1U != 3U) {
-        goto block_56;
-    }
-    goto block_102;
-block_56:
-    if ((u8) *((u8 *)arg0 + (temp_r5_2 + 0x4A)) == 0) {
-        goto block_101;
-    }
-    if (2U != 3U) {
-        goto block_59;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_59:
-    if ((u8) *((u8 *)arg0 + (temp_r5_2 + 0x6A)) == 0) {
-        goto block_101;
-    }
-    if (3U != 3U) {
-        goto block_101;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_63:
-    temp_r0_4 = (7 - var_r4_3) * 4;
-    temp_r5_3 = temp_r0_4 * 8;
-    if ((u8) arg0->cells[temp_r0_4].unk2 == 0) {
-        goto block_101;
-    }
-    if (0U != 3U) {
-        goto block_66;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_66:
-    var_r7_2 = 1;
-    if ((u8) *((u8 *)arg0 + (temp_r5_3 + 0x12)) == 0) {
-        goto block_101;
-    }
-    if (1U != 3U) {
-        goto block_69;
-    }
-    goto block_102;
-block_69:
-    if ((u8) *((u8 *)arg0 + (temp_r5_3 + 0x1A)) == 0) {
-        goto block_101;
-    }
-    if (2U != 3U) {
-        goto block_72;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_72:
-    if ((u8) *((u8 *)arg0 + (temp_r5_3 + 0x22)) == 0) {
-        goto block_101;
-    }
-    if (3U != 3U) {
-        goto block_101;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_76:
-    if ((u8) arg0->cells[3 - 0].unk2 == 0) {
-        goto block_101;
-    }
-    if (0U != 3U) {
-        goto block_79;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_79:
-    var_r7_2 = 1;
-    if ((u8) arg0->cells[(3 - 1) + 4].unk2 == 0) {
-        goto block_101;
-    }
-    if (1U != 3U) {
-        goto block_82;
-    }
-    goto block_102;
-block_82:
-    if ((u8) arg0->cells[(3 - 2) + 8].unk2 == 0) {
-        goto block_101;
-    }
-    if (2U != 3U) {
-        goto block_85;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_85:
-    if ((u8) arg0->cells[(3 - 3) + 0xC].unk2 == 0) {
-        goto block_101;
-    }
-    if (3U != 3U) {
-        goto block_101;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_89:
-    if ((u8) arg0->cells[0].unk2 == 0) {
-        goto block_101;
-    }
-    if (0U != 3U) {
-        goto block_92;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_92:
-    var_r7_2 = 1;
-    if ((u8) arg0->cells[5].unk2 == 0) {
-        goto block_101;
-    }
-    if (1U != 3U) {
-        goto block_95;
-    }
-    goto block_102;
-block_95:
-    if ((u8) arg0->cells[0xA].unk2 == 0) {
-        goto block_101;
-    }
-    if (2U != 3U) {
-        goto block_98;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_98:
-    if ((u8) arg0->cells[0xF].unk2 == 0) {
-        goto block_101;
-    }
-    if (3U != 3U) {
-        goto block_101;
-    }
-    var_r7_2 = 1;
-    goto block_102;
-block_101:
-    var_r7_2 = 0;
-block_102:
-    if (var_r7_2 == 0) {
-        goto block_104;
-    }
-    var_r3 += 1;
-block_104:
-    var_r4_3 += 1;
-    var_ctr_2 -= 1;
-    if (var_ctr_2 != 0) {
-        goto loop_43;
-    }
-block_105:
     if ((s32) (var_r3 - arg0->unk12D) == 0) {
         goto block_107;
     }
@@ -7181,190 +6353,11 @@ block_163:
     return;
 case 3:
     var_r3_3 = 0;
-    var_ctr_4 = 0xA - 0;
-    if (0 >= 0xA) {
-        goto block_227;
+    for (; var_r3_3 < 0xA; var_r3_3++) {
+        if (bingoLineClear(&gBingo, var_r3_3)) {
+            var_r4 += 1;
+        }
     }
-loop_165:
-    if (var_r3_3 == 8) {
-        goto block_198;
-    }
-    if (var_r3_3 >= 8) {
-        goto block_170;
-    }
-    if (var_r3_3 >= 4) {
-        goto block_185;
-    }
-    if (var_r3_3 >= 0) {
-        goto block_172;
-    }
-    goto block_223;
-block_170:
-    if (var_r3_3 >= 0xA) {
-        goto block_223;
-    }
-    goto block_211;
-block_172:
-    temp_r5_4 = var_r3_3 * 8;
-    if ((u8) arg0->cells[var_r3_3].unk2 == 0) {
-        goto block_223;
-    }
-    if (0U != 3U) {
-        goto block_175;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_175:
-    var_r7_3 = 1;
-    if ((u8) *((u8 *)arg0 + (temp_r5_4 + 0x2A)) == 0) {
-        goto block_223;
-    }
-    if (1U != 3U) {
-        goto block_178;
-    }
-    goto block_224;
-block_178:
-    if ((u8) *((u8 *)arg0 + (temp_r5_4 + 0x4A)) == 0) {
-        goto block_223;
-    }
-    if (2U != 3U) {
-        goto block_181;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_181:
-    if ((u8) *((u8 *)arg0 + (temp_r5_4 + 0x6A)) == 0) {
-        goto block_223;
-    }
-    if (3U != 3U) {
-        goto block_223;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_185:
-    temp_r5_5 = (7 - var_r3_3) * 4;
-    temp_r5_6 = temp_r5_5 * 8;
-    if ((u8) arg0->cells[temp_r5_5].unk2 == 0) {
-        goto block_223;
-    }
-    if (0U != 3U) {
-        goto block_188;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_188:
-    var_r7_3 = 1;
-    if ((u8) *((u8 *)arg0 + (temp_r5_6 + 0x12)) == 0) {
-        goto block_223;
-    }
-    if (1U != 3U) {
-        goto block_191;
-    }
-    goto block_224;
-block_191:
-    if ((u8) *((u8 *)arg0 + (temp_r5_6 + 0x1A)) == 0) {
-        goto block_223;
-    }
-    if (2U != 3U) {
-        goto block_194;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_194:
-    if ((u8) *((u8 *)arg0 + (temp_r5_6 + 0x22)) == 0) {
-        goto block_223;
-    }
-    if (3U != 3U) {
-        goto block_223;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_198:
-    if ((u8) arg0->cells[3 - 0].unk2 == 0) {
-        goto block_223;
-    }
-    if (0U != 3U) {
-        goto block_201;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_201:
-    var_r7_3 = 1;
-    if ((u8) arg0->cells[(3 - 1) + 4].unk2 == 0) {
-        goto block_223;
-    }
-    if (1U != 3U) {
-        goto block_204;
-    }
-    goto block_224;
-block_204:
-    if ((u8) arg0->cells[(3 - 2) + 8].unk2 == 0) {
-        goto block_223;
-    }
-    if (2U != 3U) {
-        goto block_207;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_207:
-    if ((u8) arg0->cells[(3 - 3) + 0xC].unk2 == 0) {
-        goto block_223;
-    }
-    if (3U != 3U) {
-        goto block_223;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_211:
-    if ((u8) arg0->cells[0].unk2 == 0) {
-        goto block_223;
-    }
-    if (0U != 3U) {
-        goto block_214;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_214:
-    var_r7_3 = 1;
-    if ((u8) arg0->cells[5].unk2 == 0) {
-        goto block_223;
-    }
-    if (1U != 3U) {
-        goto block_217;
-    }
-    goto block_224;
-block_217:
-    if ((u8) arg0->cells[0xA].unk2 == 0) {
-        goto block_223;
-    }
-    if (2U != 3U) {
-        goto block_220;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_220:
-    if ((u8) arg0->cells[0xF].unk2 == 0) {
-        goto block_223;
-    }
-    if (3U != 3U) {
-        goto block_223;
-    }
-    var_r7_3 = 1;
-    goto block_224;
-block_223:
-    var_r7_3 = 0;
-block_224:
-    if (var_r7_3 == 0) {
-        goto block_226;
-    }
-    var_r4 += 1;
-block_226:
-    var_r3_3 += 1;
-    var_ctr_4 -= 1;
-    if (var_ctr_4 != 0) {
-        goto loop_165;
-    }
-block_227:
     temp_r0_7 = var_r4 - arg0->unk12D;
     if (temp_r0_7 == 0) {
         goto block_234;
@@ -7575,190 +6568,11 @@ block_286:
     return;
 case 4:
     var_r6_4 = 0;
-    var_ctr_7 = 0xA - 0;
-    if (0 >= 0xA) {
-        goto block_351;
+    for (; var_r6_4 < 0xA; var_r6_4++) {
+        if (bingoLineClear(&gBingo, var_r6_4)) {
+            var_r4 += 1;
+        }
     }
-loop_289:
-    if (var_r6_4 == 8) {
-        goto block_322;
-    }
-    if (var_r6_4 >= 8) {
-        goto block_294;
-    }
-    if (var_r6_4 >= 4) {
-        goto block_309;
-    }
-    if (var_r6_4 >= 0) {
-        goto block_296;
-    }
-    goto block_347;
-block_294:
-    if (var_r6_4 >= 0xA) {
-        goto block_347;
-    }
-    goto block_335;
-block_296:
-    temp_r3_8 = var_r6_4 * 8;
-    if ((u8) arg0->cells[var_r6_4].unk2 == 0) {
-        goto block_347;
-    }
-    if (0U != 3U) {
-        goto block_299;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_299:
-    var_r7_6 = 1;
-    if ((u8) *((u8 *)arg0 + (temp_r3_8 + 0x2A)) == 0) {
-        goto block_347;
-    }
-    if (1U != 3U) {
-        goto block_302;
-    }
-    goto block_348;
-block_302:
-    if ((u8) *((u8 *)arg0 + (temp_r3_8 + 0x4A)) == 0) {
-        goto block_347;
-    }
-    if (2U != 3U) {
-        goto block_305;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_305:
-    if ((u8) *((u8 *)arg0 + (temp_r3_8 + 0x6A)) == 0) {
-        goto block_347;
-    }
-    if (3U != 3U) {
-        goto block_347;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_309:
-    temp_r0_8 = (7 - var_r6_4) * 4;
-    temp_r3_9 = temp_r0_8 * 8;
-    if ((u8) arg0->cells[temp_r0_8].unk2 == 0) {
-        goto block_347;
-    }
-    if (0U != 3U) {
-        goto block_312;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_312:
-    var_r7_6 = 1;
-    if ((u8) *((u8 *)arg0 + (temp_r3_9 + 0x12)) == 0) {
-        goto block_347;
-    }
-    if (1U != 3U) {
-        goto block_315;
-    }
-    goto block_348;
-block_315:
-    if ((u8) *((u8 *)arg0 + (temp_r3_9 + 0x1A)) == 0) {
-        goto block_347;
-    }
-    if (2U != 3U) {
-        goto block_318;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_318:
-    if ((u8) *((u8 *)arg0 + (temp_r3_9 + 0x22)) == 0) {
-        goto block_347;
-    }
-    if (3U != 3U) {
-        goto block_347;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_322:
-    if ((u8) arg0->cells[3 - 0].unk2 == 0) {
-        goto block_347;
-    }
-    if (0U != 3U) {
-        goto block_325;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_325:
-    var_r7_6 = 1;
-    if ((u8) arg0->cells[(3 - 1) + 4].unk2 == 0) {
-        goto block_347;
-    }
-    if (1U != 3U) {
-        goto block_328;
-    }
-    goto block_348;
-block_328:
-    if ((u8) arg0->cells[(3 - 2) + 8].unk2 == 0) {
-        goto block_347;
-    }
-    if (2U != 3U) {
-        goto block_331;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_331:
-    if ((u8) arg0->cells[(3 - 3) + 0xC].unk2 == 0) {
-        goto block_347;
-    }
-    if (3U != 3U) {
-        goto block_347;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_335:
-    if ((u8) arg0->cells[0].unk2 == 0) {
-        goto block_347;
-    }
-    if (0U != 3U) {
-        goto block_338;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_338:
-    var_r7_6 = 1;
-    if ((u8) arg0->cells[5].unk2 == 0) {
-        goto block_347;
-    }
-    if (1U != 3U) {
-        goto block_341;
-    }
-    goto block_348;
-block_341:
-    if ((u8) arg0->cells[0xA].unk2 == 0) {
-        goto block_347;
-    }
-    if (2U != 3U) {
-        goto block_344;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_344:
-    if ((u8) arg0->cells[0xF].unk2 == 0) {
-        goto block_347;
-    }
-    if (3U != 3U) {
-        goto block_347;
-    }
-    var_r7_6 = 1;
-    goto block_348;
-block_347:
-    var_r7_6 = 0;
-block_348:
-    if (var_r7_6 == 0) {
-        goto block_350;
-    }
-    var_r4 += 1;
-block_350:
-    var_r6_4 += 1;
-    var_ctr_7 -= 1;
-    if (var_ctr_7 != 0) {
-        goto loop_289;
-    }
-block_351:
     if ((s32) (var_r4 - arg0->unk12D) == 0) {
         goto block_416;
     }
@@ -8884,6 +7698,7 @@ block_262:
 
 void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg0, u32 arg1, BingoWindow *arg2, BingoSprite *arg3) {
     u8 bingoPanelType;
+    s32 temp_r30;
     BingoSprite sp98;
     BingoSprite sp20;
     f32 facePositionA[2];
@@ -8919,7 +7734,6 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
     s16 temp_r5_2;
     s32 temp_r0_2;
     s32 temp_r0_3;
-    s32 temp_r30;
     u16 temp_r24_2;
     u16 temp_r29;
     u16 temp_r31;
@@ -8936,8 +7750,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
                 temp_f3 = fabs((f32) cos((f64) temp_f31));
                 sp8 = temp_r30;
                 temp_f3_2 = (f32) temp_f3;
-                temp_r3 = (s16) (temp_f3_2 * -35.0f);
-                windowDrawSprite2((s16) (temp_r3 + 0x23), 0, (s16) ((temp_f3_2 * 35.0f) - (f32) temp_r3), 0x43, -1U, arg2, 0x29EU, 0, sp8);
+                temp_r3 = (s16) (-35.0f * temp_f3_2);
+                windowDrawSprite2((s16) (temp_r3 + 0x23), 0, (s16) ((35.0f * temp_f3_2) - (f32) temp_r3), 0x43, -1U, arg2, 0x29EU, 0, sp8);
             } else {
                 temp_r24 = getPokemonDataPtr__7PokemonCFv(&mPokemon__6cBingo[arg0->cells[arg1].unk1]);
                 bingoPanelType = getPanelType__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, (u32) arg0->cells[(u16) arg1].unk1);
@@ -8945,8 +7759,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
                 temp_f3_3 = fabs((f32) cos((f64) temp_f31));
                 sp8 = temp_r30;
                 temp_f3_4 = (f32) temp_f3_3;
-                temp_r3_2 = (s16) (temp_f3_4 * -35.0f);
-                windowDrawSprite2((s16) (temp_r3_2 + 0x23), 0, (s16) ((temp_f3_4 * 35.0f) - (f32) temp_r3_2), 0x43, -1U, arg2, temp_r24_2, 0, sp8);
+                temp_r3_2 = (s16) (-35.0f * temp_f3_4);
+                windowDrawSprite2((s16) (temp_r3_2 + 0x23), 0, (s16) ((35.0f * temp_f3_4) - (f32) temp_r3_2), 0x43, -1U, arg2, temp_r24_2, 0, sp8);
             }
             arg0->cells[arg1].unk4 = -((4.0f * timeGetLastFrameSec()) - arg0->cells[arg1].unk4);
             return;
@@ -8954,8 +7768,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
         if ((u8) arg0->cells[arg1].unk0 != 0) {
             temp_r25 = getGridGrid__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, (u32) arg0->cells[arg1].unk1);
             temp_f3_5 = (f32) fabs((f32) cos((f64) temp_f31));
-            temp_r4 = (s16) (temp_f3_5 * -35.0f);
-            temp_r5 = (s16) ((temp_f3_5 * 35.0f) - (f32) temp_r4);
+            temp_r4 = (s16) (-35.0f * temp_f3_5);
+            temp_r5 = (s16) ((35.0f * temp_f3_5) - (f32) temp_r4);
             switch ((s32) temp_r25) {               /* switch 1; irregular */
             case 0:                                 /* switch 1 */
                 break;
@@ -8965,8 +7779,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
                 temp_f3_6 = fabs((f32) cos((f64) temp_f31));
                 sp8 = temp_r30;
                 temp_f3_7 = (f32) temp_f3_6;
-                temp_r3_3 = (s16) (temp_f3_7 * -19.0f);
-                windowDrawSprite2((s16) (temp_r3_3 + 0x23), 7, (s16) ((temp_f3_7 * 19.0f) - (f32) temp_r3_3), 0x26, -1U, arg2, 0x27CU, 0, sp8);
+                temp_r3_3 = (s16) (-19.0f * temp_f3_7);
+                windowDrawSprite2((s16) (temp_r3_3 + 0x23), 7, (s16) ((19.0f * temp_f3_7) - (f32) temp_r3_3), 0x26, -1U, arg2, 0x27CU, 0, sp8);
                 break;
             case 2:                                 /* switch 1 */
                 sp8 = temp_r30;
@@ -8974,8 +7788,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
                 temp_f3_8 = fabs((f32) cos((f64) temp_f31));
                 sp8 = temp_r30;
                 temp_f3_9 = (f32) temp_f3_8;
-                temp_r3_4 = (s16) (temp_f3_9 * -19.0f);
-                windowDrawSprite2((s16) (temp_r3_4 + 0x23), 7, (s16) ((temp_f3_9 * 19.0f) - (f32) temp_r3_4), 0x26, -1U, arg2, 0x27DU, 0, sp8);
+                temp_r3_4 = (s16) (-19.0f * temp_f3_9);
+                windowDrawSprite2((s16) (temp_r3_4 + 0x23), 7, (s16) ((19.0f * temp_f3_9) - (f32) temp_r3_4), 0x26, -1U, arg2, 0x27DU, 0, sp8);
                 break;
             case 3:                                 /* switch 1 */
                 sp8 = temp_r30;
@@ -8983,8 +7797,8 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
                 temp_f3_10 = fabs((f32) cos((f64) temp_f31));
                 sp8 = temp_r30;
                 temp_f3_11 = (f32) temp_f3_10;
-                temp_r3_5 = (s16) (temp_f3_11 * -19.0f);
-                windowDrawSprite2((s16) (temp_r3_5 + 0x23), 7, (s16) ((temp_f3_11 * 19.0f) - (f32) temp_r3_5), 0x26, -1U, arg2, 0x27DU, 0, sp8);
+                temp_r3_5 = (s16) (-19.0f * temp_f3_11);
+                windowDrawSprite2((s16) (temp_r3_5 + 0x23), 7, (s16) ((19.0f * temp_f3_11) - (f32) temp_r3_5), 0x26, -1U, arg2, 0x27DU, 0, sp8);
                 break;
             }
             arg0->cells[arg1].unk4 = -((4.0f * timeGetLastFrameSec()) - arg0->cells[arg1].unk4);
@@ -9009,13 +7823,13 @@ void dispOpenPanel__6cBingoFUlP14tagWINDOW_WORKP14tagSPRITE_WORK(BingoState *arg
         temp_f3_12 = fabs((f32) cos((f64) temp_f31));
         sp8 = temp_r30;
         temp_f3_13 = (f32) temp_f3_12;
-        temp_r5_2 = (s16) (temp_f3_13 * -35.0f);
-        windowDrawSprite2((s16) (temp_r5_2 + 0x23), 0, (s16) ((temp_f3_13 * 35.0f) - (f32) temp_r5_2), 0x43, -1U, arg2, 0x280U, 0, sp8);
+        temp_r5_2 = (s16) (-35.0f * temp_f3_13);
+        windowDrawSprite2((s16) (temp_r5_2 + 0x23), 0, (s16) ((35.0f * temp_f3_13) - (f32) temp_r5_2), 0x43, -1U, arg2, 0x280U, 0, sp8);
         temp_f31_2 = (f32) fabs((f32) cos((f64) temp_f31));
-        temp_r24_3 = (s16) (temp_f31_2 * 10.0f);
+        temp_r24_3 = (s16) (10.0f * temp_f31_2);
         temp_r0_2 = wazaDB_GetZokuseiDataId(getPanelWaza__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, (u32) arg0->cells[arg1].unk1)) * 2;
         sp8 = temp_r30;
-        windowDrawSprite2((s16) (temp_r24_3 + 0x23), 0x2E, (s16) ((temp_f31_2 * 31.0f) - (f32) temp_r24_3), 0x12, -1U, arg2, *(const u16 *)((const u8 *)OpenPanelType__6cBingo + temp_r0_2), 0, sp8);
+        windowDrawSprite2((s16) (temp_r24_3 + 0x23), 0x2E, (s16) ((31.0f * temp_f31_2) - (f32) temp_r24_3), 0x12, -1U, arg2, *(const u16 *)((const u8 *)OpenPanelType__6cBingo + temp_r0_2), 0, sp8);
         arg0->cells[arg1].unk4 = -((4.0f * timeGetLastFrameSec()) - arg0->cells[arg1].unk4);
         if (arg0->cells[arg1].unk4 < 0.0f) {
             arg0->cells[arg1].unk4 = 0.0f;
@@ -9507,9 +8321,10 @@ noChange:
 
 void makeRandomSheet__6cBingoFv(BingoState *arg0) {
     u8 order[16] = {0,1,2,3,7,11,15,14,13,12,8,4,5,6,10,9};
+    s32 var_r30;
+    s32 var_r30b;
     s32 var_r31_2;
     BingoState *var_r31;
-    s32 var_r30;
     f32 temp_f1;
     f32 temp_f28;
     s32 temp_r0_2;
@@ -9529,7 +8344,7 @@ void makeRandomSheet__6cBingoFv(BingoState *arg0) {
         arg0->backup[var_r30].unk4 = -1.0f;
     }
     var_r31 = arg0;
-    for (var_r30 = 0; var_r30 < 16; var_r30++) {
+    for (var_r30b = 0; var_r30b < 16; var_r30b++) {
         temp_r3 = (u16)HSD_Rand();
         temp_r4 = var_r31->backup[0].unk0;
         temp_r5 = var_r31->backup[0].unk1;
@@ -9609,34 +8424,28 @@ void SetupSheet__6cBingoFUl(BingoState *arg0, u32 arg1) {
     arg0->unk148 = 1;
     setStaticBall__10bingo_biosFUc(arg0->unk129);
     memset(arg0->cells, 0, 0x80U);
-    var_r30 = 0;
-    do {
+    for (var_r30 = 0; var_r30 < 3; var_r30++) {
         temp_r3 = getGridPos__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, var_r30);
-        temp_r0 = (u8) var_r30;
         sp8 = (u32) temp_r3;
-        var_r30 += 1;
         temp_r3_2 = &arg0->cells[temp_r3];
         temp_r3_2->unk0 = 1;
-        temp_r3_2->unk1 = temp_r0;
+        temp_r3_2->unk1 = (u8) var_r30;
         temp_r3_2->unk2 = 0;
-    } while (var_r30 < 3U);
+    }
     temp_r28 = gamedataGetStatus(0, 1);
     temp_r27 = getLevel__10bingo_biosFP14BINGO_DATA_dd_(arg0, arg0->unk4);
     pokemonCreate(mPokemon__6cBingo, getPanelNo__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, 0U), temp_r27, temp_r28);
     mPokemon__6cBingo->unkC4 = 2;
-    var_r31 = arg0;
-    var_r30_2 = 0U;
     mPokemon__6cBingo->unkC5 = 1;
     mPokemon__6cBingo->unkC6 = 0;
     sp8 = 0;
-loop_16:
-    if (var_r30_2 < 0x10U) {
-        if ((u8) var_r31->cells[0].unk0 == 0) {
+    for (var_r30_2 = 0; var_r30_2 < 0x10U; var_r30_2++) {
+        if (arg0->cells[var_r30_2].unk0 == 0) {
             temp_r4 = sp8 + 1;
             sp8 = temp_r4;
-            var_r31->cells[0].unk0 = 0;
-            var_r31->cells[0].unk1 = (u8) temp_r4;
-            var_r31->cells[0].unk2 = 0;
+            arg0->cells[var_r30_2].unk0 = 0;
+            arg0->cells[var_r30_2].unk1 = (u8) temp_r4;
+            arg0->cells[var_r30_2].unk2 = 0;
             getPanelNo__10bingo_biosFP14BINGO_DATA_dd_Ul(arg0, arg0->unk4, sp8);
             temp_r27_2 = gamedataGetStatus(0, 1);
             temp_r28_2 = getLevel__10bingo_biosFP14BINGO_DATA_dd_(arg0, arg0->unk4);
@@ -9646,9 +8455,6 @@ loop_16:
             temp_r3_3->unkC4 = 0;
             temp_r3_3->unkC5 = 0;
         }
-        var_r31 = (BingoState *)((u8 *)var_r31 + 8);
-        var_r30_2 += 1;
-        goto loop_16;
     }
     sp8 = 0;
     arg0->unk122 = 0;
@@ -9681,10 +8487,11 @@ void ResetSheet__6cBingoFUl(BingoState *arg0, u32 arg1) {
     for (i = 0; i < 0x10; i++) {
         arg0->cells[i].unk2 = 0;
     }
+    i = 1;
     mPokemon__6cBingo->unkC4 = 2;
-    mPokemon__6cBingo->unkC5 = 1;
+    mPokemon__6cBingo->unkC5 = i;
     mPokemon__6cBingo->unkC6 = 0;
-    for (i = 1; i < 0xE; i++) {
+    for (; i < 0xE; i++) {
         mPokemon__6cBingo[i].unkC6 = 0;
         mPokemon__6cBingo[i].unkC4 = 0;
         mPokemon__6cBingo[i].unkC5 = 0;

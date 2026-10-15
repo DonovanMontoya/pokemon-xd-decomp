@@ -1936,6 +1936,65 @@ void _peopleRegisterChestPart__FP13tagPeopleWork(tagPeopleWork* work) {
         }
     }
 }
+u8 peopleViewerIsCheckNpc(tagPeopleWork*);
+void peopleViewerDisplayMoveRotInfo(tagPeopleWork*);
+void _peopleMoveRotate__FP13tagPeopleWork(tagPeopleWork* work) {
+    GSvec rotation;
+    f32 diff;
+    f32 original;
+    f32 second;
+    f32 first;
+    f32 rateStep;
+    f32 frame;
+    peopleBiosGetRot(work, &rotation);
+    rotation.param2 = adjustPIPI__Ff(rotation.param2);
+    work->targetRotation = adjustPIPI__Ff(work->targetRotation);
+    original = rotation.param2;
+    if (peopleBiosCheckFlag(work, 8) || work->resource != 0x64) {
+        if (work->unknown0E) {
+            diff = adjustPIPI__Ff(_peopleGetDiffAngleFixForNeck__FffP13tagPeopleWork(work->targetRotation, rotation.param2, work));
+            rateStep = 0.03f * work->rotationRate;
+            first = (f32)fabs(_peopleGetDiffAngleFixForNeck__FffP13tagPeopleWork(work->initialRotation, rotation.param2, work));
+            second = (f32)fabs(_peopleGetDiffAngleFixForNeck__FffP13tagPeopleWork(work->targetRotation, rotation.param2, work));
+            work->rotationProgress = work->rotationProgress + (first < second ? rateStep : -rateStep);
+            if (work->rotationProgress < rateStep) work->rotationProgress = rateStep;
+            _peopleRegisterChestPart__FP13tagPeopleWork(work);
+            frame = 30.0f * (f32)timeGetLastFrameTime() / (f32)GSgfxVideoGetVsyncRate();
+            if (work->rotationProgress * peopleViewerGetPlaySpeedRate(work) * frame > second) {
+                rotation.param2 = work->targetRotation;
+                work->unknown0E = 0;
+                work->rotationProgress = 0.0f;
+                work->rotationRate = 1.0f;
+                work->chestRotation.param2 = 0.0f;
+                if (work->neckEnabled == 0) work->neckRotation.param2 = 0.0f;
+            } else {
+                if (diff > 0.0f) rateStep = work->rotationProgress;
+                else rateStep = -work->rotationProgress;
+                frame = 30.0f * (f32)timeGetLastFrameTime() / (f32)GSgfxVideoGetVsyncRate();
+                rateStep = rateStep * (peopleViewerGetPlaySpeedRate(work) * frame);
+                rotation.param2 = rotation.param2 + rateStep;
+            }
+        }
+    } else if (work->group == 0 && work->resource == 0x64) {
+        if (!work->unknown0E) {
+            _peopleUnregisterChestPart__FP13tagPeopleWork(work);
+        } else {
+            if (rotation.param2 - work->targetRotation > 3.2986722f) rotation.param2 = rotation.param2 - 6.2831855f;
+            else if (work->targetRotation - rotation.param2 > 3.2986722f) rotation.param2 = rotation.param2 + 6.2831855f;
+            f32 speed = (work->targetRotation - rotation.param2) / (10.0f * (2.3f - work->rotationRate));
+            _peopleRegisterChestPart__FP13tagPeopleWork(work);
+            frame = 30.0f * (f32)timeGetLastFrameTime() / (f32)GSgfxVideoGetVsyncRate();
+            rotation.param2 = speed * peopleViewerGetPlaySpeedRate(work) * frame + rotation.param2;
+        }
+    }
+    if (work->attachIndex < 0) {
+        if (peopleViewerIsCheckNpc(work)) {
+            _peopleGetDiffAngleFixForNeck__FffP13tagPeopleWork(rotation.param2, original, work);
+            peopleViewerDisplayMoveRotInfo(work);
+        }
+        peopleBiosSetRot(work, &rotation);
+    }
+}
 void peopleUpdateShadow() {
     tagPeopleWork* work;
     s32 index = peopleBiosGetMaxNum();
@@ -2042,6 +2101,98 @@ static u8 m_hero_move = 1;
 static u8 m_bPeopleOpenWithModel = 1;
 static f32 m_hero_idling_time;
 static f32 m_hero_next_special_idling_time;
+#pragma dont_inline reset
+s32 __fpclassifyf(f32);
+f64 __frsqrte(f64);
+extern u32 __float_nan[];
+inline f32 sqrtf(f32 x) {
+    if (x > 0.0f) {
+        f64 dmag = x;
+        f64 t = __frsqrte(dmag);
+        t = 0.5 * t * (3.0 - t * t * dmag);
+        t = 0.5 * t * (3.0 - t * t * dmag);
+        t = 0.5 * t * (3.0 - t * t * dmag);
+        return (f32)(dmag * t);
+    } else if (x < 0.0) {
+        return *(f32*)__float_nan;
+    } else if (__fpclassifyf(x) == 1) {
+        return *(f32*)__float_nan;
+    }
+    return x;
+}
+u8 isWalkStartMotion__13tagPeopleWorkCFv(tagPeopleWork*);
+u8 gimmickBoxOnBox(tagPeopleWork*, GSvec*, GSvec*);
+u32 _peopleAdjustPosition__FP13tagPeopleWorkP5GSvecP5GSvec(tagPeopleWork*, GSvec*, GSvec*);
+s32 peopleMoveAlongAngle(u32 group, u32 resource, f32 speed, f32 angle) {
+    f32 move;
+    GSvec position;
+    GSvec first;
+    GSvec second;
+    tagPeopleWork* work = peopleGet(group, resource);
+    if ((resource == 0x65 || resource == 0x68 || resource == 0x69) && work->attachIndex > 0) {
+        work->unknown28 = 0.0f;
+        work->unknown160 = 0.0f;
+        work->followerMotion = 0;
+        return 1;
+    }
+    peopleBiosGetPos(work, &position);
+    static f32 d0_fix = 1.0f;
+    f32 step = speed * (30.0f * (f32)timeGetLastFrameTime() / (f32)GSgfxVideoGetVsyncRate());
+    f32 playRate = peopleViewerGetPlaySpeedRate(work);
+    work->unknown160 = speed;
+    move = playRate * step;
+    if (!peopleInfoBiosGetPtr(work->object)) return 0;
+    if (isWalkStartMotion__13tagPeopleWorkCFv(work)) return 1;
+    if (group == 0 && resource == 0x64 && !m_hero_move) move = 0.0f;
+    work->flag17F = 0;
+    if (_peopleBreakWithWalkList__FP13tagPeopleWork(work)) {
+        if (peopleBiosCheckFlag(work, 8) || work->resource == 0x64) {
+            f32 distance = _distanceXZ__FP5GSvecP5GSvec(peopleBiosGetPosPtr(work), &work->walkTarget);
+            f32 minimum = 0.001f * (30.0f * (f32)timeGetLastFrameTime() / (f32)GSgfxVideoGetVsyncRate());
+            minimum = peopleViewerGetPlaySpeedRate(work) * minimum;
+            if (work->slowDown && work->followerMotion == 0) {
+                f32 limit = work->running ? 2.0f * END_NEED_DISTANCE : END_NEED_DISTANCE;
+                if (distance < limit) {
+                    move = move * peopleGetBlendFactor(distance, 0.0f, limit);
+                    if (move < minimum) move = minimum;
+                    work->flag17F = 1;
+                }
+            }
+            if (distance < move) {
+                position.param1 = work->walkTarget.param1;
+                position.param2 = work->walkTarget.param2;
+                position.param3 = work->walkTarget.param3;
+                peopleBiosSetPos(work, &position);
+                move = 0.0f;
+            }
+        }
+    }
+    if (move > 0.0f) {
+        f32 px = position.param1, py = position.param2, pz = position.param3;
+        first.param1 = px; first.param2 = py; first.param3 = pz;
+        second.param1 = px; second.param2 = py; second.param3 = pz;
+        first.param1 = move * (f32)sin(angle) + first.param1;
+        first.param3 = move * (f32)cos(angle) + first.param3;
+        first.param2 = GScolsys2HumanGetWalkHeight(&first);
+        f32 rise = position.param2 - first.param2;
+        f32 scaled = move * move / sqrtf(move * move + rise * rise);
+        second.param1 = scaled * (f32)sin(angle) + second.param1;
+        second.param3 = scaled * (f32)cos(angle) + second.param3;
+        second.param2 = GScolsys2HumanGetWalkHeight(&second);
+        if (scaled > move) scaled = move;
+        if (!gimmickBoxOnBox(work, peopleBiosGetPosPtr(work), &first)) {
+            position.param1 = scaled * (f32)sin(angle) + position.param1;
+            position.param3 = scaled * (f32)cos(angle) + position.param3;
+            position.param2 = GScolsys2HumanGetWalkHeight(&position);
+        } else {
+            position.param1 = move * (f32)sin(angle) + position.param1;
+            position.param3 = move * (f32)cos(angle) + position.param3;
+            position.param2 = GScolsys2HumanGetWalkHeight(&position);
+        }
+    }
+    return _peopleAdjustPosition__FP13tagPeopleWorkP5GSvecP5GSvec(work, &position, &work->previousPosition);
+}
+#pragma dont_inline on
 static s32 m_before_special_effect;
 enum PeopleEnterMode { PEOPLE_ENTER_0 = 0, PEOPLE_ENTER_1 = 1, PEOPLE_ENTER_3 = 3 };
 void _peopleEnterFloor__FUi14FloorEnterMode(u32 floor, s32 modeValue) {

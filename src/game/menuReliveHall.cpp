@@ -5,6 +5,9 @@ inline void *operator new(unsigned long, void *p) {
 }
 
 class GSgfxLayer;
+struct SF32 {
+    f32 v;
+};
 enum GSgfxLayerID { GSgfxLayerID_Default = 0 };
 
 extern "C" {
@@ -46,6 +49,7 @@ void cameraSetType(s32);
 void msgctrlSetValue(s32, const void *);
 GSgfxLayer *GSgfxLayerFindByID(s32);
 void GSprimSetLineWidth(f32);
+void GSprimDraw2DLine(GSgfxColAu8 *, GSgfxColAu8 *, SF32, SF32, SF32, SF32);
 void menuDrawReliveUpdate();
 MENU_ITEM_dd_ *menuItemBiosGetPtr(s32, s16);
 tagWINDOW_WORK *windowSearchID(s32);
@@ -66,6 +70,7 @@ void menuPtSpriteDrawAndRollScale(u16, u32, f32, f32, f32, f32);
 class CMenuGlobalState;
 void relivehallDrawStageInfoCursor(long, int, int, Pokemon *, bool);
 long relivehallTempoToLevel(int);
+long relivehallGetLastViewStage(void);
 void relivehallSetLastViewStage(long);
 f32 relivehallTempoToRate(int);
 long degreeSubHalf(long, long);
@@ -90,6 +95,10 @@ public:
     Pokemon *getVisitorPointer();
     void exchangeDancer(Pokemon &, long);
     void exchangeVisitor(Pokemon &);
+    void insertDancer(Pokemon &, long);
+    void putVisitor(Pokemon &);
+    void pickupDancer(Pokemon &, long);
+    void pickupVisitor(Pokemon &);
 };
 
 class CReliveHall {
@@ -140,6 +149,7 @@ public:
     void setSw(f32, f32, bool);
     void drawPixelAll(int, int, int);
     void drawPixelOne(int, int, int);
+    void init(f32, int, f32, GSgfxColAu8);
 };
 
 class SPokemonView {
@@ -229,6 +239,7 @@ public:
     void actionChange();
     void actionPut();
     void actionPickup();
+    void dancerMoveAnimationKick(f32 *, f32 *, bool, f32);
     void actionDecide(u32);
     void loop();
     void init(CMenuGlobalState &);
@@ -293,9 +304,11 @@ static f32 _aisyou2ScaleTbl[3] = {0.6f, 0.8f, 1.0f};
 struct SLineWidth {
     s32 half;
     f32 rate;
+    s32 half2;
+    f32 rate2;
 };
-static SLineWidth _aisyou2LineWidthHalfTable[6] = {
-    {1, 0.75f}, {1, 0.3f}, {2, 1.5f}, {2, 0.6f}, {3, 2.25f}, {3, 0.9f}
+static SLineWidth _aisyou2LineWidthHalfTable[3] = {
+    {1, 0.75f, 1, 0.3f}, {2, 1.5f, 2, 0.6f}, {3, 2.25f, 3, 0.9f}
 };
 static s32 localWindowTable[8] = {0x67, 0x71, 0x72, 0x88, 0x76, 0xCF, 0xE3, 0};
 static s32 actionMenuCatchVisitorOnPokemon[6] = {4, 0xD111, 0xD112, 0xD113, 0xD114, 0};
@@ -382,6 +395,65 @@ void CMenuReliveHall::setStatusDisplayVisitor(Pokemon *p) {
     } else {
         memcpy(&visitor, p, 0xC4);
     }
+}
+
+void CMenuReliveHall::init(CMenuGlobalState &gs) {
+    time = 0;
+    ((CState *)((u8 *)this + 0x278))->init();
+    fadeTime = 0;
+    fadeState = 0;
+    memset(windows, 0, 0x100);
+    memset(windowFuncs, 0, 0x100);
+    windowTable = defautlLocalWindowOpenTable;
+    if (pcReliveHallSoundTbl != 0) {
+        memcpy(reserved8, pcReliveHallSoundTbl, 0x14);
+    }
+    tutorialActive = 0;
+    flag32C = 0;
+    val32E = 0;
+    memset(&keyInfo, 0, 0x1A);
+    repeatCount = 0;
+    lastKey = 0;
+    stageIndex = -1;
+    stage = 0;
+    memset(views, 0, 0x2D0);
+    cursorIndex = 0;
+    memset(&menuTable, 0, 0xC);
+    memset(&stick, 0, 0xC);
+    for (u32 i = 0; i < 3; i++) {
+        GSgfxColAu8 color = relivehallAisyou2ColorTbl[i];
+        circles[i].init(_aisyou2LineWidthHalfTable[i].rate, _aisyou2LineWidthHalfTable[i].half2,
+                        _aisyou2LineWidthHalfTable[i].rate2, color);
+    }
+    memset(&model0, 0, 0x10);
+    ((CState *)((u8 *)this + 0x278))->init();
+    globalState = 0;
+    cursor = 0;
+    memset(cursorPositions, 0, 0x24);
+    hallTempo = 0;
+    pokemonInit(&visitor);
+    visitorFlag = 0;
+    if (gs.cursor.flag150 != 0) {
+        tutorialActive = 1;
+    }
+    globalState = &gs;
+    cursor = &globalState->cursor;
+    cursor->setPositionTable(cursorPositions, 0);
+    ((CState *)((u8 *)this + 0x278))->init();
+    ((CState *)&animationState)->init();
+    s16 *markers = (s16 *)markerOverride;
+    for (unsigned int i = 0; i < 18; i++) markers[i] = -1;
+    circleAlpha = 255;
+    lineAlpha = 255;
+    starAlpha = 255;
+    effectAlpha = 255;
+    markerAlpha = 255;
+    memset(&hitEffect, 0, sizeof(hitEffect));
+    localWindowSetTable(localWindowTable);
+    loadDatas();
+    infoWindow.init(0xCF, 0x5D0);
+    baseInfoWindow.initTutorialTalk();
+    setStage(relivehallGetLastViewStage());
 }
 
 void CMenuReliveHall::main(CMenuGlobalState &global) {
@@ -808,6 +880,189 @@ void CMenuReliveHall::actionChange() {
     editAfterDp0VisitorCheck();
 }
 
+void CMenuReliveHall::dancerMoveAnimationKick(f32 *pos, f32 *face, bool pickup, f32 newAngle) {
+    int n = stage->getDancerQuantity();
+    for (int i = 0; i < n; i++) {
+        SPokemonView *v = &views[i];
+        v->targetAngle = v->unk4;
+        f32 a = pos[i];
+        v->startAngle = a;
+        v->unk4 = a;
+        v->targetFacing = v->facing;
+        f32 b = face[i];
+        v->startFacing = b;
+        v->facing = b;
+    }
+    if (pickup) {
+        SPokemonView *v = &views[cursor->index];
+        v->targetAngle = v->unk4;
+        v->startAngle = newAngle;
+        v->unk4 = newAngle;
+        f32 f = v->facing;
+        v->startFacing = f;
+        v->facing = f;
+        v->targetFacing = f;
+    }
+    setCircleSw();
+    animationFlag = 2;
+    memset(animationWork, 0, 0x40);
+    makeCursorPositionTbl(cursorPositions);
+}
+
+void CMenuReliveHall::resetViewAll() {
+    int off, i, quantity;
+    f32 *angles, *facings;
+    memset(views, 0, 0x2D0);
+    Pokemon *visitorPokemon = stage->getVisitorPointer();
+    memset(&views[6].ant, 0, 0x34);
+    if (visitorPokemon != 0) {
+        views[6].ant.initByPokemonAndSetColorAnimationInReliveHallVisitor(visitorPokemon);
+        views[6].ant.setAnimation(0);
+    }
+    quantity = stage->getDancerQuantity();
+    off = quantity * 16;
+    angles = (f32 *)((u8 *)_markerDancerOnDirTbl + off);
+    facings = (f32 *)((u8 *)_zokuseiMarkDancerOnDirTbl + off);
+    i = 0;
+    for (; i < quantity; i++) {
+        Pokemon *pokemon = stage->getDancerPointer(i);
+        f32 a = *angles;
+        views[i].unk4 = views[i].targetAngle = views[i].startAngle = a;
+        f32 f = *facings;
+        views[i].facing = views[i].targetFacing = views[i].startFacing = f;
+        views[i].unk0 = 0;
+        views[i].ant.initByPokemon(pokemon);
+        views[i].ant.setAnimation(1);
+        angles++;
+        facings++;
+    }
+    int empty = getQuantityMarkerDancerEmpty();
+    if (empty != 0) {
+        f32 *marks = (f32 *)((u8 *)_markerDancerEmptyDirTbl + off);
+        for (int k = 0; k < empty; k++) {
+            SPokemonView *v = &views[i + k];
+            v->unk0 = 1;
+            v->unk4 = *marks++;
+            v->targetAngle = v->unk4;
+            v->startAngle = v->unk4;
+        }
+    }
+    setCircleSw();
+    makeCursorPositionTbl(cursorPositions);
+}
+
+void CMenuReliveHall::actionPut() {
+    f32 pos[4];
+    f32 face[4];
+    int idx;
+    int slot;
+    int at;
+    hallTempo = getTempo(false);
+    menuPtPlaySe(0x45E);
+    slot = -1;
+    CMenuPokemonCursor *c = cursor;
+    idx = c->index;
+    if (isDancerSlot(idx)) {
+        int n = stage->getDancerQuantity();
+        if (n == 0) {
+            slot = 0;
+        } else if (n == 3 && cursor->index == 5) {
+            slot = 0;
+        } else {
+            int cur = cursor->index;
+            slot = cur - stage->getDancerQuantity();
+            slot += 1;
+        }
+        c = cursor;
+        Pokemon *p;
+        if (c->pokemon.checkValid()) p = &c->pokemon;
+        else p = 0;
+        stage->insertDancer(*p, at = slot);
+        s8 part = stage->partner;
+        if (n != 0 && part >= slot) part++;
+        stage->partner = part;
+        cursor->setPositionIndex(at);
+        for (int i = 0; i < n + 1; i++) {
+            if (i != slot) {
+                pos[i] = views[i].unk4;
+                face[i] = views[i].facing;
+            } else {
+                pos[i] = views[idx].unk4;
+                face[i] = 0.0f;
+            }
+        }
+    } else if (idx == 6) {
+        Pokemon *p;
+        if (c->pokemon.checkValid()) p = &c->pokemon;
+        else p = 0;
+        stage->putVisitor(*p);
+    }
+    resetViewAll();
+    if (slot != -1) {
+        dancerMoveAnimationKick(pos, face, false, -1.0f);
+        SPokemonView *v = &views[cursor->index];
+        v->startFacing = v->targetFacing;
+        v->facing = v->targetFacing;
+    } else {
+        animationFlag = 4;
+        memset(animationWork, 0, 0x40);
+    }
+    editAfterDp0VisitorCheck();
+}
+
+void CMenuReliveHall::actionPickup() {
+    f32 pos[4];
+    f32 face[4];
+    Pokemon dancerTmp;
+    Pokemon visitorTmp;
+    hallTempo = getTempo(false);
+    menuPtPlaySe(0x45D);
+    u8 moved = 0;
+    int idx = cursor->index;
+    f32 oldPos = views[idx].unk4;
+    if (isDancerSlot(idx)) {
+        moved = 1;
+        int n = stage->getDancerQuantity();
+        stage->pickupDancer(dancerTmp, cursor->index);
+        cursor->setPokemon(&dancerTmp);
+        u8 t = stage->partner;
+        int part = t;
+        if ((s8)t > cursor->index) part = t - 1;
+        if ((s8)part >= stage->getDancerQuantity()) part = 0;
+        stage->partner = part;
+        for (int i = 0; i < n; i++) {
+            if (i != cursor->index) {
+                face[i] = views[i].facing;
+                pos[i] = views[i].unk4;
+            }
+        }
+    } else if (idx == 6) {
+        memcpy(markerOverride, cursorPositions, 0x24);
+        stage->pickupVisitor(visitorTmp);
+        cursor->setPokemon(&visitorTmp);
+    }
+    int ci = cursor->index;
+    if (isDancerSlot(ci)) {
+        int slot;
+        if (stage->getDancerQuantity() == 3 && ci == 0) {
+            slot = 5;
+        } else {
+            int t = ci - 1;
+            if (t < 0) t = 0;
+            slot = t + stage->getDancerQuantity();
+        }
+        cursor->setPositionIndex(slot);
+    }
+    resetViewAll();
+    if (moved) {
+        dancerMoveAnimationKick(pos, face, true, oldPos);
+    } else {
+        animationFlag = 5;
+        memset(animationWork, 0, 0x40);
+    }
+    editAfterDp0VisitorCheck();
+}
+
 void CMenuReliveHall::actionDecide(u32 action) {
     switch (action) {
     case 0xD111:
@@ -937,6 +1192,7 @@ void CMenuReliveHall::draw9StageInfo() {
 }
 
 const PocketVec<short> circlePosition = { 320, 280 };
+const PocketVec<f32> fcirclePosition = { 320.0f, 280.0f };
 void _antZokuseiDraw(SPokemonView &);
 void _antDraw(SPokemonView &);
 void _antDraw(SPokemonView &, PocketVec<short>);
@@ -1093,6 +1349,103 @@ void CMenuReliveHall::drawDancerStarLight() {
             } while (j < 6);
         }
     }
+}
+
+void CMenuReliveHall::drawVsitorLine(long aisyou, SPokemonView *view) {
+    if (views[6].hidden == 0) {
+        GSgfxColAu8 color = relivehallAisyou2ColorTbl[aisyou];
+        u8 alpha = markerAlpha;
+        int width = _aisyou2LineWidthHalfTable[aisyou].half;
+        color.a = color.a * alpha / 255;
+        PocketVec<short> p0 = view->getPosition();
+        f32 y = p0.y;
+        PocketVec<short> p1 = view->getPosition();
+        f32 x = p1.x;
+        f32 angle = 1.5707964f + xy2dir(x - fcirclePosition.x, y - fcirclePosition.y);
+        f32 w = 0.0f;
+        while (w < (f32)width) {
+            f32 offset = w - (f32)(width / 2);
+            f32 s = offset * (f32)sin(angle);
+            f32 c = (f32)cos(angle);
+            GSgfxColAu8 c1 = color, c2 = color;
+            SF32 bx, by, ax, ay;
+            ax.v = fcirclePosition.x + s;
+            bx.v = x + s;
+            f32 d = offset * -c;
+            ay.v = fcirclePosition.y + d;
+            by.v = y + d;
+            GSprimDraw2DLine(&c1, &c2, ax, ay, bx, by);
+            w += 0.5f;
+        }
+    }
+}
+
+void CMenuReliveHall::drawMainBG() {
+    tagWINDOW_WORK *window = windowSearchID(0x67);
+    GSgfxColAu8 *colors;
+    int level, cur, i;
+    u8 hasVisitor = getVisitorWithCatch() != 0;
+    int bonus;
+    int passion = getPassion(&bonus);
+    if (passion <= 0) {
+        level = 0;
+    } else if (passion <= 0x1B) {
+        level = 1;
+    } else if (passion <= 0x34) {
+        level = 2;
+    } else if (passion <= 0x5A) {
+        level = 3;
+    } else if (passion < 0xC0) {
+        level = 4;
+    } else {
+        level = bonus + 4;
+    }
+    f32 rate = calcAnimationTimeRate0to1(0.8f);
+    colors = _passion2ColorTbl;
+    i = 0;
+    cur = (s32)(rate / 0.03846154f);
+    f32 frac = -((f32)cur * 0.03846154f - rate) * 26.0f;
+    f32 inv = 1.0f - frac;
+    do {
+        tagSPRITE_WORK *sprite = menuPtSpriteWorkGetByItemID(window, 0x28D, i);
+        GSgfxColAu8 color = *colors;
+        sprite->color.value = GSgfxColAu8To32(color);
+        if (i < level && hasVisitor) {
+            u8 alpha;
+            if (cur < 13) {
+                if (i < cur) {
+                    alpha = 0xFF;
+                } else if (i == cur) {
+                    alpha = rate01ToAlphaFrom50(frac);
+                } else {
+                    alpha = 0x46;
+                }
+            } else {
+                int base = cur - 13;
+                if (i < base) {
+                    alpha = 0x46;
+                } else if (i == base) {
+                    alpha = rate01ToAlphaFrom50(inv);
+                } else {
+                    alpha = 0xFF;
+                }
+            }
+            menuPtSpriteWorkSetSw(window, sprite, true);
+            sprite->color.channels.alpha = alpha;
+        } else {
+            menuPtSpriteWorkSetSw(window, sprite, false);
+        }
+        colors++;
+        i++;
+    } while (i < 13);
+    menuPtSpriteWorkSetSw(window, 0x28C, 0, hasVisitor);
+    menuPtSpriteWorkSetSw(window, 0x316, 0, false);
+    menuPtSpriteWorkSetSw(window, 0x28B, 0, false);
+    menuPtSpriteWorkSetSw(window, 0x28A, 0, dancerPositionQuantityWithCatch() != 0);
+    menuPtSpriteWorkSetSw(window, 0x4D1, 0, dancerPositionQuantityWithCatch() != 0);
+    menuPtSpriteWorkSetSw(window, 0x8EE, 0, hasVisitor);
+    menuPtSpriteWorkSetSw(window, 0x4D2, 0, hasVisitor);
+    menuPtWindowWorkDraw(window);
 }
 
 void CMenuReliveHall::drawVisitorStarLight(long aisyou, SPokemonView *view) {

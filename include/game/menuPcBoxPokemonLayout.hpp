@@ -39,6 +39,11 @@ public:
     DarkPokemon *getDarkPokemon();
     u16 getHp() const;
     void setPcboxMark(u8);
+    char *getNicknamePtr();
+    u16 getItemDataId() const;
+    void *getPokemonDataPtr() const;
+    u8 getLevel() const;
+    bool isDarkPokemon() const;
 };
 
 enum darkPokemonStatus {
@@ -121,7 +126,7 @@ public:
     s32 state;
     s32 sub;
     s32 unk8;
-    s32 frames;
+    u32 frames;
     f32 time;
     f32 lastFrame;
     u8 saved[0x40];

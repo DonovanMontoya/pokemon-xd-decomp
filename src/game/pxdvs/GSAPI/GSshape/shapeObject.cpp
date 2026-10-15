@@ -187,6 +187,8 @@ bool GsShapeObject::DeformTextureCoord(u32 texture,bool deform,const f32* u,cons
     }
     return true;
 }
+extern "C" double sin(double);
+extern "C" double cos(double);
 #include <libc/math.h>
 extern "C" double tan(double);
 bool GsShapeObject::DeformVertexCoord(bool deform,const f32* u,const f32* v,bool radius,f32 radiusU,f32 radiusV,bool angle,f32 angleU,f32 angleV,bool twistEnabled,const f32* twist) {
@@ -224,6 +226,76 @@ bool GsShapeObject::DeformVertexCoord(bool deform,const f32* u,const f32* v,bool
     case 34: return DeformVertexCoordTorus(deform,u,v,radius,radiusU,radiusV,angle,angleU,angleV,twistEnabled,twist);
     default: return false;
     }
+}
+
+static inline void shapeFastSinCos(f32& angle,f32& cosine) {
+    f32 reduced=angle;
+    if(angle>3.1415927f) {
+        reduced=angle-6.2831855f*(f32)(int)(angle/6.2831855f);
+        if(reduced>3.1415927f) reduced-=6.2831855f;
+    } else if(angle<-3.1415927f) {
+        reduced=angle-6.2831855f*(f32)(int)(angle/6.2831855f);
+        if(reduced<-3.1415927f) reduced+=6.2831855f;
+    }
+    f32 folded;
+    if(reduced<-1.5707964f) folded=-3.1415927f-reduced;
+    else if(reduced<=1.5707964f) folded=reduced;
+    else folded=3.1415927f-reduced;
+    f32 doubled=2.0f*folded;
+    f32 square=doubled*doubled;
+    (*(int*)&reduced)&=0x7fffffff;
+    angle=doubled*(0.5f+square*(-0.020833334f+square*(0.00026041668f+-0.0000015500992f*square)));
+    cosine=1.0f+square*(-0.125f+square*(0.0026041667f+-0.00002170139f*square));
+    if(reduced>1.5707964f) cosine=-cosine;
+}
+static inline f32 shapeEntryLength(const tagGsFilePrimObjectEntry* e) { return *(const f32*)((const u8*)e+0xC8); }
+bool GsShapeObject::DeformVertexCoordCylinderEx(bool deform,const f32* u,const f32* v,bool radius,f32 radiusU,f32 radiusV,bool angle,f32 angleU,bool twistEnabled,const f32* twist) {
+    Vec* out=(Vec*)vertexArrays[0];
+    if(!out) return false;
+    int columns=entry->segmentsU+1;
+    int rows=entry->segmentsV+1;
+    if(angle) {} else angleU=entry->shearAngle;
+    if(angleU<0.00001f) angleU=0.0f;
+    if(angleU>360.0f) angleU=360.0f;
+    f32 start;
+    if(angleU<0.00001f) start=0.0f;
+    else start=0.5f*(360.0f-angleU);
+    f32 sweep=angleU*0.017453292f;
+    start=(start+90.0f)*0.017453292f;
+    if(!radius) { radiusU=entry->width; radiusV=entry->height; }
+    f32 radiusDelta=radiusU-radiusV;
+    f32 length=shapeEntryLength(entry);
+    f32 scale;
+    for(int row=0;row<rows;row++,twist++,v++) {
+        if(twistEnabled==1) scale=1.0f+*twist;
+        f32 vertical;
+        if(deform) vertical=*v;
+        else vertical=(f32)row/(f32)(rows-1);
+        f32 ring=radiusDelta*vertical+radiusV;
+        f32 z=length*vertical;
+        const f32* horizontal=u;
+        for(int column=0;column<columns;column++,horizontal++) {
+            f32 across;
+            if(deform) across=*horizontal;
+            else across=(f32)column/(f32)(columns-1);
+            f32 current=ring;
+            f32 sine=sweep*across+start;
+            if(twistEnabled==1) current=ring*scale;
+            f32 cosine;
+            if(column==0 || column==columns-1) {
+                f32 theta=sine;
+                sine=(f32)sin(theta);
+                cosine=(f32)cos(theta);
+            } else {
+                shapeFastSinCos(sine,cosine);
+            }
+            out->x=current*cosine;
+            out->y=current*sine;
+            out->z=z;
+            out++;
+        }
+    }
+    return true;
 }
 
 bool GsShapeObject::WaveTextureCoord(u32 texture,f32 offsetU,f32 offsetV,const GSmtx* matrix,bool accumulate) {
@@ -900,3 +972,73 @@ extern "C" bool ShadeVertexColor__13GsShapeObjectFP5GSmtxP5GSmtxP5GSmtxfb(GsShap
  return true;
 }
 #pragma dont_inline off
+extern Mtx mtxIdent;
+static inline f32 (*shapeBillboardMatrix(GsShapeObject* object))[4] { return (f32 (*)[4])((u8*)object+0x470); }
+#define BB_MATRIX shapeBillboardMatrix(self)
+static inline f32 shapeDot2(f32 ax,f32 az,f32 bx,f32 bz) { return ax*bx+az*bz; }
+static inline bool shapeBillboardYaw(GsShapeObject* self,f32 x,f32 depth) {
+    Vec direction;
+    Mtx rotationNegative;
+    Mtx rotationPositive;
+    direction.x=x; direction.y=0.0f; direction.z=depth;
+    if((f32)fabs(direction.x)>0.00001f || (f32)fabs(direction.z)>0.00001f) {
+        PSVECNormalize(&direction,&direction);
+        f32 dot=shapeDot2(0.0f,1.0f,direction.x,direction.z);
+        if(dot>=-1.0f && dot<=1.0f) {
+            f32 angle=(f32)acos(dot);
+            if(direction.x>0.0f) {
+                PSMTXRotRad(rotationPositive,'Y',angle);
+                PSMTXConcat(rotationPositive,BB_MATRIX,BB_MATRIX);
+            } else {
+                PSMTXRotRad(rotationNegative,'Y',-angle);
+                PSMTXConcat(rotationNegative,BB_MATRIX,BB_MATRIX);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+static inline bool shapeBillboardFull(GsShapeObject* self,f32 x,f32 y,f32 depth) {
+    Vec axis;
+    Vec direction;
+    Vec reference;
+    Mtx rotation;
+    reference.x=0.0f; reference.y=0.0f; reference.z=1.0f;
+    direction.x=x; direction.y=y; direction.z=depth;
+    if((f32)fabs(direction.x)>0.00001f || (f32)fabs(direction.y)>0.00001f || (f32)fabs(direction.z)>0.00001f) {
+        PSVECNormalize(&direction,&direction);
+        PSVECCrossProduct(&reference,&direction,&axis);
+        if((f32)fabs(axis.x)>0.00001f || (f32)fabs(axis.y)>0.00001f || (f32)fabs(axis.z)>0.00001f) {
+            PSVECNormalize(&axis,&axis);
+            f32 dot=PSVECDotProduct(&reference,&direction);
+            if(dot>=-1.0f && dot<=1.0f) {
+                PSMTXRotAxisRad(rotation,&axis,(f32)acos(dot));
+                PSMTXConcat(rotation,BB_MATRIX,BB_MATRIX);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+extern "C" void MakeMatrixBillboard__13GsShapeObjectFP5GSmtxf(GsShapeObject* self,GSmtx* source,f32 depth) {
+    f32 x=source->matrix[0][3];
+    f32 y=source->matrix[1][3];
+    f32 z=source->matrix[2][3];
+    f32 scaleX=PSVECMag((Vec*)source->matrix[0]);
+    f32 scaleY=PSVECMag((Vec*)source->matrix[1]);
+    PSMTXScale(BB_MATRIX,scaleX,scaleY,PSVECMag((Vec*)source->matrix[2]));
+    switch(*((u8*)self->entry+0xCD)) {
+    case 1:
+        PSMTXTransApply(BB_MATRIX,BB_MATRIX,x,y,z);
+        break;
+    case 2:
+        if(!shapeBillboardYaw(self,-x,depth-z)) memcpy(BB_MATRIX,mtxIdent,0x30);
+        PSMTXTransApply(BB_MATRIX,BB_MATRIX,x,y,z);
+        break;
+    case 3:
+        if(!shapeBillboardFull(self,-x,-y,depth-z)) memcpy(BB_MATRIX,mtxIdent,0x30);
+        PSMTXTransApply(BB_MATRIX,BB_MATRIX,x,y,z);
+        break;
+    }
+}
+#undef BB_MATRIX
