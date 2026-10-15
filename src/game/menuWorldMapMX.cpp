@@ -96,8 +96,20 @@ struct GSgfxLayerID {
     s32 id;
 };
 
+void *operator new(unsigned long);
+void *operator new[](unsigned long);
+void operator delete(void *);
+void operator delete[](void *);
+
 class WorldMapModel {
 public:
+    u32 unk0;
+    ~WorldMapModel() {
+        if (unk0 != 0) {
+            releaseOffscreenData();
+        }
+    }
+    void releaseOffscreenData();
     void SetLayerID(u32, long, GSgfxLayerID *);
     u8 CheckMotion(u32);
     void StopMotion(u32);
@@ -111,9 +123,26 @@ struct WorldMapState {
     s32 floorId;
 };
 
+struct WorldMapIconSubWork {
+    f32 a;
+    f32 b;
+    WorldMapIconSubWork(f32 x = 0.0f, f32 y = 0.0f) {
+        a = x;
+        b = y;
+    }
+};
+
+struct WorldMapIconWork {
+    u8 pad0[0x14];
+    s8 slots[8];
+    u8 pad1C[0xC];
+    WorldMapIconSubWork *subs;
+    WorldMapIconWork();
+    ~WorldMapIconWork();
+};
+
 class WorldMap : public WorldMapModel {
 public:
-    s32 unk0;
     s32 unk4;
     WorldMapState *unk8;
     WorldMapIconData *icons;
@@ -132,6 +161,9 @@ public:
 
     WorldMap();
     ~WorldMap();
+    void Init();
+    void Release();
+    void InitModel2D(f32);
     void Ctrl(tagWINDOW_WORK *);
     void Button(tagWINDOW_WORK *);
     void Cursor(tagWINDOW_WORK *);
@@ -201,6 +233,29 @@ extern WorldMapData *worldmapXD_data;
 static WorldMap *pWorldmap;
 static u8 _DebugControl;
 static s16 _cursor_index[30];
+
+WorldMapIconWork::WorldMapIconWork() {
+    long i;
+    subs = new WorldMapIconSubWork[*worldmapXD_data_number];
+    for (i = 0; i < 8; i++) {
+        slots[i] = -1;
+    }
+}
+
+WorldMapIconWork::~WorldMapIconWork() {
+    delete[] subs;
+}
+
+WorldMap::~WorldMap() {
+    Release();
+}
+
+void WorldMap::InitModel2D(f32 t) {
+    long i;
+    CalcModel2D(t, true);
+    for (i = 0; i < GetDataNum(); i++) {
+    }
+}
 
 WorldMap::WorldMap() {
     unk0 = 0;
@@ -318,7 +373,7 @@ void WorldMap::SetCameraNextWork(GSvec *pos, f32 a, f32 b, f32 c, f32 d) {
         cam->next.y = pos->y;
         cam->next.z = pos->z;
     }
-    if (0.0f != a) {
+    if (a) {
         cam->n58 = a;
     }
     cam->n5C = b;
@@ -336,7 +391,7 @@ void WorldMap::SetCameraWork(GSvec *pos, f32 a, f32 b, f32 c, f32 d) {
         cam->cur.y = pos->y;
         cam->cur.z = pos->z;
     }
-    if (0.0f != a) {
+    if (a) {
         cam->c30 = a;
     }
     cam->c34 = b;
@@ -352,10 +407,16 @@ long WorldMap::Blendf(f32 *out, f32 from, f32 to, f32 t) {
     return 1;
 }
 
+static inline void setVec(GSvec *v, f32 x, f32 y, f32 z) {
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
 void WorldMap::GetCameraData(long index, GSvec *pos, f32 *a, f32 *b, f32 *c, f32 *d) {
     if ((u32)index < (u32)*worldmap_cameradata_number) {
         WorldMapCameraData *data = &worldmap_cameradata[index];
-        *pos = data->pos;
+        setVec(pos, data->pos.x, data->pos.y, data->pos.z);
         *a = data->a;
         *b = data->b;
         *c = data->c;
@@ -656,4 +717,9 @@ extern "C" s32 menuWorldMapMX(tagWINDOW_WORK *win, tagSPRITE_WORK *sprite) {
         pWorldmap->CallBackFunc(win, sprite);
     }
     return 0;
+}
+
+extern "C" void menuWorldMapMXInit(void) {
+    pWorldmap = new WorldMap;
+    pWorldmap->Init();
 }

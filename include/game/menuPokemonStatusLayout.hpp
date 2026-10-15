@@ -37,6 +37,9 @@ struct tagWINDOW_WORK {
 struct tagSPRITE_WORK {
     u8 reserved0[6];
     s16 id;                 // 0x06
+    u8 reserved8[0x4C];
+    s16 x;                  // 0x54
+    s16 y;                  // 0x56
 };
 
 // State of the status screen (static _menuStatus, 0x48 bytes).
@@ -62,6 +65,7 @@ struct MenuPokemonStatus {
     u8 reserved1B;
     RIBBON_WORK ribbon;     // 0x1C
     u8 wazaNew[4];          // 0x44
+    MenuPokemonStatus() {}
 };
 
 #endif

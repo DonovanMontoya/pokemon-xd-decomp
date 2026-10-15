@@ -1,15 +1,20 @@
 #include <game/pxdvs/GSAPI/GSmodel/runtime.hpp>
 #include <game/pxdvs/GSAPI/GSlight/GSlight.hpp>
 #include <game/pxdvs/GSAPI/GStexture/GStexture.hpp>
+#include <game/pxdvs/GSAPI/GSbound/GSbound.hpp>
+#include <dolphin/mtx.h>
 struct HSD_Shadow { void* camera; u32 flags; HSD_TObj* texture; };
 struct GSmodelShadowReceiver {
     GSmodel* model;
-    u8 reserved04[0x4c];
+    GSlight* light;
+    GSmodel* surfaces[16];
+    u32 sizeMin, sizeMax;
     u8 active, reserved51;
     u16 token;
     HSD_Shadow* shadow;
 };
 extern "C" {
+extern f32 __float_epsilon[];
 static GSmodelShadowReceiver _modelShadowReceiveList[5];
 static f32 _modelShadowMarukageDist = 350.0f, _modelShadowOffDist = 400.0f;
 s32 modelShadowLayerID = -1;
@@ -127,5 +132,70 @@ void modelShadowInit__Fv() {
         receiver->active = 0; receiver->shadow = HSD_ShadowAlloc(); HSD_ShadowSetActive(receiver->shadow, 0);
         receiver->model = 0; receiver->token = 0;
     }
+}
+double ceil(double);
+static GSmodelShadowReceiver* _modelShadowFindValidReceiveModel__FP8_GSmodelP8_GSmodelP7GSlightP7GSbound(GSmodel* model, GSmodel* surface, GSlight* light, GSbound* bound) {
+    Vec surfacePos, otherPos, size;
+    GSmodelShadowReceiver* receiver;
+    u32 i;
+    receiver = _modelShadowReceiveList;
+    for (i = 0; i < 5; ++i, ++receiver) {
+        if (receiver->model == model && receiver->light == light) {
+            if (bound) {
+                GSboundGetSize(bound, &size, 1, 1);
+                f32 largest;
+                u32 extent;
+                largest = size.x;
+                if (largest < size.y) largest = size.y;
+                if (largest < size.z) largest = size.z;
+                extent = (u32)(f32)ceil(largest);
+                if ((extent < receiver->sizeMin && extent < receiver->sizeMax / 3) ||
+                    (extent > receiver->sizeMax && extent > receiver->sizeMin * 3)) continue;
+            }
+            if (_modelShadowCutoffDist > 0.0f) {
+                u32 j;
+                u8 ok = 1;
+                GSboundGetWorldPosition((GSbound*)surface->boundStorage, &surfacePos);
+                for (j = 0; j < 16; ++j) {
+                    if (receiver->surfaces[j]) {
+                        GSboundGetWorldPosition((GSbound*)receiver->surfaces[j]->boundStorage, &otherPos);
+                        if (PSVECSquareDistance(&surfacePos, &otherPos) > _modelShadowCutoffDist) { ok = 0; j = 16; }
+                    }
+                }
+                if (!ok) continue;
+            }
+            return receiver;
+        }
+    }
+    return 0;
+}
+static u8 _modelShadowGetLightToGroundIntersect__FP8_GSmodelP5GSvec(GSmodel* model, GSvec* out) {
+    Vec lightPos, boundPos, boundSize, scaled, lineDiff, lineDir, planeNormal, planePoint;
+    Vec dir, diff, t2, t;
+    GSlightGetPosition(modelRuntime(model)->shadowLight, (HSD_Vec3*)&lightPos);
+    GSboundGetWorldPosition((GSbound*)model->boundStorage, &boundPos);
+    GSboundGetSize((GSbound*)model->boundStorage, &boundSize, 1, 1);
+    boundPos.y = 0.5f * boundSize.y + boundPos.y;
+    planePoint.x = 0.0f; planePoint.y = model->position.param2; planePoint.z = 0.0f;
+    planeNormal.x = 0.0f; planeNormal.y = -1.0f; planeNormal.z = 0.0f;
+    PSVECSubtract(&lightPos, &boundPos, &dir);
+    lineDir.x = dir.x; lineDir.y = dir.y; lineDir.z = dir.z;
+    PSVECSubtract(&boundPos, &planePoint, &diff);
+    lineDiff.x = diff.x; lineDiff.y = diff.y; lineDiff.z = diff.z;
+    f32 denom = PSVECDotProduct(&planeNormal, &lineDir);
+    f32 numer = PSVECDotProduct(&planeNormal, &lineDiff);
+    int result;
+    f32 absDenom = denom > 0.0f ? denom : -denom;
+    if (absDenom < __float_epsilon[0]) {
+        if (numer == 0.0f) result = 2;
+        else result = 1;
+    } else {
+        PSVECScale(&lineDir, &t, numer / denom);
+        scaled.x = t.x; scaled.y = t.y; scaled.z = t.z;
+        PSVECSubtract(&boundPos, &scaled, &t2);
+        result = 0;
+        *(Vec*)out = t2;
+    }
+    return result == 0;
 }
 }

@@ -33,7 +33,7 @@ int AppScript::cmpFloor(int method,GSscript::tigaVariant *args,GSscript::tigaVar
     case 0x26:GSfloorPush(I(1));floorWaitForChange();break;
     case 0x27:GSfloorPush(0x3A6);floorWaitForChange();break;
     case 0x28:GSfloorPush(0x3A3);floorWaitForChange();break;
-    case 0x2A:{s32 a=I(1);f32 x=F(2),y=F(3),z=F(4);floorChangePos(a,(s16)I(5),x,y,z);break;}
+    case 0x2A:{s32 a=I(1);f32 x=F(2),y=F(3),z=F(4);floorChangePos(a,I(5),x,y,z);break;}
     case 0x2B:GSfloorPush(0x3A7);floorWaitForChange();break;
     case 0x2C:menuBattleDeBingo();floorWaitForChange();break;
     case 0x2D:R(menuBattleDeBingoGetResult());break;

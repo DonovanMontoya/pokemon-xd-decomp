@@ -832,3 +832,37 @@ s32 heroMoveMain() {
 }
 
 }
+
+extern "C" {
+void* peopleBiosGetPosPtr();
+void* peopleBiosGetRotPtr(void*);
+void PSVECAdd(GSvec*, GSvec*, GSvec*);
+s32 GScolsys2CheckGetEventID(GSvec*, GSvec*, s32);
+double sin(double);
+double cos(double);
+
+s32 heroMoveCheckEvent(s32 arg) {
+    unsigned long group;
+    unsigned long res;
+    s32 result;
+    void* people;
+    getResID(&group, &res, (HEROMOVE_MEMBER)heroMoveGetLeader());
+    people = peopleSearchID(peopleGetHumanID(group, res));
+    if (people != 0) {
+        GSvec* pos = (GSvec*)peopleBiosGetPosPtr();
+        f32* rot = (f32*)peopleBiosGetRotPtr(people);
+        GSvec start;
+        GSvec dir;
+        start.x = pos->x;
+        start.y = pos->y;
+        start.z = pos->z;
+        start.y += 5.0f;
+        dir.x = 10.0f * (f32)sin(rot[1]);
+        dir.y = 0.0f;
+        dir.z = 10.0f * (f32)cos(rot[1]);
+        PSVECAdd(&start, &dir, &dir);
+        result = GScolsys2CheckGetEventID(&start, &dir, arg);
+    }
+    return result;
+}
+}

@@ -50,6 +50,14 @@ u8 pokemonWazaCheckValid(Pokemon*, u16);
 void* savedataGetStatus(s32, s32);
 u16 zokuseiBiosGetSpriteID(u16);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
+tagWINDOW_WORK* windowSearchID(s32);
+u32 getRibbonCnt(void);
+u8 exribbonGetNo(s32);
+u32 getRibbonMsgID(s32);
+void msgctrlSetValue(s32, s32);
+s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
+void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, u32);
+void windowDrawSprite(s16, s16, tagWINDOW_WORK*, s32, s32, s32);
 }
 
 struct DarkPokemon {
@@ -96,10 +104,9 @@ u16 _menuPokemonStatusGetWazaDataID(Pokemon* pokemon, u16 index) {
 }
 
 s32 _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
-    u16 id = pokemonGetStatus(pokemon, 0, 0x75, 0);
+    s32 id = pokemonGetStatus(pokemon, 0, 0x75, 0) & 0xFFFF;
     if (id == 0xA1B8) {
-        u8* name = GSmsgGetGSchar(0x1828);
-        if (GScharCmp((u8*)pokemonGetStatus(pokemon, 0, 0x76, 0), name) == 0) {
+        if (GScharCmp((u8*)pokemonGetStatus(pokemon, 0, 0x76, 0), GSmsgGetGSchar(0x1828)) == 0) {
             return 1;
         }
     }
@@ -107,10 +114,9 @@ s32 _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
 }
 
 s32 _menuPokemonStatusCheckGinzaru(Pokemon* pokemon) {
-    u16 id = pokemonGetStatus(pokemon, 0, 0x75, 0);
+    s32 id = pokemonGetStatus(pokemon, 0, 0x75, 0) & 0xFFFF;
     if (id == 0x911D) {
-        u8* name = GSmsgGetGSchar(0x17B9);
-        if (GScharCmp((u8*)pokemonGetStatus(pokemon, 0, 0x76, 0), name) == 0) {
+        if (GScharCmp((u8*)pokemonGetStatus(pokemon, 0, 0x76, 0), GSmsgGetGSchar(0x17B9)) == 0) {
             return 1;
         }
     }
@@ -227,6 +233,129 @@ void menuPokemonStatusCtrlRibbon(void) {
     }
 }
 
+}
+
+static s32 ribbon_id_tbl[32] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6
+};
+static u32 ex_ribbon_id[64] = {
+11026, 11027, 11028, 11029, 11030, 11031, 11032, 11033, 11034, 11035, 11036, 11037, 11038, 11039, 11040, 11041, 11042, 11043, 11044, 11045, 11046, 11047, 11048, 11049, 11050, 11051, 11052, 11053, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11064, 11065, 11066, 11067, 11068, 11069, 11070, 11071, 11072, 11073, 11074, 11075, 11076, 11077, 11078, 11079, 11080, 11081, 11082, 11083, 11084, 11085, 11086, 11087, 11088, 11089
+};
+
+extern "C" void menuPokemonStatusDrawRibbon(tagWINDOW_WORK* win, tagSPRITE_WORK* spr) {
+    u32 color;
+    u32 msg;
+    s32 id;
+    s32 i = 0;
+    if (windowSearchID(0x5E) == 0) {
+        return;
+    }
+    if (_menuStatus.pokemon == 0) {
+        return;
+    }
+    color = win->alpha | ~0xFF;
+    switch (spr->id) {
+    case 0x25B:
+        msgctrlSetValue(0x34, _menuStatus.ribbon.count);
+        GSmsgPrintRect(winSpriteGetLayerID(win, spr), 0, 0, spr->x, spr->y, color, 0x4287);
+        break;
+    case 0x25A:
+        if (_menuStatus.mode == 6) {
+            s8 cursor = _menuStatus.unk1A;
+            i = _menuStatus.ribbon.slots[(cursor % 9) * 4 + cursor / 9];
+            if (i < 0 && getRibbonCnt() <= i) {
+                break;
+            }
+            id = ribbon_id_tbl[i];
+            switch (id) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6: {
+                u32 no = exribbonGetNo(id);
+                if (no != 0) {
+                    s32 k = no - 1;
+                    msg = ex_ribbon_id[k];
+                } else {
+                    msg = 0;
+                }
+                break;
+            }
+            case -1:
+                msg = getRibbonMsgID(i);
+                break;
+            }
+            if (msg != 0) {
+                GSmsgPrintRect(winSpriteGetLayerID(win, spr), 0, 0, spr->x, spr->y, color, msg);
+            }
+        }
+        break;
+    case 0x22A:
+        i = 1;
+    case 0x22B: i++;
+    case 0x22C: i++;
+    case 0x22D: i++;
+    case 0x22E: i++;
+    case 0x22F: i++;
+    case 0x230: i++;
+    case 0x231: i++;
+    case 0x232: i++;
+    case 0x233: i++;
+    case 0x234: i++;
+    case 0x235: i++;
+    case 0x236: i++;
+    case 0x237: i++;
+    case 0x238: i++;
+    case 0x239: i++;
+    case 0x23A: i++;
+    case 0x23B: i++;
+    case 0x23C: i++;
+    case 0x23D: i++;
+    case 0x23E: i++;
+    case 0x23F: i++;
+    case 0x240: i++;
+    case 0x241: i++;
+    case 0x242: i++;
+    case 0x243: i++;
+    case 0x244: i++;
+    case 0x245: i++;
+    case 0x246: i++;
+    case 0x247: i++;
+    case 0x248: i++;
+    case 0x249:
+        {
+        s32 n = 32 - (i + 1);
+        if (n > 0x18) {
+            n += 2;
+        }
+        if (_menuStatus.ribbon.slots[(n % 9) * 4 + n / 9] >= 0) {
+            winSpriteSetDisp(spr, 1);
+        } else {
+            winSpriteSetDisp(spr, 0);
+        }
+        }
+        break;
+    case 0x229: {
+        s8 cursor = _menuStatus.unk1A;
+        if (cursor >= 0) {
+            i = cursor % 9;
+            windowDrawSprite(i * 30, (cursor / 9) * 52, win, 0x366, 0, winSpriteGetLayerID(win, spr));
+        }
+        break;
+    }
+    case 0x21E:
+    case 0x220:
+        if (_menuStatus.mode == 6) {
+            winSpriteSetDisp(spr, 1);
+        } else {
+            winSpriteSetDisp(spr, 0);
+        }
+        break;
+    }
 }
 
 struct RibbonMap {

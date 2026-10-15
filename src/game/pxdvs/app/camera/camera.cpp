@@ -206,8 +206,7 @@ GScamera* cameraGetActive() {
 u8 cameraGetType() { return pCamWork->type; }
 u8 cameraSetType(u8 type) {
     pCamWork->flags=0;
-    u8 previous=pCamWork->type;
-    if(previous!=type) { pCamWork->type=type; pCamWork->flags &= ~0x20; return previous; }
+    if(pCamWork->type!=type) { u8 previous=pCamWork->type; pCamWork->type=type; pCamWork->flags &= ~0x20; return previous; }
     return type;
 }
 void cameraRefreshTargetPos() {

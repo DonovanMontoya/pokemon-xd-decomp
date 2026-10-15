@@ -118,7 +118,7 @@ u8 fightOutPokemonIsGcHeroFightOutPokemon(FightOutPokemon*);
 u8 fightOutPokemonIsHpMantan(FightOutPokemon *);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon*, u16);
 u8 fightOutPokemonIsJoutaiNormal(FightOutPokemon *);
-u32 fightOutPokemonIsNokoriHpFollowing(FightOutPokemon *, u16);
+u8 fightOutPokemonIsNokoriHpFollowing(FightOutPokemon *, u16);
 u8 fightOutPokemonIsUseHensinBuff(FightOutPokemon *);
 u8 fightOutPokemonIsZokuseiDataId(FightOutPokemon *, u16);
 u16 fightOutPokemonMaxHpWaruValue(FightOutPokemon *,u16);
@@ -1006,16 +1006,12 @@ u8 *_fightSeqSoubiItemCheckTurnSubJoutaiKaihuku__FP15FightOutPokemonUsPUc(FightO
     var_r31 = NULL;
     if (fightOutPokemonIsJoutaiDataId(arg0, arg1) == 1) {
         fightOutPokemonInitJoutaiDataId(arg0, arg1);
-        switch (arg1) {                             /* irregular */
-        case 8:
+        if (arg1 == 8) {
             fightOutPokemonInitJoutaiDataId(arg0, 0x17U);
-            break;
-        case 4:
+        } else if (arg1 == 4) {
             fightOutPokemonInitJoutaiDataId(arg0, 3U);
-            break;
-        case 3:
+        } else if (arg1 == 3) {
             fightOutPokemonInitJoutaiDataId(arg0, 4U);
-            break;
         }
         var_r31 = arg2;
     }
@@ -1028,9 +1024,11 @@ u8 *_fightSeqSoubiItemCheckTurnSubAbiCntUp__FP15FightOutPokemonUclUcUcUc(FightOu
 
     var_r31 = NULL;
     if ((arg1 == 0) || (arg1 == 2)) {
-        temp_r30 = pokemonGetStatus((Pokemon *) arg0, 0U, fightSeqCondChgActTypeToPokemonStatusId(arg3), 0U);
+        u16 sid = fightSeqCondChgActTypeToPokemonStatusId(arg3);
+        temp_r30 = pokemonGetStatus((Pokemon *) arg0, 0U, sid, 0U);
         if ((fightOutPokemonIsNokoriHpFollowing(arg0, (u16) arg2) != 0) && (temp_r30 < 0xCU)) {
-            UserWork[0x1601E] = (s8) (arg3 + arg4);
+            s8 sum = arg3 + arg4;
+            UserWork[0x1601E] = sum;
             var_r31 = WAZA_ItemCondUp;
             UserWork[0x160A4] = arg5;
             UserWork[0x160A5] = 0;

@@ -18,6 +18,9 @@ struct psCtl {
     u16 lifeA;
     u8 reserved12[5];
     u8 flag17;
+    u8 reserved18[0x90 - 0x18];
+    f32 rx, ry, rz;
+    f32 sx, sy, sz;
 };
 
 struct peBankX {
@@ -27,7 +30,9 @@ struct peBankX {
     u32 birth;
     psGenX *ps;
     f32 x, y, z;
-    u8 reserved18[0x134 - 0x18];
+    u8 reserved18[0x118 - 0x18];
+    f32 qx, qy, qz, qw;
+    f32 sx, sy, sz;
     u32 flags;
     u8 reserved138[0x160 - 0x138];
     void *camera;
@@ -39,6 +44,9 @@ struct psWrap {
     u16 id;
     u32 birth;
     psCtl *ps;
+    u8 reserved0c[0xc];
+    f32 x, y, z;
+    f32 sx, sy, sz;
 };
 
 struct _GSparticleGen {
@@ -50,7 +58,8 @@ struct _GSparticleGen {
     s32 part;
     s32 fc;
     f32 px, py, pz;
-    u8 reserved1c[0x34 - 0x1c];
+    f32 rx, ry, rz;
+    f32 sx, sy, sz;
     _GSparticleBank *parent;
     peBankX *bank;
 };
@@ -86,6 +95,23 @@ void peBankStop(peBankX *);
 void peBankStopLoop(peBankX *);
 void peBankFree(peBankX *);
 void psKillFamily(u16, u8);
+s32 GSgfxPerfbarCPUEntry(s32);
+void particleEnginePostUpdate(void);
+u8 GScameraIsValid(u32);
+void *GScameraGetActiveCamera(void);
+void *memset(void *, int, unsigned long);
+void particleEngineUpdate(u8, f32);
+void psDispBeginFrame(void);
+void psExecGenerator(int);
+void *psGeneratorGetCamera(psGenX *);
+void psInterpretParticles(int);
+void psSetBillboardCamera(void *);
+u32 psGetGeneratorChildMaxLife(psCtl *);
+u32 psGetParticleChildCount(psCtl *);
+void psSetGeneratorAngleRadiusScale(psCtl *, f32 *, u8);
+f32 peBankGetLife(peBankX *);
+u8 GSgfxVideoGetVsyncRate(void);
+void EulerToQuat(void *, f32 *);
 void psKillGenerator(void *);
 void *GSmemAlloc(u32);
 psCtl *psCreateGeneratorID(u8, u8, u32);
@@ -103,11 +129,11 @@ static u8 _particlePALFrameCount;
 static u8 _invalidateVtx;
 static u8 _invalidateTex;
 
-static inline s32 _findFreeGenerator(_GSparticleBank *bank, u8 mode) {
-    s32 i;
+static inline s32 _findFreeGenerator(_GSparticleBank *bank) {
     _GSparticleGen *g = bank->gens;
+    s32 i;
     for (i = 0; i < bank->count; i++, g++) {
-        if (mode != g->isBank) {
+        if (bank->loaded != g->isBank) {
             return -1;
         }
         if (g->bank == 0) {
@@ -125,6 +151,179 @@ static inline void _setBankVisibility(peBankX *b, bool v) {
             b->flags &= ~4;
         }
     }
+}
+
+static inline u32 _generatorLife(_GSparticleGen *g) {
+    peBankX *b = g->bank;
+    if (b == 0) {
+        return 0;
+    }
+    if (g->isBank != 0) {
+        if (peBankIsInfinite(b) != 0) {
+            return -1;
+        }
+        f32 rate = (f32)GSgfxVideoGetVsyncRate();
+        f32 life = peBankGetLife(g->bank);
+        return (u32)(life * rate);
+    }
+    if (((psWrap *)b)->isFinite == 1) {
+        return -1;
+    }
+    return psGetGeneratorChildMaxLife(((psWrap *)b)->ps);
+}
+
+static inline u8 _isGeneratorAlive(_GSparticleGen *g) {
+    peBankX *b = g->bank;
+    if (b == 0) {
+        return 0;
+    }
+    if (g->isBank != 0) {
+        return _generatorLife(g) != 0;
+    }
+    if (((psWrap *)b)->isFinite != 0) {
+        return 1;
+    }
+    if (psGetParticleChildCount(((psWrap *)b)->ps) != 0) {
+        return 1;
+    }
+    return _generatorLife(g) != 0;
+}
+
+static void _particlePostUpdate(f32) {
+    u32 i;
+    u32 j;
+    s32 perf = GSgfxPerfbarCPUEntry(0x800080);
+    for (i = 0; i < (u32)_particleBankStructCount; i++) {
+        _GSparticleGen *g;
+        _GSparticleBank *bank = &((_GSparticleBank *)_particleBankStructList)[i];
+        if (bank->reserved0 == 1) {
+            g = bank->gens;
+            for (j = 0; j < bank->count; j++, g++) {
+                if (g->bank != 0) {
+                    if (!_isGeneratorAlive(g)) {
+                        GSparticleDestroyGenerator(g, 1);
+                    }
+                }
+            }
+        }
+    }
+    particleEnginePostUpdate();
+    GSgfxPerfbarCPUEntry(perf);
+}
+
+static inline void _genSetCamera(_GSparticleGen *g, void *cam) {
+    peBankX *b = g->bank;
+    if (b) {
+        if (g->isBank) {
+            if (b) {
+                b->camera = cam;
+            }
+        } else {
+            psGeneratorSetCamera(b->ps, cam);
+        }
+    }
+}
+
+static inline void *_genGetCamera(_GSparticleGen *g) {
+    peBankX *b = g->bank;
+    if (b == 0) {
+        return 0;
+    }
+    if (g->isBank) {
+        if (b) {
+            return b->camera;
+        }
+        return 0;
+    }
+    return psGeneratorGetCamera(b->ps);
+}
+
+static void _particleUpdateAttachment(_GSparticleGen *g);
+
+static void _particlePreUpdate(f32 dt) {
+    static f32 sysdolRemain = 0.0f;
+    u32 steps;
+    u32 i;
+    u32 j;
+    s32 perf;
+    perf = GSgfxPerfbarCPUEntry(0x800080);
+    memset(g_particle_cameras, 0, 0x10);
+    g_particle_cameras_count = 0;
+    for (i = 0; i < (u32)_particleBankStructCount; i++) {
+        _GSparticleBank *bank = &((_GSparticleBank *)_particleBankStructList)[i];
+        if (bank->reserved0 == 1) {
+            _GSparticleGen *g;
+            if (bank->camera != 0 && !GScameraIsValid((u32)bank->camera)) {
+                if (bank != 0 && bank->reserved0 != 0) {
+                    u8 n;
+                    bank->camera = 0;
+                    n = bank->count;
+                    g = bank->gens;
+                    while (n--) {
+                        if (g->bank != 0) {
+                            _genSetCamera(g, 0);
+                        }
+                        g++;
+                    }
+                }
+            }
+            g = bank->gens;
+            for (j = 0; j < bank->count; j++, g++) {
+                if (g->bank != 0) {
+                    void *cam;
+                    _particleUpdateAttachment(g);
+                    cam = _genGetCamera(g);
+                    if (GScameraIsValid((u32)cam)) {
+                        u8 found = 0;
+                        s32 k;
+                        for (k = 0; k < g_particle_cameras_count; k++) {
+                            if (g_particle_cameras[k] == cam) {
+                                found = 1;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            g_particle_cameras[g_particle_cameras_count] = cam;
+                            g_particle_cameras_count++;
+                        }
+                    } else {
+                        _genSetCamera(g, 0);
+                    }
+                }
+            }
+        }
+    }
+    steps = (u32)dt;
+    sysdolRemain = sysdolRemain + (dt - (f32)steps);
+    if (sysdolRemain >= 1.0f) {
+        u32 extra = (u32)sysdolRemain;
+        steps += extra;
+        sysdolRemain = sysdolRemain - (f32)extra;
+    }
+    if (GSgfxVideoGetVsyncRate() == 0x32) {
+        _particlePALFrameCount++;
+        if (_particlePALFrameCount >= 5) {
+            steps++;
+            _particlePALFrameCount = 0;
+        }
+    }
+    {
+        void *camera = GScameraGetActiveCamera();
+        if (camera != 0 && GScameraIsValid((u32)camera)) {
+            u32 n;
+            psSetBillboardCamera(((psCtl **)camera)[2]);
+            for (n = 0; n < steps; n++) {
+                psInterpretParticles(0);
+                psExecGenerator(0);
+            }
+        }
+    }
+    {
+        u8 rate = GSgfxVideoGetVsyncRate();
+        particleEngineUpdate(rate, dt / (f32)rate);
+    }
+    psDispBeginFrame();
+    GSgfxPerfbarCPUEntry(perf);
 }
 
 extern "C" void GSparticleGeneratorSetCamera(_GSparticleGen *g, void *cam) {
@@ -274,6 +473,90 @@ extern "C" void GSparticleDisactivateBank(_GSparticleBank *bank) {
     bank->disabled = 1;
 }
 
+extern "C" u8 GSparticleIsGeneratorAlive(_GSparticleGen *g) {
+    return _isGeneratorAlive(g);
+}
+
+extern "C" u32 GSparticleGetGeneratorLife(_GSparticleGen *g) {
+    return _generatorLife(g);
+}
+
+static inline void _clampScale(f32 *p) {
+    f32 v = *p;
+    f32 a = v > 0.0f ? v : -v;
+    f32 e = 0.00001f;
+    if (a < 0.00001f) {
+        if (v < 0.0f) {
+            e = -0.00001f;
+        }
+        *p = e;
+    }
+}
+
+extern "C" void GSparticleSetGeneratorScale(_GSparticleGen *g, f32 *scale, u8 flag, u32 radius) {
+    if (g->bank != 0) {
+        if (g->part == 0) {
+            _clampScale(&scale[0]);
+            _clampScale(&scale[1]);
+            _clampScale(&scale[2]);
+            if (g->isBank != 0) {
+                peBankX *bank = g->bank;
+                if (bank != 0) {
+                    bank->sx = scale[0];
+                    bank->sy = scale[1];
+                    bank->sz = scale[2];
+                }
+            } else {
+                psWrap *w = (psWrap *)g->bank;
+                w->sx = scale[0];
+                w->sy = scale[1];
+                w->sz = scale[2];
+                w->ps->sx = scale[0];
+                w->ps->sy = scale[1];
+                w->ps->sz = scale[2];
+            }
+        } else {
+            g->sx = scale[0];
+            g->sy = scale[1];
+            g->sz = scale[2];
+        }
+        if (g->isBank == 0 && flag == 1) {
+            psSetGeneratorAngleRadiusScale(((psWrap *)g->bank)->ps, scale, radius);
+        }
+    }
+}
+
+extern "C" void GSparticleSetGeneratorRotation(_GSparticleGen *g, f32 *rot) {
+    peBankX *b = g->bank;
+    if (b != 0) {
+        if (g->part == 0) {
+            if (g->isBank != 0) {
+                f32 quat[4];
+                EulerToQuat(rot, quat);
+                peBankX *bank = g->bank;
+                if (bank != 0) {
+                    bank->qx = quat[0];
+                    bank->qy = quat[1];
+                    bank->qz = quat[2];
+                    bank->qw = quat[3];
+                }
+            } else {
+                psWrap *w = (psWrap *)b;
+                w->x = rot[0];
+                w->y = rot[1];
+                w->z = rot[2];
+                w->ps->rx = rot[0];
+                w->ps->ry = rot[1];
+                w->ps->rz = rot[2];
+            }
+        } else {
+            g->rx = rot[0];
+            g->ry = rot[1];
+            g->rz = rot[2];
+        }
+    }
+}
+
 extern "C" void GSparticleBankSetCamera(_GSparticleBank *bank, void *cam) {
     if (bank != 0) {
         switch (bank->reserved0) {
@@ -349,7 +632,7 @@ extern "C" void GSparticleDestroyGenerator(_GSparticleGen *g, u8 flag) {
 
 static void _particleBankDestroyOldestGenerator(_GSparticleBank *bank);
 
-extern "C" bool GSparticleCreateGenerator(_GSparticleBank *bank, u32 id, u8 flag) {
+extern "C" _GSparticleGen *GSparticleCreateGenerator(_GSparticleBank *bank, u32 id, u8 flag) {
     _GSparticleGen *g;
     if (bank->reserved0 == 0) {
         return 0;
@@ -359,7 +642,7 @@ extern "C" bool GSparticleCreateGenerator(_GSparticleBank *bank, u32 id, u8 flag
     }
     if (bank->loaded != 0) {
         peBankX *b;
-        s32 idx = _findFreeGenerator(bank, bank->loaded);
+        s32 idx = _findFreeGenerator(bank);
         if (idx < 0) {
             return 0;
         }
@@ -378,11 +661,11 @@ extern "C" bool GSparticleCreateGenerator(_GSparticleBank *bank, u32 id, u8 flag
         g->bank = b;
         _invalidateVtx = 1;
     } else {
-        s32 idx = _findFreeGenerator(bank, bank->loaded);
+        s32 idx = _findFreeGenerator(bank);
         psWrap *w;
         if (idx < 0) {
             _particleBankDestroyOldestGenerator(bank);
-            idx = _findFreeGenerator(bank, bank->loaded);
+            idx = _findFreeGenerator(bank);
             if (idx < 0) {
                 return 0;
             }
@@ -391,7 +674,9 @@ extern "C" bool GSparticleCreateGenerator(_GSparticleBank *bank, u32 id, u8 flag
         if (w == 0) {
             return 0;
         }
-        w->ps = psCreateGeneratorID(flag == 1 ? 1 : 0, bank->kind, id);
+        u8 type = 0;
+        if (flag == 1) type = 1;
+        w->ps = psCreateGeneratorID(type, bank->kind, id);
         if (w->ps == 0) {
             GSmemFree(w);
             return 0;
@@ -419,7 +704,7 @@ extern "C" bool GSparticleCreateGenerator(_GSparticleBank *bank, u32 id, u8 flag
     g->f1 = 0;
     g->f2 = 0;
     g->parent = bank;
-    return 1;
+    return g;
 }
 
 static void _particleBankDestroyOldestGenerator(_GSparticleBank *bank) {

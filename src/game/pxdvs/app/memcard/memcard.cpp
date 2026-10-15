@@ -179,8 +179,8 @@ static s32 _memcardMergeDataPack(void) {
     {                                                     \
         u32 hi = ((u16*)(base))[((off) + 2) / 2];         \
         u32 lo = ((u16*)(base))[(off) / 2];               \
-        data = data + (hi << 16);                         \
-        data = data + lo;                                 \
+        data = (hi << 16) + data;                         \
+        data = lo + data;                                 \
     }
 
 static void* _memcardGetMultiSaveDataToSTRUCT(void* base, long index) {
@@ -297,6 +297,164 @@ static s32 _memcardExamineDataPack(void) {
     }
     *(s32*)(pack + _memcardStatusPtr->index * 0x200 + 0x28004) = 0;
     return 0x1F;
+}
+
+struct MemcardCardStat {
+    char fileName[32];
+    u32 length;
+    u32 time;
+    u8 gameName[4];
+    u8 company[2];
+    u8 bannerFormat;
+    u8 pad2F;
+    u32 iconAddr;
+    u16 iconFormat;
+    u16 iconSpeed;
+    u32 commentAddr;
+    u32 offsetBanner;
+    u32 offsetBannerTlut;
+    u32 offsetIcon[8];
+    u32 offsetIconTlut;
+    u32 offsetData;
+};
+
+extern "C" {
+s32 CARDFreeBlocks(s32, s32*, s32*);
+s32 CARDFastOpen(s32, s32, void*);
+s32 CARDGetStatus(s32, s32, MemcardCardStat*);
+s32 pokecoloGetCountryCode(void);
+int strcmp(const char*, const char*);
+}
+
+static inline u8 _memcardIsXDSave(MemcardCardStat* stat) {
+    switch (pokecoloGetCountryCode()) {
+    case 0:
+        if (strcmp(stat->fileName, "PokemonXD") == 0 && *(u32*)stat->gameName == *(u32*)"GXXJ" && *(u16*)stat->company == *(u16*)"01") return 1;
+        break;
+    case 1:
+        if (strcmp(stat->fileName, "PokemonXD") == 0 && *(u32*)stat->gameName == *(u32*)"GXXE" && *(u16*)stat->company == *(u16*)"01") return 1;
+        break;
+    case 2:
+        if (strcmp(stat->fileName, "PokemonXD") == 0 && *(u32*)stat->gameName == *(u32*)"GXXP" && *(u16*)stat->company == *(u16*)"01") return 1;
+        break;
+    }
+    return 0;
+}
+
+static s32 _memcardCardOpen(void) {
+    s32 freeBytes;
+    s32 freeFiles;
+    MemcardCardStat stat2;
+    s32 status;
+    CARDFreeBlocks(*(s32*)((u8*)_memcardStatusPtr + 0x14), &freeBytes, &freeFiles);
+    switch (pokecoloGetCountryCode()) {
+    case 0: {
+        s32 i;
+        s32 result;
+        s32 chan;
+        void* info;
+        MemcardCardStat stat;
+        chan = *(s32*)((u8*)_memcardStatusPtr + 0x14);
+        info = (u8*)_memcardStatusPtr + 0x8C;
+        i = 0;
+            for (;;) {
+                result = CARDFastOpen(chan, i, info);
+                if (result == 0) {
+                    result = CARDGetStatus(chan, i, &stat);
+                    u8 found;
+                    if (result == 0) {
+                        found = _memcardIsXDSave(&stat);
+                    } else {
+                        found = 0;
+                    }
+                    if (found) {
+                        result = 0;
+                        break;
+                    }
+                }
+                ++i;
+                if (i >= 0x7F) {
+                    if (result == 0) result = -4;
+                    break;
+                }
+            }
+        status = result;
+        break;
+    }
+    case 1:
+    case 2: {
+        void* info;
+        s32 chan;
+        s32 result;
+        s32 i;
+        MemcardCardStat stat;
+        chan = *(s32*)((u8*)_memcardStatusPtr + 0x14);
+        info = (u8*)_memcardStatusPtr + 0x8C;
+        i = 0;
+            for (;;) {
+                result = CARDFastOpen(chan, i, info);
+                if (result == 0) {
+                    result = CARDGetStatus(chan, i, &stat);
+                    u8 found;
+                    if (result == 0) {
+                        found = _memcardIsXDSave(&stat);
+                    } else {
+                        found = 0;
+                    }
+                    if (found) {
+                        result = 0;
+                        break;
+                    }
+                }
+                ++i;
+                if (i >= 0x7F) {
+                    if (result == 0) result = -4;
+                    break;
+                }
+            }
+        status = result;
+        break;
+    }
+    }
+    switch (status) {
+    case 0: {
+        _memcardStatusPtr->unk3E = 1;
+        status = CARDGetStatus(*(s32*)((u8*)_memcardStatusPtr + 0x14), *(s32*)((u8*)_memcardStatusPtr + 0x90), &stat2);
+        if (status != 0) goto fail;
+        if (stat2.commentAddr + 0x10000 != 0xFFFF) {
+            if (_memcardStatusPtr->state == 0xC) {
+                _memcardStatusPtr->msg = 2;
+                _memcardStatusPtr->nextTask = 0xB;
+                return 0x30;
+            }
+            s32 ret = 0x19;
+            if (_memcardStatusPtr->state == 3) ret = 0x1C;
+            return ret;
+        }
+        status = -4;
+        freeBytes += 0x56000;
+        freeFiles += 1;
+    }
+    // fall through
+    case -4:
+        switch (_memcardStatusPtr->state) {
+        case 1:
+            if (freeBytes < 0x56000) { status = -9; goto fail; }
+            if (freeFiles < 1) { status = -8; goto fail; }
+            _memcardStatusPtr->msg = 6;
+            _memcardStatusPtr->nextTask = 0xA;
+            return 0x30;
+        case 9:
+            _memcardStatusPtr->msg = 2;
+            _memcardStatusPtr->nextTask = 0xB;
+            return 0x30;
+        }
+        // fall through
+    default:
+    fail:
+        _memcardStatusPtr->msg = status;
+        return 0x2B;
+    }
 }
 
 static void _memcardCallback(long, long) {

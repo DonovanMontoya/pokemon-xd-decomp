@@ -782,7 +782,7 @@ config.libs = [
         minor=0,
         patch=3,
         objects=[
-            Object(NonMatching, "musyx/runtime/seq.c"),
+            Object(NonMatching, "musyx/runtime/seq.c", src_dir="src" if config.version == "GXXE01" else None),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/synth.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/seq_api.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd_synthapi.c"),
@@ -921,7 +921,7 @@ config.libs = [
             Object(NonMatching, "game/menuCB_Sub1.cpp", extra_cflags=["-lang c", "-opt nopeephole"]),
             Object(NonMatching, "game/menuLogoDemo.cpp", extra_cflags=["-opt nopeephole", "-inline noauto"]),
             Object(NonMatching, "game/menuHologram.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
-            Object(NonMatching, "game/menuBingo.cpp", extra_cflags=["-lang c", "-opt nopeephole"]),
+            Object(NonMatching, "game/menuBingo.cpp", extra_cflags=["-lang c", "-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/menuItemBT.c"),
             Object(NonMatching, "game/menuReliveHallTutorial.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
             Object(NonMatching, "game/menuPokemonChange.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
@@ -1079,7 +1079,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSScript/tiga.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/GSAPI/GSScript/tvariant.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSScript/chank.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSScript/defobj.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSScript/defobj.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
 
             Object(NonMatching, "game/pxdvs/GSAPI/GSnetwork/GSnetwork.cpp"),
 
@@ -1238,7 +1238,7 @@ config.libs = [
 
             # battleGrid
             Object(NonMatching, "game/pxdvs/app/battleGrid/battleGrid.cpp"),
-            Object(NonMatching, "game/pxdvs/app/battleGrid/wazaSequenceCamera.cpp"),
+            Object(NonMatching, "game/pxdvs/app/battleGrid/wazaSequenceCamera.cpp", extra_cflags=["-inline auto,deferred"]),
             Object(NonMatching, "game/pxdvs/app/battleGrid/wazaSequenceCameraData.cpp"),
             Object(NonMatching, "game/pxdvs/app/battleGrid/battleCamera.cpp"),
 
@@ -1249,17 +1249,17 @@ config.libs = [
 
             # script
             Object(NonMatching, "game/pxdvs/app/script/appScript.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/script/objCamera.cpp", extra_cflags=["-inline auto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/script/objFloor.cpp", extra_cflags=["-inline auto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/script/objHero.cpp", extra_cflags=["-inline auto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/script/objMenu.cpp", extra_cflags=["-inline auto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/script/objPeople.cpp", extra_cflags=["-inline noauto", "-opt nopeephole", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/app/script/objCamera.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/app/script/objFloor.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/app/script/objHero.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/app/script/objMenu.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
+            Object(NonMatching, "game/pxdvs/app/script/objPeople.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/script/script.cpp", cflags=cflags_xd_app_fight, extra_cflags=["-opt nopeephole", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/script/scriptModel.cpp", cflags=cflags_xd_app_fight),
             Object(NonMatching, "game/pxdvs/app/script/contSave.cpp", extra_cflags=["-inline noauto", "-opt nopeephole"]),
 
             # memcard
-            Object(NonMatching, "game/pxdvs/app/memcard/memcard.cpp"),
+            Object(NonMatching, "game/pxdvs/app/memcard/memcard.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/memcard/savedata.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/memcard/savedataBios.cpp"),
 
@@ -1290,7 +1290,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/wazaSequence/deoxyspokemonPKXData.c"),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/rareDeoxysPokemonPKXData.c"),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/pachiru.cpp", extra_cflags=["-inline noauto", "-str reuse,nopool,readonly"]),
-            Object(NonMatching, "game/pxdvs/app/wazaSequence/leaffx.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/leaffx.cpp", extra_cflags=["-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/billboard.cpp", extra_cflags=["-inline noauto"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/wazaSequence/wazaeffects.cpp"),
             Object(NonMatching, "game/pxdvs/app/wazaSequence/boneFill.cpp", extra_cflags=["-inline noauto"]),
@@ -1410,7 +1410,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/ribbon/exribbon.cpp", cflags=cflags_xd_app_fight),
 
             # light
-            Object(NonMatching, "game/pxdvs/app/light/lightEditor.cpp"),
+            Object(NonMatching, "game/pxdvs/app/light/lightEditor.cpp", extra_cflags=["-inline off", "-str reuse,nopool,readonly"]),
             Object(NonMatching, "game/pxdvs/app/light/light.cpp", extra_cflags=["-inline off", "-str reuse,nopool,readonly"]),
 
             Object(NonMatching, "game/pxdvs/app/esaba/esaba.cpp"),

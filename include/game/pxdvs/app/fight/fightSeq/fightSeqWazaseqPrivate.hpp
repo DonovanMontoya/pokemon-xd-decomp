@@ -76,7 +76,7 @@ u16 fightOutPokemonGetSoubiItemDataId(void*);
 u32 fightOutPokemonGetSoubiItemSoubiDataId(void*);
 u16 fightOutPokemonGetTeikouZokuseiDataIdAry(void*, s32, void *);
 u16 fightOutPokemonGetTokuseiDataId(void*);
-u32 fightOutPokemonGetUserFightTargetIdJoutaiDataId(void*, u16);
+u16 fightOutPokemonGetUserFightTargetIdJoutaiDataId(void*, u16);
 void fightOutPokemonInitAbiCntAll(void*);
 void fightOutPokemonInitJoutaiDataId(void*, u16);
 void fightOutPokemonInitJoutaiKeep(void*);

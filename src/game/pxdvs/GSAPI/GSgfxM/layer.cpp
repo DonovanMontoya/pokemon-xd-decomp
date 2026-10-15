@@ -207,9 +207,9 @@ LayerNode* GSgfxLayerFindByName(char* name) {
 s32 GSgfxLayerFindByName_C(char* name) {
     LayerNode* p=_layerBottom;
     for (;p;p=p->next) {
-        char local[32]; char* source=reinterpret_cast<char*>(p)+8;
-        if ((s32)((u8)strlen(source)+1)<=32) memcpy(local,source,(u8)strlen(source)+1);
-        else { memcpy(local,source,31); local[31]=0; }
+        char local[32];
+        if ((s32)((u8)strlen(reinterpret_cast<char*>(p)+8)+1)<=32) memcpy(local,reinterpret_cast<char*>(p)+8,(u8)strlen(reinterpret_cast<char*>(p)+8)+1);
+        else { memcpy(local,reinterpret_cast<char*>(p)+8,31); local[31]=0; }
         if (stricmp(local,name)==0) break;
     }
     return p ? p->id : -1;
@@ -277,6 +277,7 @@ void PrepareNextFrame__10GSgfxLayerFv(void* layer) {
     switch (layerField<s32>(layer,0x2c)) {
     case 1: PrepareDistortion__10GSgfxLayerFv(layer); break;
     case 4: PrepareFBCopy__10GSgfxLayerFv(layer); break;
+    case 0: break;
     }
     layerField<void*>(layer,0x19dc)=0; layerField<void*>(layer,0x19ec)=0;
     layerField<void*>(layer,0x19fc)=0; layerField<void*>(layer,0x1a0c)=0;
@@ -510,7 +511,8 @@ void CreateFifo__10GSgfxLayerF14GSgfxLayerPassUl(void* layer,s32 pass,u32 bytes)
     u8* fifo=static_cast<u8*>(layer)+0x1818+pass*0xbc;
     layerField<void*>(fifo,0)=0; layerField<u32>(fifo,4)=0; memset(fifo+8,0,0x80);
     s32 id=layerField<s32>(layer,0x28);
-    layerField<u32>(fifo,0x90)=id<8 ? _layerPerfColor[id] : _layerPerfUserColor;
+    if (id<8) layerField<u32>(fifo,0x90)=_layerPerfColor[id];
+    else layerField<u32>(fifo,0x90)=_layerPerfUserColor;
     layerField<u16>(fifo,0xac)=0; layerField<u16>(fifo,0xae)=0;
     layerField<u32>(fifo,0xb0)=0; layerField<u32>(fifo,0xb4)=0; layerField<u32>(fifo,0xb8)=0;
     layerField<void*>(fifo,0x88)=0; layerField<void*>(fifo,0x8c)=0;

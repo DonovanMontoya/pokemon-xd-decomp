@@ -7,7 +7,7 @@ Hero::Hero() {}
 s32 deckDataVirtualDB_GetExplanetion1(u16);
 s32 deckDataVirtualDB_GetExplanetion2(u16);
 s32 deckDataVirtualDB_GetTitle(u16);
-void drawPkmPanel(u32, tagWINDOW_WORK*, tagSPRITE_WORK*);
+static void drawPkmPanel(u32, tagWINDOW_WORK*, tagSPRITE_WORK*);
 
 struct GSvec2 {
     f32 x;
@@ -19,6 +19,23 @@ struct Pokemon {
 s32 cBattleDisk::mItemCurIdx[8] = {0x6F9, 0x6FB, 0x6FD, 0x6FF, 0x701, 0x703, 0x705, 0x707};
 s32 cBattleDisk::mContentsCurIdx[15] = {0x76F, 0x770, 0x771, 0x772, 0x773, 0x774, 0x775, 0x776,
                                         0x777, 0x778, 0x7B6, 0x7B7, 0x7B8, 0x7B9, 0x7BA};
+
+static s16 sRect[14][4] = {
+    {216, 6, 42, 42},
+    {0, 0, -264, 54},
+    {19, 7, 133, 18},
+    {30, 29, 95, 18},
+    {126, 29, 80, 18},
+    {154, 7, 19, 18},
+    {9, 29, 20, 15},
+    {6, 6, 42, 42},
+    {0, 0, 264, 54},
+    {64, 7, 133, 18},
+    {75, 29, 95, 18},
+    {171, 29, 80, 18},
+    {199, 7, 19, 18},
+    {54, 29, 20, 15}
+};
 
 extern "C" {
 Pokemon* heroBiosGetPokemonPtr(Hero*, u16);
@@ -47,6 +64,15 @@ u32 heroGetPokeomCount(Hero*);
 void menuSetPosition(s32, s16, s16);
 void winSeqSetMenu(s32, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
+s32 pokemonGetStatus(Pokemon*, u16, u16, u16);
+u8 menuSubGetPokemonSexForDisp(Pokemon*);
+u16 pokemonGetSoubiItemDataId(Pokemon*);
+void msgctrlSetValue(s32, s32);
+s32 GSmsgGetGSchar(s32);
+void GSmsgPrintRect(s32, s32, s32, s16, s16, u32, s32);
+void GSmsgPrint2(s32, s32, s32, u32, s32);
+void windowDrawSprite2(s16, s16, s16, s16, u32, tagWINDOW_WORK*, s32, s32, s32);
+s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 u8 winSeqCheckMove(s32);
 u8 GSgfxVideoGetVsyncRate(void);
 void floorSetFadeScript(s32, s32);
@@ -62,6 +88,7 @@ s32 windowGetActiveID(void);
 }
 
 static s32 getPanelIdx(u32, u8);
+static void dispFace(u32, GSvec2*, tagWINDOW_WORK*, tagSPRITE_WORK*, Pokemon*);
 
 extern "C" {
 
@@ -371,13 +398,13 @@ static s32 getPanelIdx(u32 id, u8 mode) {
         idx = 5;
         break;
     case 7:
-        if (mode != 2 || heroGetPokeomCount(&gBDisk.heroes[1]) != 1) idx = 6;
+        if (mode != 2 || (s32)heroGetPokeomCount(&gBDisk.heroes[1]) != 1) idx = 6;
         break;
     case 8:
-        if (mode == 2 && heroGetPokeomCount(&gBDisk.heroes[1]) == 1) idx = 6;
+        if (mode == 2 && (s32)heroGetPokeomCount(&gBDisk.heroes[1]) == 1) idx = 6;
         break;
     case 9:
-        if (mode == 2 && heroGetPokeomCount(&gBDisk.heroes[1]) != 1) idx = 7;
+        if (mode == 2 && (s32)heroGetPokeomCount(&gBDisk.heroes[1]) != 1) idx = 7;
         break;
     case 10:
         if (mode == 1) idx = 7;
@@ -396,6 +423,88 @@ static s32 getPanelIdx(u32 id, u8 mode) {
         break;
     }
     return idx;
+}
+
+static void drawPkmPanel(u32 id, tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
+    s32 layer = winSpriteGetLayerID(win, sprite);
+    u32 index = id;
+    Hero* hero;
+    s32 base;
+    s16 slide;
+    if (id < 6) {
+        base = 0;
+        hero = &gBDisk.heroes[0];
+        if (gBDisk.slide < 0.2f) {
+            slide = (s16)(1280.0f * gBDisk.slide + -256.0f);
+        } else {
+            slide = 0;
+        }
+    } else {
+        index = id - 6;
+        hero = &gBDisk.heroes[1];
+        base = 7;
+        if (gBDisk.slide < 0.2f) {
+            slide = (s16)-(1280.0f * gBDisk.slide - 256.0f);
+        } else {
+            slide = 0;
+        }
+    }
+    if (heroGetPokeomCount(hero) > index) {
+        s32 shift = slide;
+        GSvec2 pos;
+        Pokemon* pokemon;
+        s32 sex;
+        s32 level;
+        s32 hp;
+        pos.x = (f32)(shift + sRect[base][0]);
+        pos.y = (f32)sRect[base][1];
+        pokemon = heroBiosGetPokemonPtr(hero, index);
+        if (pokemon != 0) {
+            sex = pokemonGetStatus(pokemon, 0, 0x77, 0);
+            level = pokemonGetStatus(pokemon, 0, 0x83, 0);
+            hp = pokemonGetStatus(pokemon, 0, 0x7A, 0);
+            dispFace(id, &pos, win, sprite, pokemon);
+            windowDrawSprite2(shift + sRect[base + 1][0], sRect[base + 1][1], sRect[base + 1][2], sRect[base + 1][3],
+                              win->alpha | ~0xFF, win, 0x2FC, 0, layer);
+            msgctrlSetValue(0x37, sex);
+            GSmsgPrintRect(layer, shift + sRect[base + 2][0], sRect[base + 2][1], sprite->x, sprite->y,
+                           win->alpha | ~0xFF, 0x4277);
+            msgctrlSetValue(0x37, GSmsgGetGSchar(0x42D4));
+            GSmsgPrintRect(layer, shift + sRect[base + 3][0], sRect[base + 3][1], sprite->x, sprite->y,
+                           win->alpha | ~0xFF, 0x4276);
+            msgctrlSetValue(0x34, hp);
+            GSmsgPrintRect(layer, shift + (sRect[base + 3][0] + 0x18), sRect[base + 3][1], sprite->x, sprite->y,
+                           win->alpha | ~0xFF, 0x426F);
+            msgctrlSetValue(0x37, GSmsgGetGSchar(0x42D5));
+            GSmsgPrintRect(layer, shift + sRect[base + 4][0], sRect[base + 4][1], sprite->x, sprite->y,
+                           win->alpha | ~0xFF, 0x4276);
+            msgctrlSetValue(0x34, level);
+            GSmsgPrintRect(layer, shift + (sRect[base + 4][0] + 0x1C), sRect[base + 4][1], sprite->x, sprite->y,
+                           win->alpha | ~0xFF, 0x426F);
+            {
+                s32 msg;
+                switch (menuSubGetPokemonSexForDisp(pokemon)) {
+                case 0:
+                    msg = 0x9C5;
+                    break;
+                case 1:
+                    msg = 0x9C6;
+                    break;
+                default:
+                    msg = 0;
+                    break;
+                }
+                if (msg != 0) {
+                    msgctrlSetValue(0x37, GSmsgGetGSchar(msg));
+                    GSmsgPrint2(layer, shift + sRect[base + 5][0], sRect[base + 5][1], win->alpha | ~0xFF, 0x4276);
+                }
+            }
+            if (pokemonGetSoubiItemDataId(pokemon) != 0) {
+                windowDrawSprite2(shift + sRect[base + 6][0], sRect[base + 6][1], sRect[base + 6][2],
+                                  sRect[base + 6][3], win->alpha | ~0xFF, win, 0x14B, 0, layer);
+            }
+        }
+    }
 }
 
 static void dispFace(u32 index, GSvec2* pos, tagWINDOW_WORK* win, tagSPRITE_WORK* sprite, Pokemon* pokemon) {

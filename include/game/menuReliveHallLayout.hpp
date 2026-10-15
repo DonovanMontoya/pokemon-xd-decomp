@@ -31,6 +31,7 @@ public:
     u16 *getNicknamePtr();
     DarkPokemon *getDarkPokemon();
     void *getPokemonDataPtr() const;
+    u16 getPokemonDataId() const;
 };
 
 enum darkPokemonStatus {
@@ -50,6 +51,8 @@ public:
 class CAnt {
 public:
     static void systemUpdate(bool);
+    static void allRequestCancel();
+    static void waitEndOfReading();
     u32 unk0;
     u32 unk4;
     u32 unk8;
@@ -97,6 +100,13 @@ public:
     void setPositionTable(PocketVec<short> *, long);
     void setAnimationOff();
     void init();
+    inline PocketVec<short> getPosition() {
+        return table[index];
+    }
+    inline void setPosition(PocketVec<short> v) {
+        x = v.x;
+        y = v.y;
+    }
 };
 
 class CState {
@@ -120,7 +130,9 @@ public:
 
 class CMenuGlobalState {
 public:
-    u8 reserved0[0xC];
+    s32 unk0;
+    s32 mode;
+    s32 unk8;
     CMenuPokemonCursor cursor;
     CState state;
     void init();
@@ -285,9 +297,14 @@ public:
     u8 tutorialActive;
     u8 reserved243;
     CInfoWindow baseInfoWindow;
-    u8 reserved278[0x320 - 0x278];
+    u8 reserved278[4];
+    s32 state;
+    u8 reserved280[0x10];
+    u8 stateWork[0x40];
+    u8 reserved2D0[0x320 - 0x2D0];
     u64 time;
-    u8 reserved328[8];
+    CMenuGlobalState *globalState;
+    u8 reserved32C[4];
 };
 
 class CMetaMenu : public CMetaMenuBase {
@@ -305,7 +322,7 @@ public:
     void systemFadeWaitToEnd();
     void systemFadeOutSetAndWait(f32);
     void systemFadeOutKick(f32);
-    void systemFadeInKick();
+    static void systemFadeInKick();
     void systemFadeOutKeepAfterFloorPush();
     void alphaFadeDraw();
     u8 getAlphaFadeAlpha() const;

@@ -64,6 +64,46 @@ void GSsndPlayNow(u32);
 void winMsgOpen(s32, s32, s32, s32);
 void fadeCheck(s32);
 void *memset(void *, int, u32);
+void menuFaceLoad(s32, Pokemon *(*)(void *));
+void menuCursorNormal(tagWINDOW_WORK *, s32);
+u32 pokemonGetStatus(Pokemon *, s32, s32, s32);
+u32 GSmsgGetCharLength(u16 *);
+s32 GSfloorGetCurrentFloorGroupID(void);
+s8 menuSubOpenYesNoField(void);
+s32 floorGetNextFloorID(void);
+void gamedatasaveSetStatus(s32, s32, s32);
+s32 memcardTaskCall(s32, s32, s32);
+void GSthreadUnblockGroup(s32);
+struct PcPortKey {
+    u8 pad0[4];
+    u16 trg;
+};
+PcPortKey *windowGetPortKeyInfo(s32);
+s32 GSfsysGetDriveStatus(void);
+void *savedataGetStatus(s32, s32);
+void *memcpy(void *, const void *, u32);
+void GSfloorPush(s32);
+void floorWaitForChange(void);
+s32 openMenuGBA(s32, s32, Hero **);
+void pokemonEvolutionAll(Pokemon *, u16, u16, void *, s32, s32, s32, s32);
+s32 menuPokemonStatusOpenFromPokemonChange(Pokemon *, Pokemon *(*)(Pokemon *, MENU_POKEMON_CB_TYPE, long), long);
+}
+
+struct PcMenuItem {
+    u8 enable : 1;
+    u8 rest : 7;
+    u8 pad1[5];
+    s16 x;
+    u8 pad8[0x10];
+    s16 next;
+};
+struct PcMenuData {
+    u8 pad0[6];
+    s16 first;
+};
+extern "C" {
+PcMenuData *menuDataBiosGetPtr(s32);
+PcMenuItem *menuItemBiosGetPtr(s32, s32);
 }
 
 struct MenuItemSimple {
@@ -83,10 +123,24 @@ void menuModelFree(MENU_MODEL *);
 void menuModelTerm(MENU_MODEL *);
 }
 
+struct PokemonChangeKeys {
+    u8 pad0[0x14];
+    u16 hold;
+    u8 pad16[4];
+    u16 repeat;
+};
+extern PokemonChangeKeys winSysWork;
+extern PokemonChangeKeys winSysWork2;
+
+struct POKEMON_EVOLUTION_INFO {
+    u8 data[0x20];
+};
+
 namespace {
 
 enum enumPlayerIndex { PLAYER_0, PLAYER_1 };
-enum enumMenuState { MENU_STATE_0, MENU_STATE_1, MENU_STATE_2, MENU_STATE_3 };
+enum MENU_POKEMONCHANGE_USERTYPE { MENU_POKEMONCHANGE_USERTYPE_0, MENU_POKEMONCHANGE_USERTYPE_1 };
+enum enumMenuState { MENU_STATE_0, MENU_STATE_1, MENU_STATE_2, MENU_STATE_3, MENU_STATE_4, MENU_STATE_5, MENU_STATE_6 };
 
 void _menuSetMsg(long, u16, u32);
 long _getPokemonState(Pokemon *, enumPlayerIndex);
@@ -95,6 +149,8 @@ bool _isPokemonBattleAble(Pokemon *, enumPlayerIndex);
 bool _isPokemonValid(Pokemon *, enumPlayerIndex);
 bool _isPokemonExchangeAble(Pokemon *, enumPlayerIndex);
 void _setInfo(u32);
+s16 _selectDisplay_2p_offset();
+Pokemon *_cbMenuPokemonStatus(Pokemon *, MENU_POKEMON_CB_TYPE, long);
 long _actionSelect2or3(u32, u32, u32);
 void _menuWait(f32);
 void _pokemonChangeFadeOut(f32);
@@ -102,7 +158,8 @@ void _pokemonChangeFadeIn(f32);
 
 class CMenuPokemonChange {
 public:
-    u8 pad0[0x24];
+    s32 menuState;
+    s32 menuTbl[8];
     Hero *hero0;
     Hero hero1;
     u8 pad29[0x9A0 - 0x29];
@@ -110,11 +167,12 @@ public:
     CState cstate;
     s32 menuId;
     void *saveData;
-    u8 padA54[4];
+    u8 ready[2];
+    u8 padA56[2];
     s32 bgModelId;
     void *bgModel;
     s32 selectIndex[2];
-    u8 padA68[4];
+    s32 lookIndex;
     MENU_MODEL models[2];
     u8 padC44[0xC50 - 0xC44];
     u8 flagC50;
@@ -132,7 +190,12 @@ public:
     void stateFunctionExChangeStart();
     bool bgDrawFadeIsLive();
     void bgModelRelease();
-    void pokemonStatusCallback(Pokemon *, MENU_POKEMON_CB_TYPE, enumPlayerIndex);
+    Pokemon *pokemonStatusCallback(Pokemon *, MENU_POKEMON_CB_TYPE, enumPlayerIndex);
+    long pokemonStatusSearch(long, long);
+    void requestPokemonFaceLoad();
+    void stateFunctionCheckconnection();
+    void stateFunctionConfirmExChange();
+    void _pokemonChangeEvolutionEffect(Pokemon *, MENU_POKEMONCHANGE_USERTYPE, u16, POKEMON_EVOLUTION_INFO);
     void main();
     bool gbaConnectionCheckIsError();
     void stateFunctionSelectPokemon2PokeExChange();
@@ -174,10 +237,11 @@ public:
     void bgModelLoad();
     void bgDrawFadeOut();
     void oneMenuLoad(long);
-    void selectPokemonMenuOpen();
+    long selectPokemonMenuOpen();
     bool pokemonExchangeCheck(enumPlayerIndex);
     void menuStateChange(enumMenuState);
     void menuPokemonStatusExecute(enumPlayerIndex);
+    void setMenuByTbl(long *);
 };
 
 CMenuPokemonChange MenuPokemonChange;
@@ -261,6 +325,43 @@ long CMenuPokemonChange::getQuantityHeroPokemon(enumPlayerIndex player) {
     return i;
 }
 
+long CMenuPokemonChange::selectPokemonMenuOpen() {
+    enumPlayerIndex player = (enumPlayerIndex)currentPlayer;
+    Hero *hero;
+    PcMenuItem *item;
+    int side;
+    int i;
+    PcMenuData *data;
+    windowSearchID(0xD6);
+    data = menuDataBiosGetPtr(0xD6);
+    item = menuItemBiosGetPtr(0xD6, data->first);
+    for (side = 0; side < 2; side++) {
+        if (side == 0) {
+            hero = hero0;
+        } else {
+            hero = &hero1;
+        }
+        for (i = 0; i < 6; i++) {
+            item->enable = _isPokemonValid(hero->getPokemon(i), player);
+            item = menuItemBiosGetPtr(0xD6, item->next);
+        }
+    }
+    static bool isDirty = false;
+    if (!isDirty) {
+        isDirty = true;
+        s16 offset = _selectDisplay_2p_offset();
+        int j;
+        item = menuItemBiosGetPtr(0xD6, 0x627);
+        for (j = 0; j < 6; j++) {
+            item->x += offset;
+            item = menuItemBiosGetPtr(0xD6, item->next);
+        }
+    }
+    menuOpenCustom(0xD6, windowGetActiveID(), &selectIndex[player], flagC51 ? 4 : 0, 0, 0);
+    _setInfo(0xC491);
+    return 0xD6;
+}
+
 void CMenuPokemonChange::waitMenuOpen() {
     while (winSeqCheckMove(menuId)) {
         GSthreadSwitch();
@@ -275,6 +376,209 @@ void CMenuPokemonChange::oneMenuLoad(long id) {
         menuOpenCustom(id, windowGetActiveID(), 0, 4, 0, 0);
         menuSetDisp(id, id == 0xD3);
     }
+}
+
+void CMenuPokemonChange::menuStateChange(enumMenuState state) {
+    menuState = state;
+    switch (state) {
+    case MENU_STATE_0: {
+        static long tbl[] = {0};
+        setMenuByTbl(tbl);
+        break;
+    }
+    case MENU_STATE_1: {
+        static long tbl[] = {0xD3, 0};
+        setMenuByTbl(tbl);
+        break;
+    }
+    case MENU_STATE_2: {
+        static long tbl[] = {0xD3, 0xE1, 0};
+        setMenuByTbl(tbl);
+        break;
+    }
+    case MENU_STATE_3:
+    case MENU_STATE_4: {
+        static long tbl[] = {0xD3, 0xE1, 0xD4, 0xD5, 0xD6, 0};
+        setMenuByTbl(tbl);
+        break;
+    }
+    case MENU_STATE_5: {
+        static long tbl[] = {0xD3, 0xE1, 0xDD, 0};
+        setMenuByTbl(tbl);
+        break;
+    }
+    case MENU_STATE_6: {
+        static long tbl[] = {0xD3, 0xE1, 0xDE, 0};
+        setMenuByTbl(tbl);
+        break;
+    }
+    }
+    flagC51 = 0;
+}
+
+Pokemon *pokemonChangeRequestPokemonFaceLoadCallBack(void *arg) {
+    u32 *p = (u32 *)arg;
+    if (p == 0) {
+        return 0;
+    }
+    if (p[13] >= 13) {
+        return 0;
+    }
+    u32 idx = p[13];
+    p[13] = idx + 1;
+    return (Pokemon *)p[idx];
+}
+
+void CMenuPokemonChange::requestPokemonFaceLoad() {
+    static struct {
+        Pokemon *list[13];
+        u32 index;
+    } stPokemonListFace;
+    int count = 0;
+    int side;
+    int i;
+    for (side = 0; side < 2; side++) {
+        for (i = 0; i < 6; i++) {
+            Hero *hero;
+            if (side == 0) {
+                hero = hero0;
+            } else {
+                hero = &hero1;
+            }
+            Pokemon *pokemon = hero->getPokemon(i);
+            if (_isPokemonValid(pokemon, (enumPlayerIndex)side)) {
+                stPokemonListFace.list[count++] = pokemon;
+            }
+        }
+    }
+    stPokemonListFace.list[count] = 0;
+    stPokemonListFace.index = 0;
+    menuFaceLoad(0, pokemonChangeRequestPokemonFaceLoadCallBack);
+}
+
+Pokemon *CMenuPokemonChange::pokemonStatusCallback(Pokemon *, MENU_POKEMON_CB_TYPE type, enumPlayerIndex) {
+    getQuantityAllPokemon();
+    long idx = lookIndex;
+    if (type == MENU_POKEMON_CB_TYPE_1) {
+        idx = pokemonStatusSearch(idx, -1);
+    } else if (type == MENU_POKEMON_CB_TYPE_2) {
+        idx = pokemonStatusSearch(idx, 1);
+    }
+    lookIndex = idx;
+    return getPokemonBySelect(lookIndex);
+}
+
+long CMenuPokemonChange::pokemonStatusSearch(long, long dir) {
+    long total = getQuantityAllPokemon();
+    long idx = lookIndex;
+    do {
+        idx += dir;
+        if (idx < 0 || idx >= total) {
+            return lookIndex;
+        }
+    } while (!isPokemonLookAbleStatus(idx));
+    return idx;
+}
+
+void CMenuPokemonChange::menuPokemonStatusExecute(enumPlayerIndex player) {
+    lookIndex = selectIndex[player];
+    Pokemon *pokemon = getPokemonBySelect(selectIndex[player]);
+    menuPokemonStatusOpenFromPokemonChange(pokemon, _cbMenuPokemonStatus, player);
+    selectIndex[player] = lookIndex;
+}
+
+void CMenuPokemonChange::stateFunctionCheckconnection() {
+    Hero *heroes[4] = {0, 0, 0, 0};
+    heroes[1] = &hero1;
+    if (openMenuGBA(0, 9, heroes) < 0) {
+        cstate.unk4 = 4;
+        memset(cstate.saved, 0, 0x40);
+    } else {
+        requestPokemonFaceLoad();
+        cstate.unk4 = cstate.unk0 + 1;
+        memset(cstate.saved, 0, 0x40);
+    }
+}
+
+void CMenuPokemonChange::_pokemonChangeEvolutionEffect(Pokemon *pokemon, MENU_POKEMONCHANGE_USERTYPE type, u16 id, POKEMON_EVOLUTION_INFO info) {
+    if (id != 0 && id != 0xFFFF) {
+        switch (type) {
+        case MENU_POKEMONCHANGE_USERTYPE_0:
+            pokemonEvolutionAll(pokemon, id, 0, &info, 0, 0, 0, 1);
+            break;
+        case MENU_POKEMONCHANGE_USERTYPE_1:
+            pokemonEvolutionAll(pokemon, id, 0, &info, 0, 1, 0, 1);
+            break;
+        }
+    }
+}
+
+void CMenuPokemonChange::stateFunctionConfirmExChange() {
+    u8 ready0;
+    u8 ready1;
+    u32 key0;
+    u32 key1;
+    ready[0] = 0;
+    ready[1] = 0;
+    menuStateChange((enumMenuState)5);
+    bgDrawFadeIn();
+    menuSetEnablePort(3);
+    ready0 = 0;
+    ready1 = 0;
+    while (!ready0 || !ready1) {
+        key0 = windowGetPortKeyInfo(1)->trg;
+        key1 = windowGetPortKeyInfo(2)->trg;
+        if (gbaConnectionCheckIsError()) {
+            goto done;
+        }
+        if (GSfsysGetDriveStatus() != 5) {
+            if (key0 & 0x10) {
+                if (!ready0) {
+                    GSsndPlayNow(0x11);
+                }
+                ready0 = 1;
+            } else if (key0 & 0x20) {
+                GSsndPlayNow(0x12);
+                if (!ready0) {
+                    break;
+                }
+                ready0 = 0;
+            }
+            if (key1 & 0x10) {
+                if (!ready1) {
+                    GSsndPlayNow(0x11);
+                }
+                ready1 = 1;
+            } else if (key1 & 0x20) {
+                GSsndPlayNow(0x12);
+                if (!ready1) {
+                    break;
+                }
+                ready1 = 0;
+            }
+        }
+        GSthreadSwitch();
+        ready[0] = ready0;
+        ready[1] = ready1;
+    }
+    ready[0] = ready0;
+    ready[1] = ready1;
+    if (!ready0 || !ready1) {
+        cstate.unk4 = 7;
+        memset(cstate.saved, 0, 0x40);
+    } else {
+        memcpy(saveData, savedataGetStatus(0, 0), 0x27FD0);
+        cstate.unk4 = 0x12;
+        memset(cstate.saved, 0, 0x40);
+    }
+done:
+    bgDrawFadeOut();
+    long i;
+    for (i = 0; i < 2; i++) {
+        menuModelFree(&models[i]);
+        menuModelTerm(&models[i]);
+    }
+    menuSetEnablePort(1);
 }
 
 void _pokemonChangeFadeIn(f32 t) {
@@ -945,8 +1249,8 @@ void CMenuPokemonChange::stateFunctionExChangeStart() {
 MENU_MODEL::MENU_MODEL() {
 }
 
-void _cbMenuPokemonStatus(Pokemon *p, MENU_POKEMON_CB_TYPE type, long player) {
-    MenuPokemonChange.pokemonStatusCallback(p, type, (enumPlayerIndex)player);
+Pokemon *_cbMenuPokemonStatus(Pokemon *p, MENU_POKEMON_CB_TYPE type, long player) {
+    return MenuPokemonChange.pokemonStatusCallback(p, type, (enumPlayerIndex)player);
 }
 
 void CMenuPokemonChange::bgDrawFadeIn() {
@@ -986,4 +1290,90 @@ extern "C" void menuPokemonChangeMain(void) {
 extern "C" void menuPokemonChangeInit(void) {
     floorMapSetDisp(0);
     scriptModelStopMotion(0xFCC1000);
+}
+
+extern "C" void menuPokemonChangeCursor(tagWINDOW_WORK *win) {
+    if (!winSeqCheckMove(win->menu)) {
+        PokemonChangeKeys *k1 = &winSysWork;
+        PokemonChangeKeys *k2 = &winSysWork2;
+        u16 hold1 = k1->hold;
+        u16 hold2 = k2->hold;
+        u16 any = hold1 | hold2;
+        if ((any & 0xC) != 0 && (any & 3) != 0) {
+            u16 rep1 = k1->repeat;
+            u16 rep2 = k2->repeat;
+            k1->hold = hold1 & 0xC;
+            k1->repeat = rep1 & 0xC;
+            k2->hold = hold2 & 0xC;
+            k2->repeat = rep2 & 0xC;
+            menuCursorNormal(win, 1);
+            k1->hold = hold1 & 3;
+            k1->repeat = rep1 & 3;
+            k2->hold = hold2 & 3;
+            k2->repeat = rep2 & 3;
+            menuCursorNormal(win, 1);
+            k1->hold = hold1;
+            k1->repeat = rep1;
+            k2->hold = hold2;
+            k2->repeat = rep2;
+        } else {
+            menuCursorNormal(win, 1);
+        }
+    }
+}
+
+extern "C" void menuPokemonChange(void) {
+    s32 group;
+    if (_isTemochiPokemonCheck()) {
+        group = GSfloorGetCurrentFloorGroupID();
+        winMsgOpenWithSE(3, 0xC48E, 1, 0, 2);
+        if (menuSubOpenYesNoField() == 0) {
+            gamedatasaveSetStatus(0, 5, floorGetNextFloorID());
+            s32 result = memcardTaskCall(4, 2, 0);
+            winMsgClose(1);
+            if (result == 4) {
+                GSfloorPush(0x394);
+                floorWaitForChange();
+            }
+            return;
+        }
+    }
+    winMsgClose(1);
+    GSthreadUnblockGroup(group);
+}
+
+extern "C" u8 fn_80098B44(u8 mode, Pokemon *pokemon) {
+    u16 *name = (u16 *)pokemonGetStatus(pokemon, 0, 0x77, 0);
+    u32 len = GSmsgGetCharLength(name);
+    u16 countA;
+    u16 countB;
+    u16 charA;
+    u16 charB;
+    u32 i;
+    countB = 0;
+    countA = 0;
+    switch (mode) {
+    case 0:
+        charA = 0x2642;
+        charB = 0x2640;
+        break;
+    case 1:
+        charA = 0x2640;
+        charB = 0x2642;
+        break;
+    default:
+        return mode;
+    }
+    for (i = 0; i < len; i++) {
+        if (charA == name[i]) {
+            countA++;
+        }
+        if (charB == name[i]) {
+            countB++;
+        }
+    }
+    if (countB == 0 && countA != 0) {
+        return 2;
+    }
+    return mode;
 }

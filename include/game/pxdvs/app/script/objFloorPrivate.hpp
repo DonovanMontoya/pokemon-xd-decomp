@@ -13,7 +13,7 @@ s32 floorEventCtrlDoor(s32,s32,u8);s32 floorEventCtrlElevator(s32,s32,u16,u32,u3
 void floorEventSetTresureDisp(s32,u8);s32 floorEventChangeTresure(s32,u16,u8);
 s32 scriptFloorCharSetDisp(s32,s32);s32 scriptFloorCharSetPos(s32,f32,f32,f32);
 void floorSetFadeScript(s32,s32);u8 floorSetOffscreenIndex(s32);void floorOffscreenPlayWait();void floorReleaseOffscreen();
-void floorChangePos(s32,s32,f32,f32,f32);u8 floorDataBiosGetPosListData(s32,GSvec *,f32 *);
+void floorChangePos(s32,s16,f32,f32,f32);u8 floorDataBiosGetPosListData(s32,GSvec *,f32 *);
 void floorMoviePlay(s32,u8,u8,s32,u16,u16);void floorRegisterLight(u32,s32);void floorRegisterCamera(u32,s32);
 void menuTitle();void menuWorldMapMXMain();void menuBattleDeBingo();void menuBattleDiskOpen();void menuBattleDiskOpenFight();
 s32 menuBattleDiskGetSelectID();s32 menuBattleDiskGetResult();void menuMoveDemo(s32);

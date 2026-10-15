@@ -83,7 +83,8 @@ struct BDisk {
     u8 unk16;                   // 0x16
     u8 selectedID;              // 0x17
     u16 result;                 // 0x18
-    u8 reserved1A[0xA];
+    u8 reserved1A[6];
+    f32 slide;                  // 0x20
     s32 field24;                // 0x24
     u8 entries[0x5A0];      // 0x28 (BDiskEntry rows, stride 0x18)
     Hero heroes[2];             // 0x5C8

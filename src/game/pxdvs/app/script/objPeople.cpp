@@ -42,9 +42,6 @@ static u8 _pokeRareCol[9][8]={
  {0,2,0,3,127,127,127,255},{2,0,0,3,0x99,0xAA,0x93,255},
  {2,0,2,3,0x91,0x91,0x91,255}
 };
-struct ScriptPeopleVector {f32 param1,param2,param3;};
-static ScriptPeopleVector Vector;
-static u8 vectorInitialized;
 #define I(N) getInteger__Q28GSscript11tigaVariantFv(&args[N])
 #define F(N) getSingle__Q28GSscript11tigaVariantFv(&args[N])
 #define V(N) getVector__Q28GSscript11tigaVariantFv(&args[N])
@@ -52,17 +49,21 @@ static u8 vectorInitialized;
 #define A(N) getArray__Q28GSscript11tigaVariantFv(&args[N])
 #define P person->group,person->id
 #define R(E) appScriptSetInt(result,(E))
+struct ScriptPeopleVector {f32 param1,param2,param3;};
 int AppScript::cmpPeople(int method,GSscript::tigaVariant *args,GSscript::tigaVariant *result) {
-    GSvec *vector=(GSvec *)&Vector;
+    static ScriptPeopleVector Vector;
+    static s8 init;
     s32 parts[6],motions[7];
-    if(vectorInitialized==0)vectorInitialized=1;
-    if(method==1)return 0;
-    if(args[0].type!=0x23){R(0);return 1;}
-    GSresID *person=H(0);
+    if(init==0)init=1;
+    GSresID *person;
+    if(method!=1){
+        if(args[0].type!=0x23){R(0);return 1;}
+        person=H(0);
+    }else return 0;
     switch(method) {
     case 0x10:peopleSetDisp(P,(bool)I(1));break;
-    case 0x11:{u8 loop=(bool)I(3);s32 blend=I(2);R(peopleSetMotion(P,I(1),blend,loop));break;}
-    case 0x12:{u8 loop=(bool)I(3);s32 blend=I(2);peopleSetMotionForce(P,I(1),blend,loop);break;}
+    case 0x11:{s32 blend;u8 loop;loop=(bool)I(3);blend=I(2);R(peopleSetMotion(P,I(1),blend,loop));break;}
+    case 0x12:{s32 blend;u8 loop;loop=(bool)I(3);blend=I(2);peopleSetMotionForce(P,I(1),blend,loop);break;}
     case 0x13:peopleStopMotion(P);break;
     case 0x14:peopleWaitSyncMotion(P,(bool)I(1));break;
     case 0x15:peopleSpeakStart(P);peopleTalkMsg(P,I(1));if(I(2)!=0)peopleTalkMsgEnd(P);break;
@@ -77,7 +78,7 @@ int AppScript::cmpPeople(int method,GSscript::tigaVariant *args,GSscript::tigaVa
     case 0x1E:{GSvec *v=V(1);peopleSetPosXYZ(P,v->param1,v->param2,v->param3);break;}
     case 0x1F:{f32 z=F(3),y=F(2);peopleSetRotXYZ(P,F(1),y,z);break;}
     case 0x20:peopleSetRot(P,V(1));break;
-    case 0x21:vector->param1=F(1);vector->param2=F(2);vector->param3=F(3);peopleGetPos(P,vector);break;
+    case 0x21:Vector.param1=F(1);Vector.param2=F(2);Vector.param3=F(3);peopleGetPos(P,(GSvec *)&Vector);break;
     case 0x22:peopleGetPos(P,V(1));break;
     case 0x24:{f32 z=F(4),y=F(3),x=F(2);peopleWalkToXYZ(P,(bool)I(1),x,y,z);break;}
     case 0x25:{GSvec *v=V(2);peopleWalkToXYZ(P,(bool)I(1),v->param1,v->param2,v->param3);break;}
@@ -316,8 +317,8 @@ int AppScript::cmpPeople(int method,GSscript::tigaVariant *args,GSscript::tigaVa
             break;
         }
     case 0x4A:{u8 mode=I(3);s32 b=I(2),a=I(1);peopleAttachWithMode(P,floorGetCurrentGroupID(),a,b,mode);break;}
-    case 0x4B:{void *model=GSresGetResource(P);if(model)GSmodelGetPosition(model,vector);setRpVec__Q28GSscript4TigaFPC5GSvec(this,vector);break;}
-    case 0x4C:{void *model=GSresGetResource(P);if(model)GSmodelGetRotation(model,vector);vector->param2=57.29578f*vector->param2;appScriptSetFloat(result,vector->param2);break;}
+    case 0x4B:{void *model=GSresGetResource(P);if(model)GSmodelGetPosition(model,(GSvec *)&Vector);setRpVec__Q28GSscript4TigaFPC5GSvec(this,(GSvec *)&Vector);break;}
+    case 0x4C:{void *model=GSresGetResource(P);if(model)GSmodelGetRotation(model,(GSvec *)&Vector);Vector.param2=57.29578f*Vector.param2;appScriptSetFloat(result,Vector.param2);break;}
     case 0x4D:peopleSetWaitAnimation(P);break;
     case 0x4E:peopleUnsetWaitAnimation(P);break;
     case 0x51:{GSresID *p=H(1);peopleMoveNeckTarget(P,p->group,p->id,F(2));break;}
@@ -346,8 +347,8 @@ int AppScript::cmpPeople(int method,GSscript::tigaVariant *args,GSscript::tigaVa
     case 0x6B:{s32 type=I(2);scriptModelPartPaticle(person->id,I(1),type);break;}
     case 0x6C:{void *model=GSresGetResource(P);GSmodelSetScale(model,V(1));break;}
     case 0x6D:GSmodelRecalculateBound(GSresGetResource(P));break;
-    case 0x6E:peopleGetPos(P,vector);{GSvec *point=V(3);f32 radius=F(2);R(scriptPeopleInsideCheck(vector,V(1),point,radius));}break;
-    case 0x6F:{s32 index=I(1);void *model=GSresGetResource(floorGetCurrentGroupID(),person->id);void *part=GSmodelGetPart(model,index);GSpartGetTransform(part,&vector->param1,0,0);GSpartFree(part);setRpVec__Q28GSscript4TigaFPC5GSvec(this,vector);break;}
+    case 0x6E:peopleGetPos(P,(GSvec *)&Vector);{GSvec *point=V(3);f32 radius=F(2);R(scriptPeopleInsideCheck((GSvec *)&Vector,V(1),point,radius));}break;
+    case 0x6F:{s32 index=I(1);void *model=GSresGetResource(floorGetCurrentGroupID(),person->id);void *part=GSmodelGetPart(model,index);GSpartGetTransform(part,&Vector.param1,0,0);GSpartFree(part);setRpVec__Q28GSscript4TigaFPC5GSvec(this,(GSvec *)&Vector);break;}
     case 0x70:{void *model=GSresGetResource(P);if(model){s32 index=I(1);GSmodelEnableColorSwap(model,_pokeRareCol[index]);GSmodelEnableModulation(model,&_pokeRareCol[index][4]);}break;}
     case 0x71:peopleGet(P)->field54=0;break;
     case 0x72:{PersonScriptWork *p=peopleGet(P);peopleRotateStop(P);p->field54=0;break;}

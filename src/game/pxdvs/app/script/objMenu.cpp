@@ -1,6 +1,7 @@
 #include <game/pxdvs/app/script/objMenuPrivate.hpp>
 #define I(N) appScriptGetInt(&args[N])
 #define R(E) appScriptSetInt(result,(E))
+static inline char *menuScriptString(GSscript::tigaVariant *v,char *buf){if(v->type==8)return v->value.string;return v->getCnvString(buf);}
 int AppScript::cmpMenu(int method,GSscript::tigaVariant *args,GSscript::tigaVariant *result) {
     s32 selections[128];s32 number;s8 learned;
     switch(method) {
@@ -18,16 +19,14 @@ int AppScript::cmpMenu(int method,GSscript::tigaVariant *args,GSscript::tigaVari
     case 0x1B:{s32 a=I(1);R(menuSetCursor(a,I(2)));break;}
     case 0x1C:
         if(I(1)==0x4D) msgctrlSetValue(0x4D,(u32)GSmsgGetGSchar(I(2)));
-        else switch(args[2].type) {
-        case 37:{s32 a=I(1);msgctrlSetValue(a,(u32)appScriptGetPokemon(&args[2]));break;}
-        case 1:{s32 a=I(1);msgctrlSetValue(a,I(2));break;}
-        case 8:{s32 a=I(1);char *text;if(args[2].type==8)text=args[2].value.string;else text=args[2].getCnvString((char *)field954);msgctrlSetValue(a,(u32)text);break;}
-        case 2:{s32 a=I(1);msgctrlSetValue(a,(u32)appScriptGetFloat(&args[2]));break;}
-        }
+        else if(args[2].type==37){s32 a=I(1);msgctrlSetValue(a,(u32)appScriptGetPokemon(&args[2]));}
+        else if(args[2].type==1){s32 a=I(1);msgctrlSetValue(a,I(2));}
+        else if(args[2].type==8){s32 a=I(1);msgctrlSetValue(a,(u32)menuScriptString(&args[2],(char *)field954));}
+        else if(args[2].type==2){s32 a=I(1);msgctrlSetValue(a,(u32)appScriptGetFloat(&args[2]));}
         break;
     case 0x1D:
         if(I(2)>=128){R(0);return 1;}
-        for(s32 i=0;i<I(2);++i)selections[i]=appScriptGetInt(menuScriptArray(&args[1])->get(i));
+        for(s32 i=0;I(2)>i;++i)selections[i]=appScriptGetInt(menuScriptArray(&args[1])->get(i));
         {s32 count=I(2),x=I(3),y=I(4),start=I(5);R(menuSubOpenSelect2(0,selections,count,x,y,start,I(2),1));}break;
     case 0x20:R(menuPokemonOpen(6,0,0));break;
     case 0x21:R(menuPokemonOpen(6,0,0));break;
@@ -44,7 +43,7 @@ int AppScript::cmpMenu(int method,GSscript::tigaVariant *args,GSscript::tigaVari
     case 0x3A:R(menuScriptEevee());break;
     case 0x3B:
         if(I(3)>=128){R(0);return 1;}
-        for(s32 i=0;i<I(3);++i)selections[i]=appScriptGetInt(menuScriptArray(&args[2])->get(i));
+        for(s32 i=0;I(3)>i;++i)selections[i]=appScriptGetInt(menuScriptArray(&args[2])->get(i));
         {s32 kind=I(1),count=I(3),x=I(4),y=I(5),start=I(6),limit=I(7);R(menuSubOpenSelect2(kind,selections,count,x,y,start,limit,(bool)I(8)));}break;
     case 0x3C:GSthreadSwitch();menuScriptOpenWorldMap(I(1));break;
     case 0x3D:menuIntUnderTakerMenuOpen();break;

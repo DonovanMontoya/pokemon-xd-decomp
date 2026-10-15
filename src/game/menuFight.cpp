@@ -114,10 +114,10 @@ static s32 getKane(void) {
     FIGHT_TRAINER *hero;
     u8 maxLevel;
     u8 fightOutNum = fightFloor_GetFightTypeFightoutPokemonNum(0);
+    int j;
     void *p;
     FIGHT_TRAINER *target;
     int i;
-    int j;
     void *p2;
     s32 mult;
     if (fightFloor_GetFightKindGetOkaneFlag(0) == 0) {
@@ -954,4 +954,35 @@ static void menuFightSetSeqOut(void) {
     winSeqSetMenu(0x38, 0x1A1);
     winSeqSetMenu(0x41, 0x1A1);
     menuFightSetStatus(1);
+}
+
+static inline s32 targetSecretSprite(s32 id) {
+    switch (id) {
+    case 0x37:
+        return 0x42;
+    case 0x40:
+        return 0x41;
+    case 0x38:
+        return 0x40;
+    case 0x41:
+        return 0x3F;
+    default:
+        return 0;
+    }
+}
+
+extern "C" void menuFightDrawTargetSecret(tagWINDOW_WORK *window, tagSPRITE_WORK *sprite) {
+    FightTargetSecret *entries = (FightTargetSecret *)windowGetParam(window, 0);
+    s32 i;
+    for (i = 0; i < 2; i++) {
+        if (targetSecretSprite(entries[i].idA) == sprite->id) {
+            winSpriteSetDisp(sprite, 1);
+            return;
+        }
+        if (targetSecretSprite(entries[i].idB) == sprite->id) {
+            winSpriteSetDisp(sprite, 1);
+            return;
+        }
+    }
+    winSpriteSetDisp(sprite, 0);
 }

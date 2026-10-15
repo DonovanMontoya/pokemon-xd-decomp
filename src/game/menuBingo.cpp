@@ -9669,8 +9669,7 @@ BingoPokemon *loadPkmFace__6cBingoFPv(u32 *arg0) {
 }
 
 void ResetSheet__6cBingoFUl(BingoState *arg0, u32 arg1) {
-    BingoPokemon *var_r4;
-    s32 var_ctr;
+    s32 i;
 
     arg0->unk108 = 0;
     arg0->unk130 = 0;
@@ -9679,75 +9678,16 @@ void ResetSheet__6cBingoFUl(BingoState *arg0, u32 arg1) {
     arg0->unk148 = 1;
     arg0->unk121 = 0;
     setStaticBall__10bingo_biosFUc(arg0->unk129);
-    if (0 < 0x10) {
-        arg0->cells[0].unk2 = 0;
-        arg0->cells[1].unk2 = 0;
-        arg0->cells[2].unk2 = 0;
-        arg0->cells[3].unk2 = 0;
-        arg0->cells[4].unk2 = 0;
-        arg0->cells[5].unk2 = 0;
-        arg0->cells[6].unk2 = 0;
-        arg0->cells[7].unk2 = 0;
-        arg0->cells[8].unk2 = 0;
-        arg0->cells[9].unk2 = 0;
-        arg0->cells[0xA].unk2 = 0;
-        arg0->cells[0xB].unk2 = 0;
-        arg0->cells[0xC].unk2 = 0;
-        arg0->cells[0xD].unk2 = 0;
-        arg0->cells[0xE].unk2 = 0;
-        arg0->cells[0xF].unk2 = 0;
+    for (i = 0; i < 0x10; i++) {
+        arg0->cells[i].unk2 = 0;
     }
     mPokemon__6cBingo->unkC4 = 2;
     mPokemon__6cBingo->unkC5 = 1;
     mPokemon__6cBingo->unkC6 = 0;
-    if (1 < 0xE) {
-        mPokemon__6cBingo[1].unkC6 = 0;
-        mPokemon__6cBingo[1].unkC4 = 0;
-        mPokemon__6cBingo[1].unkC5 = 0;
-        mPokemon__6cBingo[2].unkC6 = 0;
-        mPokemon__6cBingo[2].unkC4 = 0;
-        mPokemon__6cBingo[2].unkC5 = 0;
-        mPokemon__6cBingo[3].unkC6 = 0;
-        mPokemon__6cBingo[3].unkC4 = 0;
-        mPokemon__6cBingo[3].unkC5 = 0;
-        mPokemon__6cBingo[4].unkC6 = 0;
-        mPokemon__6cBingo[4].unkC4 = 0;
-        mPokemon__6cBingo[4].unkC5 = 0;
-        mPokemon__6cBingo[5].unkC6 = 0;
-        mPokemon__6cBingo[5].unkC4 = 0;
-        mPokemon__6cBingo[5].unkC5 = 0;
-        mPokemon__6cBingo[6].unkC6 = 0;
-        mPokemon__6cBingo[6].unkC4 = 0;
-        mPokemon__6cBingo[6].unkC5 = 0;
-        mPokemon__6cBingo[7].unkC6 = 0;
-        mPokemon__6cBingo[7].unkC4 = 0;
-        mPokemon__6cBingo[7].unkC5 = 0;
-        mPokemon__6cBingo[8].unkC6 = 0;
-        mPokemon__6cBingo[8].unkC4 = 0;
-        mPokemon__6cBingo[8].unkC5 = 0;
-        mPokemon__6cBingo[9].unkC6 = 0;
-        mPokemon__6cBingo[9].unkC4 = 0;
-        mPokemon__6cBingo[9].unkC5 = 0;
-        mPokemon__6cBingo[0xA].unkC6 = 0;
-        mPokemon__6cBingo[0xA].unkC4 = 0;
-        mPokemon__6cBingo[0xA].unkC5 = 0;
-        mPokemon__6cBingo[0xB].unkC6 = 0;
-        mPokemon__6cBingo[0xB].unkC4 = 0;
-        mPokemon__6cBingo[0xB].unkC5 = 0;
-        mPokemon__6cBingo[0xC].unkC6 = 0;
-        mPokemon__6cBingo[0xC].unkC4 = 0;
-        mPokemon__6cBingo[0xC].unkC5 = 0;
-        var_r4 = &mPokemon__6cBingo[0xD];
-        var_ctr = 0xE - 0xD;
-        if (0xD < 0xE) {
-            do {
-                var_r4->unkC6 = 0;
-                var_r4->unkC4 = 0;
-                var_r4->unkC5 = 0;
-                var_r4 = (BingoPokemon *)((u8 *)var_r4 + 0xC8);
-                var_ctr -= 1;
-            } while (var_ctr != 0);
-        }
+    for (i = 1; i < 0xE; i++) {
+        mPokemon__6cBingo[i].unkC6 = 0;
+        mPokemon__6cBingo[i].unkC4 = 0;
+        mPokemon__6cBingo[i].unkC5 = 0;
     }
 }
 #ifdef __cplusplus

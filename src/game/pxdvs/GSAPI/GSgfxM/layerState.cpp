@@ -1761,17 +1761,21 @@ __declspec(weak) void GSgfx_GCSetTevOrder(s32 arg0, s32 arg1, s32 arg2, s32 arg3
 __declspec(weak) void GSgfx_GCSetMatColor(s32 arg0, u32 *arg1) {
     u32 sp8;
     s32 temp_r11;
+    s32 index;
+    u8 *base;
     u32 temp_r9;
 
     temp_r11 = (arg0 - 4) * 5;
-    if (((u32) layerField<u32>(reinterpret_cast<u8*>(gsgfxState) + (temp_r11 + 0x4C3), 0) != (u32) *arg1) || ((u8) layerField<u8>(reinterpret_cast<u8*>(gsgfxState) + temp_r11, 0x4C2) == 1)) {
+    base = reinterpret_cast<u8*>(gsgfxState);
+    index = temp_r11 + 0x4C3;
+    if (((u32) *arg1 != layerField<u32>(base + index, 0)) || ((u8) layerField<u8>(base + temp_r11, 0x4C2) == 1)) {
         temp_r9 = *arg1;
         sp8 = temp_r9;
         *(volatile u8*)0xCC008000 = 0x10;
         *(volatile u16*)0xCC008000 = 0;
         *(volatile u16*)0xCC008000 = (s16) ((arg0 & 1) + 0x100C);
-        *(volatile u32*)0xCC008000 = (s32) (layerField<u8>(&sp8,3) | (((((layerField<u8>(&sp8,1) << 0x10) & ~0xFF000000) | (layerField<u8>(&sp8,0) << 0x18)) & ~0xFF00) | ((layerField<u8>(&sp8,2) << 8) & 0xFF00)));
-        layerField<u32>(reinterpret_cast<u8*>(gsgfxState) + (temp_r11 + 0x4C3), 0) = temp_r9;
+        *(volatile u32*)0xCC008000 = (layerField<u8>(&sp8,0) << 24) | (layerField<u8>(&sp8,1) << 16) | (layerField<u8>(&sp8,2) << 8) | layerField<u8>(&sp8,3);
+        layerField<u32>(base + index, 0) = temp_r9;
         layerField<u8>(reinterpret_cast<u8*>(gsgfxState) + temp_r11, 0x4C2) = 0;
     }
 }
