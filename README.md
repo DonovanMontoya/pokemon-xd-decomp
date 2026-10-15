@@ -4,32 +4,28 @@
 ![US code matched: 50.01%](https://img.shields.io/static/v1?label=US%20code%20matched&message=50.01%25&color=blue) ![US data matched: 21.35%](https://img.shields.io/static/v1?label=US%20data%20matched&message=21.35%25&color=blue)
 <!-- progress:end -->
 
-This is a matching decompilation of **Pokémon XD: Gale of Darkness** for the Nintendo GameCube.
+A matching decompilation of **Pokémon XD: Gale of Darkness** for the Nintendo GameCube.
 
-It started as a fork of [TeamOrre/xd-decomp](https://github.com/TeamOrre/xd-decomp) and is now maintained as a separate project. Thanks to everyone who worked on the original.
+The goal is C/C++ source that compiles to a byte-for-byte copy of the retail game. This repository is the decompilation only. Ports to other platforms are planned as separate projects built on top of it and will not live here.
 
-## Why a separate project?
+The project began as a fork of xd-decomp and is now maintained independently.
 
-This is an **AI-assisted decompilation**. TeamOrre's [contributing guidelines](https://github.com/TeamOrre/xd-decomp/blob/main/CONTRIBUTING.md#ai-assistance-policy) ban AI-assisted contributions for now, so this work can't be merged upstream, and it continues here instead.
+## AI-assisted
 
-AI assistance doesn't lower the bar for what counts as decompiled. A function only counts as matching when objdiff confirms it compiles to exactly the same bytes as the original, and every build is checked against the retail DOL's SHA1.
+This is an **AI-assisted decompilation**. That doesn't lower the bar for what counts as decompiled: a function only counts as matching when objdiff confirms it compiles to exactly the same bytes as the original, and every build is checked against the retail DOL's SHA1.
 
 ## Progress
 
-The badges above show the percentage of original US (`GXXE01`) code and data
-bytes matched by objdiff in the last recorded local build. They are snapshots,
-not live CI measurements or estimates of remaining effort. JP demo progress has
-not been measured here.
+The badges above show the percentage of original US (`GXXE01`) code and data bytes matched by objdiff in the last recorded local build. They are snapshots, not live measurements or estimates of remaining effort. JP demo progress has not been measured.
 
-After building the US version, refresh the badges with:
+Progress is tracked in this repository rather than on an external site. After building the US version, refresh the badges with:
 
 ```sh
 ninja all_source progress build/GXXE01/report.json
 python3 tools/update_readme_progress.py build/GXXE01/report.json
 ```
 
-Commit the updated README with the corresponding source changes. Full builds
-currently require private inputs; public CI checks configuration only.
+Commit the updated README with the corresponding source changes. Full builds require private inputs, so CI only checks the configuration; see [docs/github_actions.md](docs/github_actions.md).
 
 ## Supported Versions
 
@@ -43,6 +39,8 @@ Work in progress:
 - Reconstruct the game's code in C/C++.
 - Produce a **matching** retail binary.
 - Remain legally clean – **no ROMs, ISOs, or copyrighted assets**.
+
+Non-goals: ports, enhancements, and gameplay changes. Those belong in separate projects.
 
 ## Repository Organization
 
@@ -126,8 +124,4 @@ Select an object from the left sidebar to begin diffing. Changes to the project 
 
 ## Contributing
 
-Contributions are welcome! Before making a pull request, please read our [contributing guidelines](CONTRIBUTING.md).
-
-Also, consider joining our `#pokemon-xd` discussion channel on Discord.
-
-[![Gamecube/Wii Decompilation Discord](https://discordapp.com/api/guilds/727908905392275526/widget.png?style=banner2)](https://discord.gg/hKx3FJJgrV)
+Contributions are welcome. Please read the [contributing guidelines](CONTRIBUTING.md) before opening a pull request, and use GitHub issues for questions and discussion.
