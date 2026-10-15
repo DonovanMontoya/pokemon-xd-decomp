@@ -1,5 +1,9 @@
 # Pokémon XD: Gale of Darkness Decompilation
 
+<!-- progress:start -->
+![US code matched: 45.22%](https://img.shields.io/static/v1?label=US%20code%20matched&message=45.22%25&color=blue) ![US data matched: 12.37%](https://img.shields.io/static/v1?label=US%20data%20matched&message=12.37%25&color=blue)
+<!-- progress:end -->
+
 This is a matching decompilation of **Pokémon XD: Gale of Darkness** for the Nintendo GameCube.
 
 It started as a fork of [TeamOrre/xd-decomp](https://github.com/TeamOrre/xd-decomp) and is now maintained as a separate project. Thanks to everyone who worked on the original.
@@ -9,6 +13,23 @@ It started as a fork of [TeamOrre/xd-decomp](https://github.com/TeamOrre/xd-deco
 This is an **AI-assisted decompilation**. TeamOrre's [contributing guidelines](https://github.com/TeamOrre/xd-decomp/blob/main/CONTRIBUTING.md#ai-assistance-policy) ban AI-assisted contributions for now, so this work can't be merged upstream, and it continues here instead.
 
 AI assistance doesn't lower the bar for what counts as decompiled. A function only counts as matching when objdiff confirms it compiles to exactly the same bytes as the original, and every build is checked against the retail DOL's SHA1.
+
+## Progress
+
+The badges above show the percentage of original US (`GXXE01`) code and data
+bytes matched by objdiff in the last recorded local build. They are snapshots,
+not live CI measurements or estimates of remaining effort. JP demo progress has
+not been measured here.
+
+After building the US version, refresh the badges with:
+
+```sh
+ninja all_source progress build/GXXE01/report.json
+python3 tools/update_readme_progress.py build/GXXE01/report.json
+```
+
+Commit the updated README with the corresponding source changes. Full builds
+currently require private inputs; public CI checks configuration only.
 
 ## Supported Versions
 
