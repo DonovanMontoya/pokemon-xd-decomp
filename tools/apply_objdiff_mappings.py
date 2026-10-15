@@ -1,4 +1,4 @@
-# Thanks KooShnoo! https://discord.com/channels/727908905392275526/1024871155804426310/1329716224971767891
+# Thanks KooShnoo!
 
 """
 objdiff allows one to map symbols from the target binary to the source binary.
