@@ -27,7 +27,7 @@ jobs:
     - name: Check build configuration
       run: python configure.py --map --version ${{ matrix.version }}
     - name: Explain full-build requirements
-      if: ${{ github.repository != 'TeamOrre/xd-decomp' && vars.BUILD_CONTAINER == '' }}
+      if: ${{ vars.BUILD_CONTAINER == '' }}
       run: |
         echo 'Only configuration was checked; compilation and progress were not run.' >> "$GITHUB_STEP_SUMMARY"
         echo 'Set BUILD_CONTAINER to an accessible private build image. See docs/github_actions.md.' >> "$GITHUB_STEP_SUMMARY"
@@ -35,15 +35,13 @@ jobs:
   build:
     # Private game files must come from an image accessible to this repository.
     # Never expose the image to untrusted pull-request code.
-    if: >-
-      github.event_name != 'pull_request' &&
-      (github.repository == 'TeamOrre/xd-decomp' || vars.BUILD_CONTAINER != '')
+    if: github.event_name != 'pull_request' && vars.BUILD_CONTAINER != ''
     needs: configure
     permissions:
       contents: read
       packages: read
     container:
-      image: ${{ vars.BUILD_CONTAINER || 'ghcr.io/teamorre/xd-decomp-build:main' }}
+      image: ${{ vars.BUILD_CONTAINER }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

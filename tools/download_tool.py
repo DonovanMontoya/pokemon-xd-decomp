@@ -37,6 +37,11 @@ def binutils_url(tag):
 
 
 def compilers_url(tag: str) -> str:
+    # XD_COMPILERS_URL overrides the default host. It may be an http(s)/file
+    # URL or a local path to a compilers zip.
+    override = os.environ.get("XD_COMPILERS_URL")
+    if override:
+        return override if "://" in override else Path(override).resolve().as_uri()
     return f"https://files.decomp.dev/compilers_{tag}.zip"
 
 
